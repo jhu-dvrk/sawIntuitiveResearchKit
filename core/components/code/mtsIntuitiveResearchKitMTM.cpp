@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen, Rishibrata Biswas, Adnan Munawar
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2024 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -47,10 +47,7 @@ mtsIntuitiveResearchKitMTM::mtsIntuitiveResearchKitMTM(const mtsTaskPeriodicCons
     Init();
 }
 
-mtsIntuitiveResearchKitMTM::~mtsIntuitiveResearchKitMTM()
-{
-    delete GravityCompensationMTM;
-}
+mtsIntuitiveResearchKitMTM::~mtsIntuitiveResearchKitMTM() = default;
 
 void mtsIntuitiveResearchKitMTM::set_simulated(void)
 {
@@ -100,11 +97,11 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     mEffortOrientationJoint.SetSize(number_of_joints());
 
     // initialize gripper state
-    m_gripper_measured_js.Name().SetSize(1);
+    m_gripper_measured_js.Name().resize(1);
     m_gripper_measured_js.Name().at(0) = "gripper";
     m_gripper_measured_js.Position().SetSize(1);
 
-    m_gripper_configuration_js.Name().SetSize(1);
+    m_gripper_configuration_js.Name().resize(1);
     m_gripper_configuration_js.Name().at(0) = "gripper";
     m_gripper_configuration_js.Type().SetSize(1);
     m_gripper_configuration_js.Type().at(0) = CMN_JOINT_REVOLUTE;
@@ -122,10 +119,10 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     m_trajectory_j.goal_tolerance.at(JNT_WRIST_ROLL) = 6.0 * cmnPI_180; // roll has low encoder resolution
 
     // default PID tracking errors, defaults are used for homing
-    PID.DefaultTrackingErrorTolerance.SetSize(number_of_joints());
-    PID.DefaultTrackingErrorTolerance.SetAll(10.0 * cmnPI_180);
+    PID.measured_setpoint_tolerance.SetSize(number_of_joints());
+    PID.measured_setpoint_tolerance.SetAll(10.0 * cmnPI_180);
     // last 3 joints tend to be weaker
-    PID.DefaultTrackingErrorTolerance.Ref(3, 4) = 30.0 * cmnPI_180;
+    PID.measured_setpoint_tolerance.Ref(3, 4) = 30.0 * cmnPI_180;
 
     this->StateTable.AddData(m_gripper_measured_js, "gripper/measured_js");
 
@@ -148,31 +145,16 @@ void mtsIntuitiveResearchKitMTM::Init(void)
 }
 
 void mtsIntuitiveResearchKitMTM::PreConfigure(const Json::Value & jsonConfig,
-                                              const cmnPath & configPath,
-                                              const std::string & filename)
+                                              const cmnPath & CMN_UNUSED(configPath),
+                                              const std::string & CMN_UNUSED(filename))
 {
-    // gravity compensation
-    const auto jsonGC = jsonConfig["gravity-compensation"];
-    if (!jsonGC.isNull()) {
-        const auto fileGC = configPath.Find(jsonGC.asString());
-        if (fileGC == "") {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
-                                     << " can't find gravity-compensation file \""
-                                     << jsonGC.asString() << "\" defined in \""
-                                     << filename << "\"" << std::endl;
-            exit(EXIT_FAILURE);
-        } else {
-            ConfigureGC(fileGC);
-        }
-    }
-
     // platform gain
-    const auto jsonPlatformGain = jsonConfig["platform-gain"];
+    const auto jsonPlatformGain = jsonConfig["platform_gain"];
     if (!jsonPlatformGain.isNull()) {
         const auto gain = jsonPlatformGain.asDouble();
         if ((gain < 0.0) || (gain > 1.0)) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
-                                     << " platform-gain must be between 0 and 1, found: "
+                                     << " platform_gain must be between 0 and 1, found: "
                                      << gain << std::endl;
             exit(EXIT_FAILURE);
         } else {
@@ -181,12 +163,12 @@ void mtsIntuitiveResearchKitMTM::PreConfigure(const Json::Value & jsonConfig,
     }
 
     // gripper events
-    const auto jsonGripperEventDebounce = jsonConfig["gripper-events-debounce"];
+    const auto jsonGripperEventDebounce = jsonConfig["gripper_events_debounce"];
     if (!jsonGripperEventDebounce.isNull()) {
         const auto debounce = jsonGripperEventDebounce.asDouble();
         if (debounce < 0.0) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
-                                     << " gripper-events-debounce must be greater or equal to 0, found: "
+                                     << " gripper_events_debounce must be greater or equal to 0, found: "
                                      << debounce << std::endl;
             exit(EXIT_FAILURE);
         } else {
@@ -194,13 +176,13 @@ void mtsIntuitiveResearchKitMTM::PreConfigure(const Json::Value & jsonConfig,
         }
     }
 
-    const auto jsonGripperEventZero = jsonConfig["gripper-events-zero"];
+    const auto jsonGripperEventZero = jsonConfig["gripper_events_zero"];
     if (!jsonGripperEventZero.isNull()) {
         gripper_events.zero_angle = jsonGripperEventZero.asDouble();
     }
 
     // which IK to use
-    const auto jsonKinematic = jsonConfig["kinematic-type"];
+    const auto jsonKinematic = jsonConfig["kinematic_type"];
     if (!jsonKinematic.isNull()) {
         const auto kinematicType = jsonKinematic.asString();
         const std::list<std::string> options {"ITERATIVE", "CLOSED"};
@@ -218,31 +200,47 @@ void mtsIntuitiveResearchKitMTM::PreConfigure(const Json::Value & jsonConfig,
                                                            [](const std::string & a, const std::string & b) {
                                                                return a.empty() ? b : a + ", " + b; });
             CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
-                                     << " kinematic-type \"" << kinematicType << "\" is not valid.  Valid options are: "
+                                     << " kinematic_type \"" << kinematicType << "\" is not valid.  Valid options are: "
                                      << allOptions << std::endl;
             exit(EXIT_FAILURE);
         }
     }
 }
 
-void mtsIntuitiveResearchKitMTM::ConfigureGC(const std::string & filename)
+void mtsIntuitiveResearchKitMTM::ConfigureGC(const Json::Value & armConfig,
+                                             const cmnPath & configPath,
+                                             const std::string & filename)
 {
+    const auto jsonGC = armConfig["gravity_compensation"];
+    if (jsonGC.isNull()) {
+        return;
+    }
+
+    const auto fileGC = configPath.Find(jsonGC.asString());
+    if (fileGC == "") {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
+                                    << " can't find gravity_compensation file \""
+                                    << jsonGC.asString() << "\" defined in \""
+                                    << filename << "\"" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
     try {
         std::ifstream jsonStream;
         Json::Value jsonConfig;
         Json::Reader jsonReader;
 
-        jsonStream.open(filename.c_str());
+        jsonStream.open(fileGC.c_str());
         if (!jsonReader.parse(jsonStream, jsonConfig)) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureGC " << this->GetName()
                                      << ": failed to parse gravity compensation (GC) configuration file \""
-                                     << filename << "\"\n"
+                                     << fileGC << "\"\n"
                                      << jsonReader.getFormattedErrorMessages();
             return;
         }
 
         CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureGC: " << this->GetName()
-                                   << " using file \"" << filename << "\"" << std::endl
+                                   << " using file \"" << fileGC << "\"" << std::endl
                                    << "----> content of gravity compensation (GC) configuration file: " << std::endl
                                    << jsonConfig << std::endl
                                    << "<----" << std::endl;
@@ -252,19 +250,21 @@ void mtsIntuitiveResearchKitMTM::ConfigureGC(const std::string & filename)
             if (!result.Pointer) {
                 CMN_LOG_CLASS_INIT_ERROR << "ConfigureGC " << this->GetName()
                                          << ": failed to create an instance of robGravityCompensationMTM with \""
-                                         << filename << "\" because " << result.ErrorMessage << std::endl;
+                                         << fileGC << "\" because " << result.ErrorMessage << std::endl;
                 exit(EXIT_FAILURE);
             }
-            GravityCompensationMTM = result.Pointer;
+
+            m_gc = std::unique_ptr<robGravityCompensationMTM>(result.Pointer);
+            gravity_compensation = m_gc.get();
             if (!result.ErrorMessage.empty()) {
                 CMN_LOG_CLASS_INIT_WARNING << "ConfigureGC " << this->GetName()
                                            << ": robGravityCompensationMTM created from file \""
-                                           << filename << "\" warns " << result.ErrorMessage << std::endl;
+                                           << fileGC << "\" warns " << result.ErrorMessage << std::endl;
             }
         }
     } catch (...) {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureGC " << this->GetName() << ": make sure the file \""
-                                 << filename << "\" is in JSON format" << std::endl;
+                                 << fileGC << "\" is in JSON format" << std::endl;
     }
 }
 
@@ -377,18 +377,18 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
     m_trajectory_j.goal.at(JNT_WRIST_ROLL) = currentRoll - maxRollRange;
     m_trajectory_j.goal_v.SetAll(0.0);
     m_trajectory_j.end_time = 0.0;
-    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
-                           mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::JOINT_SPACE,
+                           mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE);
 
     // disable safety features so we can look for physical joint limit
     PID.enforce_position_limits(false);
-    PID.EnableTrackingError(false);
+    PID.enable_measured_setpoint_check(false);
     // enable PID for roll only
     vctBoolVec enableJoints(number_of_joints());
     enableJoints.SetAll(false);
     enableJoints.at(JNT_WRIST_ROLL) = true;
-    PID.EnableJoints(enableJoints);
-    PID.Enable(true);
+    PID.enable_joints(enableJoints);
+    PID.enable(true);
 
     m_arm_interface->SendStatus(this->GetName() + ": looking for roll lower limit");
 }
@@ -429,7 +429,7 @@ void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
         trackingError = std::abs(m_pid_measured_js.Position().at(JNT_WRIST_ROLL) - m_servo_jp.at(JNT_WRIST_ROLL));
         if (trackingError > maxTrackingError) {
             // disable PID
-            PID.Enable(false);
+            PID.enable(false);
             m_arm_interface->SendStatus(this->GetName() + ": found roll lower limit");
             mArmState.SetCurrentState("ROLL_CALIBRATED");
         } else {
@@ -702,13 +702,9 @@ void mtsIntuitiveResearchKitMTM::unlock_orientation(void)
     mtm_events.orientation_locked(m_effort_orientation_locked);
 }
 
-
-void mtsIntuitiveResearchKitMTM::gravity_compensation(vctDoubleVec & efforts)
+bool mtsIntuitiveResearchKitMTM::should_use_gravity_compensation(void)
 {
-    efforts.SetAll(0.0);
-    if (GravityCompensationMTM) {
-        GravityCompensationMTM->AddGravityCompensationEfforts(m_kin_measured_js.Position(),
-                                                              m_kin_measured_js.Velocity(),
-                                                              efforts);
-    }
+    return m_gravity_compensation &&
+           m_control_mode != mtsIntuitiveResearchKitControlTypes::POSITION_MODE &&
+           m_gravity_compensation_setpoint_js.Valid();
 }

@@ -1,9 +1,9 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
-    "$id": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.2/dvrk-tool-list.schema.json",
-    "title": "dVRK tool list 2.2",
+    "$id": "dvrk-tool-list.schema.json",
+    "title": "dVRK tool list",
     "type": "object",
-    "description": "Configuration file format for the dVRK tool list.  See [dVRK wiki](https://github.com/jhu-dVRK/sawIntuitiveResearchKit/wiki).<ul><li>This format is used by the application `sawIntuitiveResearchKitQtConsoleJSON` and the ROS application `dvrk_robot dvrk_console_json`<li>This file defines the mapping between an instrument's name the the file used to define all the parameters for said instrument, i.e. DH, joint limits, maximum torques...<li>For details of implementation, see code under `sawIntuitiveResearchKit/components/code/mtsToolList.cpp`<li>[Schema file](dvrk-tool-list.schema.json)<li>Examples can be found in `sawIntuitiveResearchKit/share/tool/index.json` and `sawIntuitiveResearchKit/share/jhu-dVRK/custom-tool/custom-tool-index.json`</ul>",
+    "description": "Configuration file format for the dVRK tool list.  See the [dVRK wiki](https://dvrk.readthedocs.io).\n\n - This format is used by the application `sawIntuitiveResearchKitSystem` and the ROS application `dvrk_robot dvrk_system`\n - This file defines the mapping between an instrument's name the the file used to define all the parameters for said instrument, i.e. DH, joint limits, maximum torques...\n - For details of implementation, see code under `sawIntuitiveResearchKit/core/components/code/mtsToolList.cpp`\n - [Schema file](dvrk-tool-list.schema.json)\n - Examples can be found in `sawIntuitiveResearchKit/share/tool/index.json` and `sawIntuitiveResearchKit/share/jhu-dVRK/custom-tool/custom-tool-index.json`",
     "additionalProperties": false,
     "properties": {
 
@@ -26,7 +26,7 @@
                         "description": "Name(s) of the instrument.  This field is compared to the value reported by the instrument's Dallas chip and might vary.  You can provide multiple names.",
                         "items": {
                             "type": "string",
-                            "description": "Name of the instrument.  By convention, use all caps with underscores.  For example \"LARGE_NEEDLE_DRIVER\".  The full name of the instrument is also including the required model and optional version, for example \"LARGE_NEEDLE_DRIVER:420006[12]"
+                            "description": "Name of the instrument.  By convention, use all caps with underscores.  For example \"LARGE\\_NEEDLE\\_DRIVER\".  The full name of the instrument is also including the required model and optional version, for example \"LARGE\\_NEEDLE\\_DRIVER:420006[12]"
                         }
                     }
                     ,
@@ -39,7 +39,7 @@
                     "version_max": {
                         "type": "integer",
                         "minimum": 0,
-                        "description": "Maximum version supported.  This is optional but if provided, one must make sure the ranges for a single instrument \"name:model\" don't overlap.  If \"version_min\" is provided but not \"version_max\", any instrument with a version higher than \"version_min\" will be using this instrument's \"file\"."
+                        "description": "Maximum version supported.  This is optional but if provided, one must make sure the ranges for a single instrument \"name:model\" don't overlap.  If \"version\\_min\" is provided but not \"version\\_max\", any instrument with a version higher than \"version_min\" will be using this instrument's \"file\"."
                     }
                     ,
                     "description": {
@@ -55,7 +55,7 @@
                     ,
                     "file": {
                         "type": "string",
-                        "description": "File with the tool DH and other parameters.  You should use a path relative to `sawIntuitiveResearchKit/share`.  The file name should match the \"name\"_\"model\""
+                        "description": "File with the tool DH and other parameters.  You should use a path relative to `sawIntuitiveResearchKit/share`.  The file name should match \"<name>\\_<model>.json\", e.g. \"LARGE\\_NEEDLE\\_DRIVER\\_400006.json\""
                     }
                 }
             }

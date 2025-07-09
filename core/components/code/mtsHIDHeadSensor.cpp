@@ -46,7 +46,7 @@ void mtsHIDHeadSensor::Init(void)
 {
     m_data = new mtsHIDHeadSensorData;
 
-    m_interface = AddInterfaceProvided("OperatorPresent");
+    m_interface = AddInterfaceProvided("operator_present");
     if (m_interface) {
         m_interface->AddEventWrite(m_events.operator_present,
                                    "Button", prmEventButton());

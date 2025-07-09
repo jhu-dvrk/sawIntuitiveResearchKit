@@ -9,11 +9,11 @@
 #
 # --- end cisst license ---
 
-cmake_minimum_required (VERSION 3.10)
+cmake_minimum_required (VERSION 3.16)
 project (dvrk_robot VERSION 2.3.1)
 
 # first test for ROS1
-set (ROS1_depends cisst_ros_crtk roscpp roslib)
+set (ROS1_depends cisst_ros_crtk saw_robot_io_1394_ros saw_controllers_ros roscpp roslib)
 
 find_package (catkin QUIET
   COMPONENTS
@@ -39,6 +39,7 @@ else (catkin_FOUND)
       tf2_ros tf2_msgs
       cisst_msgs crtk_msgs
       cisst_ros_bridge cisst_ros_crtk
+      saw_robot_io_1394_ros saw_controllers_ros
       )
     foreach (_dep ${ROS2_depends})
       find_package (${_dep} REQUIRED)
@@ -94,31 +95,41 @@ if (cisst_FOUND_AS_REQUIRED)
     ${sawIntuitiveResearchKit_LIBRARY_DIR}
     )
 
+  add_executable (dvrk_pid src/dvrk_pid.cpp)
+  target_link_libraries (
+    dvrk_pid
+    ${sawRobotIO1394_LIBRARIES}
+    ${sawControllers_LIBRARIES}
+    ${catkin_LIBRARIES}
+    )
+  cisst_target_link_libraries (dvrk_pid ${REQUIRED_CISST_LIBRARIES})
+
+
   add_library (dvrk_utilities
-    include/dvrk_utilities/dvrk_console.h
-    src/dvrk_console.cpp)
+    include/dvrk_utilities/system_ROS.h
+    src/system_ROS.cpp)
 
   target_link_libraries (
     dvrk_utilities
     ${sawRobotIO1394_LIBRARIES}
-    ${sawIntuitiveResearchKit_LIBRARIES}
     ${sawControllers_LIBRARIES}
+    ${sawIntuitiveResearchKit_LIBRARIES}
     ${catkin_LIBRARIES}
     )
   cisst_target_link_libraries (dvrk_utilities ${REQUIRED_CISST_LIBRARIES})
 
-  add_executable (dvrk_console_json src/dvrk_console_json.cpp)
+  add_executable (dvrk_system src/dvrk_system.cpp)
   target_link_libraries (
-    dvrk_console_json
+    dvrk_system
     ${sawRobotIO1394_LIBRARIES}
-    ${sawIntuitiveResearchKit_LIBRARIES}
     ${sawControllers_LIBRARIES}
+    ${sawIntuitiveResearchKit_LIBRARIES}
     ${catkin_LIBRARIES}
     )
-  cisst_target_link_libraries (dvrk_console_json ${REQUIRED_CISST_LIBRARIES})
-  target_link_libraries (dvrk_console_json dvrk_utilities)
+  cisst_target_link_libraries (dvrk_system ${REQUIRED_CISST_LIBRARIES})
+  target_link_libraries (dvrk_system dvrk_utilities)
 
-  install (TARGETS dvrk_utilities dvrk_console_json
+  install (TARGETS dvrk_utilities dvrk_pid dvrk_system
     LIBRARY DESTINATION lib/${PROJECT_NAME}
     RUNTIME DESTINATION lib/${PROJECT_NAME}
     LIBRARY DESTINATION lib
@@ -127,6 +138,10 @@ if (cisst_FOUND_AS_REQUIRED)
   if (ROS_VERSION EQUAL 2)
     ament_target_dependencies (
       dvrk_utilities
+      ${ROS2_depends}
+      )
+    ament_target_dependencies (
+      dvrk_pid
       ${ROS2_depends}
       )
     ament_package ()

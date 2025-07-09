@@ -1,0 +1,34 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "dvrk-system-settings.schema.json",
+    "title": "dVRK system settings",
+    "type": "object",
+    "description": "Configuration file format for the dVRK system settings.\n\n - These setting are for fine tuning and rarely used.\n\n - This format is used by the application `sawIntuitiveResearchKitSystem` and the ROS application `dvrk_robot dvrk_system`\n - For details of implementation, see code under `sawIntuitiveResearchKit/core/components/code/system.cpp`\n - [Schema file](dvrk-system.schema.json)",
+    "additionalProperties": false,
+
+    "properties": {
+
+        "path": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "description": "Directory used to locate dVRK configuration files. The directory can be relative. In this case, the search will be relative to the current working directory.  This feature should be used with caution as users might inadvertently include the wrong configuration file. The log file cisstLog-xxx.txt can be used to determine the full path and content of the files actually loaded."
+            }
+        }
+        ,
+        "audio_volume": {
+            "type": "",
+            "description": "Sets the audio volume (as a ratio of the operating state volume set on the computer). This can be useful if you are getting tried of the beeps emitted by the dVRK system application when console events occur (e.g. clutch, camera, operator present...)",
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "maximum": 1.0,
+            "default": 0.5
+        }
+        ,
+        "chatty": {
+            "type": "boolean",
+            "description": "Make the console say something useless when it starts.  It's mostly a way to test the text-to-speech feature.",
+            "default": false
+        }
+    }
+}

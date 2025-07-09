@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-03-06
 
-  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
   --- begin cisst license - do not edit ---
 
@@ -31,6 +31,7 @@
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
+#include <sawIntuitiveResearchKit/teleop_PSM_configuration.h>
 
 // always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
@@ -53,7 +54,7 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     void set_scale(const double & scale);
     void lock_rotation(const bool & lock);
     void lock_translation(const bool & lock);
-    void set_align_mtm(const bool & alignMTM);
+    void set_align_MTM(const bool & alignMTM);
     void following_mtm_body_servo_cf(const prmForceCartesianSet & wrench);
 
  protected:
@@ -61,11 +62,11 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     virtual void Init(void);
 
     // Event Handler
-    void MTMErrorEventHandler(const mtsMessage & message);
-    void PSMErrorEventHandler(const mtsMessage & message);
-
-    void ClutchEventHandler(const prmEventButton & button);
+    void arm_error_event_handler(const mtsMessage & message);
+    void clutch_event_handler(const prmEventButton & button);
     void Clutch(const bool & clutch);
+
+    dvrk::teleop_PSM_configuration m_config;
 
     // Functions for events
     struct {
@@ -79,7 +80,7 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
         mtsFunctionWrite scale;
         mtsFunctionWrite rotation_locked;
         mtsFunctionWrite translation_locked;
-        mtsFunctionWrite align_mtm;
+        mtsFunctionWrite align_MTM;
     } ConfigurationEvents;
 
     void SetDesiredState(const std::string & state);
@@ -90,6 +91,7 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
 
     void StateChanged(void);
     void RunAllStates(void); // this should happen for all states
+    void EnterDisabled(void);
     void TransitionDisabled(void); // checks for desired state
     void EnterSettingArmsState(void);
     void TransitionSettingArmsState(void);
@@ -100,10 +102,14 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     void RunEnabled(void); // performs actual teleoperation
     void TransitionEnabled(void); // performs actual teleoperation
 
+    virtual void RunCartesianTeleop(); // runs actual teleoperation for Cartesian pose
+    virtual void RunJawGripperTeleop(); // runs actual teleoperation for jaw/gripper
+
     struct {
         mtsFunctionRead  measured_cp;
         mtsFunctionRead  measured_cv;
         mtsFunctionRead  setpoint_cp;
+        mtsFunctionVoid  hold;
         mtsFunctionWrite move_cp;
         mtsFunctionRead  gripper_measured_js;
         mtsFunctionWrite lock_orientation;
@@ -119,7 +125,6 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
         prmVelocityCartesianGet m_measured_cv;
         prmPositionCartesianGet m_setpoint_cp;
         prmPositionCartesianSet m_move_cp;
-        bool use_measured_cv = false;
         vctFrm4x4 CartesianInitial;
     } mMTM;
 
@@ -148,7 +153,6 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
         vctFrm4x4 CartesianInitial;
     } mBaseFrame;
 
-    double m_scale = mtsIntuitiveResearchKit::TeleOperationPSM::Scale;
     vctMatRot3 m_alignment_offset,
         m_alignment_offset_initial; // rotation offset between MTM and PSM when tele-operation goes in follow mode
 
@@ -168,12 +172,6 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     void virtual UpdateGripperToJawConfiguration(void);
 
     struct {
-        bool ignore = false; // flag to tele-op in cartesian position only, don't need or drive the PSM jaws
-        double rate = mtsIntuitiveResearchKit::TeleOperationPSM::JawRate;
-        double rate_back_from_clutch = mtsIntuitiveResearchKit::TeleOperationPSM::JawRateBackFromClutch;
-    } m_jaw;
-
-    struct {
         double max = 60.0 * cmnPI_180; // from 2012, we assumed MTM gripper is 0 to 60 degrees
         double zero = 0.0; // value corresponding to closed SPM jaws,
                            // MTM gripper might go lower to force negative
@@ -181,13 +179,10 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     } m_gripper;
 
     struct {
-        double orientation_tolerance = mtsIntuitiveResearchKit::TeleOperationPSM::OrientationTolerance;
         double roll_min;
         double roll_max;
-        double roll_threshold = mtsIntuitiveResearchKit::TeleOperationPSM::RollThreshold;
         double gripper_min;
         double gripper_max;
-        double gripper_threshold = mtsIntuitiveResearchKit::TeleOperationPSM::GripperThreshold;
         bool is_active = false;
         bool was_active_before_clutch = false;
     } m_operator;
@@ -195,9 +190,6 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     bool m_clutched = false;
     bool m_back_from_clutch = false;
     bool m_jaw_caught_up_after_clutch = false;
-    bool m_rotation_locked = false;
-    bool m_translation_locked = false;
-    bool m_align_mtm = true; // default on da Vinci
     prmForceCartesianSet m_following_mtm_body_servo_cf;
 
     vctMatRot3 mMTMClutchedOrientation;

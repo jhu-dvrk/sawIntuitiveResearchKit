@@ -1,0 +1,57 @@
+// -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+// ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab:
+
+inline-header {
+// Always include last
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
+}
+
+class {
+    name mtsIntuitiveResearchKitControlTypes;
+
+    enum {
+        name ControlSpace;
+        attribute CISST_EXPORT;
+
+        enum-value {
+            name UNDEFINED_SPACE;
+        }
+        enum-value {
+            name ACTUATOR_SPACE;
+        }
+        enum-value {
+            name JOINT_SPACE;
+        }
+        enum-value {
+            name CARTESIAN_SPACE;
+        }
+        enum-value {
+            name USER_SPACE;
+        }
+    }
+
+    enum {
+        name ControlMode;
+        attribute CISST_EXPORT;
+
+        enum-value {
+            name UNDEFINED_MODE;
+        }
+        enum-value {
+            name POSITION_MODE;
+        }
+        enum-value {
+            name TRAJECTORY_MODE;
+        }
+        enum-value {
+            name VELOCITY_MODE;
+        }
+        enum-value {
+            name EFFORT_MODE;
+        }
+        enum-value {
+            name USER_MODE;
+        }
+    }
+
+}

@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.10)
+cmake_minimum_required (VERSION 3.16)
 project (dvrk_config VERSION 2.3.1)
 
 # ROS 1
@@ -10,7 +10,7 @@ else (catkin_FOUND)
   # ROS 2
   find_package (ament_cmake QUIET)
   if (ament_cmake_FOUND)
-    set (_to_be_installed arm collection console deprecated hid igtl io kinematic pid schemas socket-streamer tool)
+    set (_to_be_installed arm collection system deprecated hid igtl io kinematic pid schemas socket-streamer tool)
 
     foreach (_dir ${_to_be_installed})
       install (DIRECTORY

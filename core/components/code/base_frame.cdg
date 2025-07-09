@@ -1,0 +1,61 @@
+// -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+// ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab:
+
+inline-header {
+#include <cisstVector/vctTransformationTypes.h>
+// Always include last
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
+}
+
+class {
+    name base_frame;
+    namespace dvrk;
+    attribute CISST_EXPORT;
+
+    // fixed transformation with reference_frame name
+    member {
+        name reference_frame;
+        type std::string;
+        visibility public;
+        default "";
+    }
+
+    member {
+        name transform;
+        type vctFrm4x4;
+        visibility public;
+        default vctFrm4x4::Identity();
+    }
+
+    // or get it dynamically from a component/interface
+
+    member {
+        name component;
+        type std::string;
+        visibility public;
+        default "";
+    }
+
+    member {
+        name interface;
+        type std::string;
+        visibility public;
+        default "";
+    }
+
+    inline-header {
+
+        inline bool valid(void) const {
+            return (// fixed frame
+                    ((reference_frame != "") && (transform != vctFrm4x4::Identity())
+                     && (interface == "") && (component == ""))
+                    // component
+                    || ((reference_frame == "") && (transform == vctFrm4x4::Identity())
+                        && (interface != "") && (component != ""))
+                    // undefined
+                    || ((reference_frame == "") && (transform == vctFrm4x4::Identity())
+                        && (interface == "") && (component == ""))
+                    );
+        }
+    }
+}

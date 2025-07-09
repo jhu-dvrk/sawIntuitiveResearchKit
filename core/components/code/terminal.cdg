@@ -1,0 +1,25 @@
+// -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+// ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab:
+
+inline-header {
+// Always include last
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
+}
+
+class {
+    name terminal;
+    namespace dvrk;
+    attribute CISST_EXPORT;
+
+    member {
+        name component;
+        type std::string;
+        visibility public;
+    }
+
+    member {
+        name interface;
+        type std::string;
+        visibility public;
+    }
+}

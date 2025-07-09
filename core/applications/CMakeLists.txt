@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2009-2024 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2009-2025 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -9,14 +9,14 @@
 #
 # --- end cisst license ---
 
-cmake_minimum_required (VERSION 3.10)
+cmake_minimum_required (VERSION 3.16)
 project (sawIntuitiveResearchKitApplications VERSION 2.3.0)
 
 project (sawIntuitiveResearchKitApplications)
 
 # applications in separate directories
 add_subdirectory (gripper-calibration)
-add_subdirectory (s-potentiometers-calibration)
+add_subdirectory (si-potentiometers-calibration)
 add_subdirectory (config-generator)
 add_subdirectory (sd-card-updater)
 add_subdirectory (remove-logs)
@@ -77,19 +77,19 @@ if (cisst_FOUND_AS_REQUIRED)
     if (CISST_HAS_QT)
 
       # main program used to configure PID
-      add_executable (sawIntuitiveResearchKitQtPID mainQtPID.cpp)
-      set_target_properties (sawIntuitiveResearchKitQtPID PROPERTIES
+      add_executable (sawIntuitiveResearchKitPID main_PID.cpp)
+      set_target_properties (sawIntuitiveResearchKitPID PROPERTIES
                              COMPONENT sawIntuitiveResearchKit-Applications
                              FOLDER "sawIntuitiveResearchKit")
       # link against non cisst libraries and cisst components
-      target_link_libraries (sawIntuitiveResearchKitQtPID
+      target_link_libraries (sawIntuitiveResearchKitPID
                              ${sawIntuitiveResearchKit_LIBRARIES}
                              ${sawRobotIO1394_LIBRARIES}
                              ${sawControllers_LIBRARIES})
       # link against cisst libraries (and dependencies)
-      cisst_target_link_libraries (sawIntuitiveResearchKitQtPID ${REQUIRED_CISST_LIBRARIES})
+      cisst_target_link_libraries (sawIntuitiveResearchKitPID ${REQUIRED_CISST_LIBRARIES})
 
-      install (TARGETS sawIntuitiveResearchKitQtPID
+      install (TARGETS sawIntuitiveResearchKitPID
                COMPONENT sawIntuitiveResearchKit-Applications
                RUNTIME DESTINATION bin
                LIBRARY DESTINATION lib
@@ -99,20 +99,20 @@ if (cisst_FOUND_AS_REQUIRED)
       if (CISST_HAS_JSON)
 
         # main program used to configure Console
-        add_executable (sawIntuitiveResearchKitQtConsoleJSON mainQtConsoleJSON.cpp)
-        set_target_properties (sawIntuitiveResearchKitQtConsoleJSON PROPERTIES
+        add_executable (sawIntuitiveResearchKitSystem main_system.cpp)
+        set_target_properties (sawIntuitiveResearchKitSystem PROPERTIES
                                COMPONENT sawIntuitiveResearchKit-Applications
                                FOLDER "sawIntuitiveResearchKit")
         # link against non cisst libraries and cisst components
-        target_link_libraries (sawIntuitiveResearchKitQtConsoleJSON
+        target_link_libraries (sawIntuitiveResearchKitSystem
                                ${sawIntuitiveResearchKit_LIBRARIES}
                                ${sawRobotIO1394_LIBRARIES}
                                ${sawControllers_LIBRARIES}
                                ${sawTextToSpeech_LIBRARIES})
         # link against cisst libraries (and dependencies)
-        cisst_target_link_libraries (sawIntuitiveResearchKitQtConsoleJSON ${REQUIRED_CISST_LIBRARIES})
+        cisst_target_link_libraries (sawIntuitiveResearchKitSystem ${REQUIRED_CISST_LIBRARIES})
 
-        install (TARGETS sawIntuitiveResearchKitQtConsoleJSON
+        install (TARGETS sawIntuitiveResearchKitSystem
                  COMPONENT sawIntuitiveResearchKit-Applications
                  RUNTIME DESTINATION bin
                  LIBRARY DESTINATION lib

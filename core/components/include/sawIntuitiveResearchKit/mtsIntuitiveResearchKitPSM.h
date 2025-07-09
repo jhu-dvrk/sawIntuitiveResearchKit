@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2024 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -20,6 +20,8 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsIntuitiveResearchKitPSM_h
 #define _mtsIntuitiveResearchKitPSM_h
 
+#include <memory>
+
 #include <cisstParameterTypes/prmActuatorJointCoupling.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
 #include <sawIntuitiveResearchKit/mtsToolList.h>
@@ -27,6 +29,8 @@ http://www.cisst.org/cisst/license.txt.
 // Always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
+// forward declaration, definition in mtsIntuitiveResearchKitPSM.cpp
+class GravityCompensationPSM;
 
 class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 {
@@ -35,11 +39,12 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
  public:
     mtsIntuitiveResearchKitPSM(const std::string & componentName, const double periodInSeconds);
     mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicConstructorArg & arg);
-    inline ~mtsIntuitiveResearchKitPSM() override {};
+    ~mtsIntuitiveResearchKitPSM();
+    
     void set_simulated(void) override;
 
  protected:
-    void set_generation(const GenerationType generation) override;
+    void set_generation(const dvrk::generation generation) override;
     void load_tool_list(const cmnPath & path,
                         const std::string & indexFile = "tool/index.json");
 
@@ -48,6 +53,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     void tool_full_description(const size_t & index, std::string & description) const;
 
     void PostConfigure(const Json::Value & jsonConfig,
+                       const cmnPath & configPath,
+                       const std::string & filename) override;
+    void ConfigureGC(const Json::Value & jsonConfig,
                        const cmnPath & configPath,
                        const std::string & filename) override;
     virtual bool ConfigureTool(const std::string & filename);
@@ -63,10 +71,10 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 
     inline size_t number_of_brakes(void) const override {
         switch (m_generation) {
-        case mtsIntuitiveResearchKitArm::GENERATION_Classic:
+        case dvrk::generation::Classic:
             return 0;
             break;
-        case mtsIntuitiveResearchKitArm::GENERATION_Si:
+        case dvrk::generation::Si:
             return 3;
             break;
         default:
@@ -94,6 +102,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 
     // state related methods
     void SetGoalHomingArm(void) override;
+    void EnterHomed(void);
     void TransitionHomed(void); // for adapter/tool detection
 
     // methods used in change coupling/engaging
@@ -112,6 +121,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 
     // manual mode
     void EnterManual(void);
+    void RunManual(void);
+    void LeaveManual(void);
+
     void EventHandlerAdapter(const prmEventButton & button);
 
     /*! This should be called to set either m_tool_present or m_tool_configured. */
@@ -131,6 +143,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     void EventHandlerManipClutch(const prmEventButton & button);
     void EventHandlerSUJClutch(const prmEventButton & button);
 
+    double clip_jaw_jp(const double jp);
     void jaw_servo_jp(const prmPositionJointSet & jp);
     void jaw_move_jp(const prmPositionJointSet & jp);
     void jaw_servo_jf(const prmForceTorqueJointSet & jf);
@@ -138,6 +151,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     void servo_jp_internal(const vctDoubleVec & jp,
                            const vctDoubleVec & jv) override;
     void servo_jf_internal(const vctDoubleVec & jf) override;
+    void feed_forward_jf_internal(const vctDoubleVec & jf) override;
 
     void control_move_jp_on_stop(const bool reached) override;
 
@@ -183,9 +197,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 
     /*! Configuration for tool detection, either using Dallas Chip,
       manual or fixed based on configuration file. */
-    mtsToolList mToolList;
-    size_t mToolIndex;
-    mtsIntuitiveResearchKitToolTypes::Detection mToolDetection;
+    mtsToolList m_tool_list;
+    size_t m_tool_index;
+    mtsIntuitiveResearchKitToolTypes::Detection m_tool_detection;
     bool m_tool_present = false;
     bool m_tool_configured = false;
     bool m_tool_type_requested = false;
@@ -211,6 +225,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 
     vctDoubleVec m_tool_engage_lower_position,
         m_tool_engage_upper_position;
+
+    std::unique_ptr<GravityCompensationPSM> m_gc;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitPSM);

@@ -1224,29 +1224,29 @@ def generateArmConfig(robotTypeName, hardwareVersion, serialNumber, generation):
         print("Existing arm config file has been renamed {}".format(backup))
     kinematic = '    "kinematic": "kinematic/';
     if robotTypeName.startswith('PSM'):
-        kinematic += 'psm'
+        kinematic += 'PSM'
     elif robotTypeName == 'MTML':
-        kinematic += 'mtml'
+        kinematic += 'MTML'
     elif robotTypeName == 'MTMR':
-        kinematic += 'mtmr'
+        kinematic += 'MTMR'
     elif robotTypeName == 'ECM':
-        kinematic += 'ecm'
+        kinematic += 'ECM'
     else:
         raise ValueError('Unrecognized robot type: {}'.format(robotTypeName))
     if generation == 'Si':
-        kinematic += '-si'
+        kinematic += '_Si'
     kinematic += '.json"\n'
 
     mounting_pitch = 0.0
     with open(fileName, "w") as f:
         f.write('{\n')
-        f.write('    // see https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/Configuration-File-Formats\n')
+        f.write('    // see https://dvrk.readthedocs.io\n')
         f.write(kinematic)
         f.write('    , "generation": "' + generation + '"\n')
         if robotTypeName.startswith("PSM"):
-            f.write('    // , "tool-detection": "MANUAL"\n')
-            f.write('    // , "tool-detection": "FIXED"\n')
-            f.write('    , "tool-detection": "AUTOMATIC"\n')
+            f.write('    // , "tool_detection": "MANUAL"\n')
+            f.write('    // , "tool_detection": "FIXED"\n')
+            f.write('    , "tool_detection": "AUTOMATIC"\n')
             if generation == 'Si':
                 if robotTypeName == 'PSM3':
                     mounting_pitch = -15.0
@@ -1263,7 +1263,7 @@ def generateArmConfig(robotTypeName, hardwareVersion, serialNumber, generation):
                 f.write('    , "endoscope": "Classic_HD_STRAIGHT" // or UP or DOWN\n')
                 mounting_pitch = -45
         elif robotTypeName.startswith("MTM"):
-            f.write('    // , "gravity-compensation": "gc-' + robotTypeName + '-' + serialNumber + '.json"\n')
+            f.write('    // , "gravity_compensation": "gc-' + robotTypeName + '-' + serialNumber + '.json"\n')
         if mounting_pitch != 0.0:
             f.write(f'    // , "mounting_pitch": {(mounting_pitch * math.pi / 180.0):.5f} // {mounting_pitch} for {generation} {robotTypeName} on SUJ\n')
         f.write("}\n")
@@ -1271,12 +1271,12 @@ def generateArmConfig(robotTypeName, hardwareVersion, serialNumber, generation):
     print('Generated arm config file {}'.format(fileName))
 
 
-def generateConsoleConfig(robotTypeName, hardwareVersion, serialNumber, generation):
-    fileName = "console-{}.json".format(robotTypeName)
+def generateSystemConfig(robotTypeName, hardwareVersion, serialNumber, generation):
+    fileName = "system-{}.json".format(robotTypeName)
     if os.path.exists(fileName):
         backup =  fileName + datetime.datetime.now().strftime("-backup-%Y-%m-%d_%H:%M:%S")
         os.rename(fileName, backup)
-        print("Existing console file has been renamed {}".format(backup))
+        print("Existing system file has been renamed {}".format(backup))
     type = ""
     if robotTypeName.startswith("PSM"):
         type = "PSM"
@@ -1289,21 +1289,26 @@ def generateConsoleConfig(robotTypeName, hardwareVersion, serialNumber, generati
 
     with open(fileName, "w") as f:
         f.write('{\n')
-        f.write('    // see https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/Configuration-File-Formats\n')
-        f.write('    "io": {\n')
-        f.write('        // "close-all-relays": true  // uncomment to avoid calling qlacommand -c close-relays\n')
-        f.write('    }\n')
+        f.write('    // see https://dvrk.readthedocs.io\n')
+        f.write('    "IOs":\n')
+        f.write('    [\n')
+        f.write('        {\n')
+        f.write('            "name": "IO1",\n')
+        f.write('            "port": "fw" // or udpfw or udp\n')
+        f.write('        }\n')
+        f.write('    ]\n')
         f.write('    ,\n')
         f.write('    "arms":\n')
         f.write('    [\n')
         f.write('        {\n')
         f.write('            "name": "' + robotTypeName + '",\n')
         f.write('            "type": "' + type + '",\n')
-        f.write('            "serial": "' + str(serialNumber) + '"\n')
+        f.write('            "serial": "' + str(serialNumber) + '",\n')
+        f.write('            "IO": "IO1" // defined in IOs\n')
         f.write('        }\n')
         f.write('    ]\n')
         f.write('}\n')
-    print('Generated console file {}'.format(fileName))
+    print('Generated system file {}'.format(fileName))
 
 
 def main():
@@ -1382,9 +1387,9 @@ def main():
     outputFormat = OutputFormat.XML if args.format == "XML" else OutputFormat.JSON
     # sawRobotIO config file
     actualSerial = generateConfig(args.cal, args.arm, args.hardware_version, args.serial, args.generation, outputFormat)
-    # sawIntuitiveResearchKit arm and console config files
+    # sawIntuitiveResearchKit arm and system config files
     generateArmConfig(args.arm, args.hardware_version, actualSerial, args.generation)
-    generateConsoleConfig(args.arm, args.hardware_version, actualSerial, args.generation)
+    generateSystemConfig(args.arm, args.hardware_version, actualSerial, args.generation)
 
 if __name__ == "__main__":
     main()

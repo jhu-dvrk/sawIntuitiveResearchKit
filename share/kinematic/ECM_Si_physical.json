@@ -1,0 +1,69 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    // see dVRK user guide
+
+    // yaw+pitch links based on PSM Si physical DH,
+    // with insertion link constructed to match ECM virtual DH
+
+    "DH": {
+        "convention": "modified",
+        "joints": [
+            { // add q1 to theta
+                "name": "yaw",
+                "alpha": 1.570796327, "A": 0.0000, "theta": 1.570796327, "D": 0.0000,
+                "type": "revolute",
+                "mode": "active",
+                "mass": 1.003, "cx":  -0.117, "cy":   0.068, "cz":   0.000
+            },
+            // link offset to pitch1 is (-0.0712, 0, -0.2913), can't express with one DH transform
+            {
+                "name": "intermediate yaw",
+                "alpha": -1.570796327, "A": -0.0712, "theta": 1.570796327, "D": 0.0000,
+                "type": "revolute",
+                "mode": "passive"
+            },
+            // In intermediate yaw frame (but w/ origin at pitch1), parallelogram vertices when q=0 are
+            // 1 ( 0,        0,      0)
+            // 2 (-0.0922,  -0.1810, 0)
+            // 3 ( 0.24652, -0.2522, 0) = (-0.0922, -0.1810, 0) + ( 0.33872, -0.0712, 0)
+
+            { // add q2 to theta - first angle in parallelogram
+              // new x-axis points at second parallelogram vertex, so angle is atan2(-0.922, -0.1810) = -2.04193... rads
+                "name": "pitch1",
+                "alpha": 0.0000, "A": 0.2913, "theta": -2.04193, "D": 0.0000,
+                "type": "revolute",
+                "mode": "active",
+                "mass": 1.391, "cx":   0.200, "cy":  -0.100, "cz":   0.000
+            },
+            { // add -q2 to theta - second angle in parallelogram
+              // Euclidean length of link offset (-0.0922, -0.1810, 0) is 0.203130...
+              // new x-axis points at 3rd vertex, so angle from pitch1 is atan2(-0.0712, 0.33872) = -0.207187...
+              // so relative angle is 2.04193 - 0.207187 = 1.83474
+                "name": "pitch2",
+                "alpha": 0, "A":  0.203130, "theta": 1.83474, "D":  0.0000,
+                "type": "revolute",
+                "mode": "active",
+                "mass": 1.792, "cx":   0.000, "cy":  -0.000, "cz":   0.000
+            },
+            { // add q2 to theta - third angle in parallelogram
+              // Euclidean length of link offset (0.33872, -0.0712, 0) is 0.346122...
+                "name": "pitch3",
+                "alpha": 0, "A":  0.346122, "theta": 0.207187, "D":  0.0000,
+                "type": "revolute",
+                "mode": "active",
+                "mass": 1.845, "cx":   0.000, "cy":  -0.080, "cz":   0.000
+            }
+            ,
+            { // add q3 to D
+                "name": "insertion",
+                "alpha": -1.570796327, "A":  0.0922, "theta":  3.14159625, "D":  -0.2012,
+                "type": "prismatic",
+                "mode": "active",
+                // mass is set in code, depending on endoscope type
+                "mass": 0.0,
+                // approximative position of endoscope center of gravity
+                "cx":   0.000, "cy":   0.000, "cz":  -0.144
+            }
+        ]
+    }
+}

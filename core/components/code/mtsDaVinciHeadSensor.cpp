@@ -67,7 +67,7 @@ void mtsDaVinciHeadSensor::Init(void)
                                                 this, "Button");
     }
 
-    mInterface = AddInterfaceProvided("OperatorPresent");
+    mInterface = AddInterfaceProvided("operator_present");
     if (mInterface) {
         mInterface->AddEventWrite(MessageEvents.OperatorPresent,
                                   "Button", prmEventButton());

@@ -181,8 +181,8 @@ public:
         m_delta_measured_js.SetSize(m_nb_joints);
 
         m_measured_js.Position().SetSize(m_nb_joints, 0.0);
-        m_measured_js.Name().SetSize(m_nb_joints);
-        m_configuration_js.Name().SetSize(m_nb_joints);
+        m_measured_js.Name().resize(m_nb_joints);
+        m_configuration_js.Name().resize(m_nb_joints);
         std::stringstream jointName;
         for (size_t index = 0; index < m_nb_joints; ++index) {
             jointName.str("");
@@ -191,7 +191,7 @@ public:
             m_configuration_js.Name().at(index) = jointName.str();
         }
         m_live_measured_js.Position().ForceAssign(m_measured_js.Position());
-        m_live_measured_js.Name().ForceAssign(m_measured_js.Name());
+        cmnDataCopy(m_live_measured_js.Name(), m_measured_js.Name());
 
         m_configuration_js.Type().SetSize(m_nb_joints);
         m_configuration_js.Type().SetAll(CMN_JOINT_REVOLUTE);
@@ -244,7 +244,7 @@ public:
 
         // write commands
         m_interface_provided->AddCommandWrite(&mtsIntuitiveResearchKitSUJSiArmData::clutch_command, this,
-                                              "Clutch", false);
+                                              "clutch", false);
         m_interface_provided->AddCommandWrite(&mtsIntuitiveResearchKitSUJSiArmData::calibrate_potentiometers, this,
                                               "SetRecalibrationMatrix", m_recalibration_matrix);
 
@@ -520,19 +520,19 @@ void mtsIntuitiveResearchKitSUJSi::Configure(const std::string & filename)
     // get the reference arm if defined.  By default ECM and should be
     // used only and only if user want to use a PSM to hold a camera
     std::string reference_sarm_name = "ECM";
-    const Json::Value jsonReferenceArm = jsonConfig["reference-arm"];
+    const Json::Value jsonReferenceArm = jsonConfig["reference_arm"];
     if (!jsonReferenceArm.isNull()) {
         reference_sarm_name = jsonReferenceArm.asString();
-        CMN_LOG_CLASS_INIT_WARNING << "Configure: \"reference-arm\" is user defined.  This should only happen if you are using a PSM to hold a camera.  Most users shouldn't define \"reference-arm\".  If undefined, all arm cartesian positions will be defined with respect to the ECM" << std::endl;
+        CMN_LOG_CLASS_INIT_WARNING << "Configure: \"reference_arm\" is user defined.  This should only happen if you are using a PSM to hold a camera.  Most users shouldn't define \"reference_arm\".  If undefined, all arm cartesian positions will be defined with respect to the ECM" << std::endl;
     }
 
     if (!m_simulated) {
         // base arduino used for SUJ prismatic joints
-        if (!jsonConfig["base-arduino-mac"]) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure: \"base-arduino-mac\" is missing" << std::endl;
+        if (!jsonConfig["base_arduino_mac"]) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: \"base_arduino_mac\" is missing" << std::endl;
             exit(EXIT_FAILURE);
         }
-        const std::string mac = jsonConfig["base-arduino-mac"].asString();
+        const std::string mac = jsonConfig["base_arduino_mac"].asString();
         m_base_arduino = new mtsIntuitiveResearchKitSUJSiArduino(mac, "column", m_interface);
     }
 
@@ -558,12 +558,12 @@ void mtsIntuitiveResearchKitSUJSi::Configure(const std::string & filename)
 
         std::string mac = "00:00:00:00:00:00";
         if (!m_simulated) {
-            if (!jsonArm["arduino-mac"]) {
-                CMN_LOG_CLASS_INIT_ERROR << "Configure: \"arduino-mac\" is missing for SUJ \""
+            if (!jsonArm["arduino_mac"]) {
+                CMN_LOG_CLASS_INIT_ERROR << "Configure: \"arduino_mac\" is missing for SUJ \""
                                          << name << "\"" << std::endl;
                 exit(EXIT_FAILURE);
             }
-            mac = jsonArm["arduino-mac"].asString();
+            mac = jsonArm["arduino_mac"].asString();
         }
 
         // add interfaces, one is provided so users can find the SUJ
@@ -602,14 +602,14 @@ void mtsIntuitiveResearchKitSUJSi::Configure(const std::string & filename)
 
         if (!m_simulated) {
             // find serial number
-            sarm->m_serial_number = jsonArm["serial-number"].asString();
+            sarm->m_serial_number = jsonArm["serial_number"].asString();
 
             // read pot settings
             sarm->m_state_table_configuration.Start();
-            cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_offsets[0], jsonArm["primary-offsets"]);
-            cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_offsets[1], jsonArm["secondary-offsets"]);
-            cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_scales[0], jsonArm["primary-scales"]);
-            cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_scales[1], jsonArm["secondary-scales"]);
+            cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_offsets[0], jsonArm["primary_offsets"]);
+            cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_offsets[1], jsonArm["secondary_offsets"]);
+            cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_scales[0], jsonArm["primary_scales"]);
+            cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_scales[1], jsonArm["secondary_scales"]);
             for (auto vec : sarm->m_voltage_to_position_offsets) {
                 if (vec.size() != nb_joints) {
                     CMN_LOG_CLASS_INIT_ERROR << "Configure: incorrect number of voltage to position offsets for \""
@@ -628,7 +628,7 @@ void mtsIntuitiveResearchKitSUJSi::Configure(const std::string & filename)
             }
         } else {
             // look for hard coded position if available - users can always push new joint values using ROS
-            Json::Value jsonPosition = jsonArm["simulated-position"];
+            Json::Value jsonPosition = jsonArm["simulated_position"];
             if (!jsonPosition.empty()) {
                 vctDoubleVec position;
                 cmnDataJSON<vctDoubleVec>::DeSerializeText(position, jsonPosition);
@@ -664,9 +664,9 @@ void mtsIntuitiveResearchKitSUJSi::Configure(const std::string & filename)
             }
             // read setup transforms
             vctFrm3 transform;
-            cmnDataJSON<vctFrm3>::DeSerializeText(transform, jsonArm["world-origin-to-suj"]);
+            cmnDataJSON<vctFrm3>::DeSerializeText(transform, jsonArm["world_origin_to_SUJ"]);
             sarm->m_world_to_SUJ.From(transform);
-            cmnDataJSON<vctFrm3>::DeSerializeText(transform, jsonArm["suj-tip-to-tool-origin"]);
+            cmnDataJSON<vctFrm3>::DeSerializeText(transform, jsonArm["SUJ_tip_to_tool_origin"]);
             sarm->m_SUJ_to_arm_base.From(transform);
         }
     }

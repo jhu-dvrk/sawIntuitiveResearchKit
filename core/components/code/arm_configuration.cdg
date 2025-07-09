@@ -1,0 +1,51 @@
+// -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+// ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab:
+
+inline-header {
+#include <sawIntuitiveResearchKit/generation.h>
+}
+
+class {
+    name arm_configuration;
+    namespace dvrk;
+    attribute CISST_EXPORT;
+
+    member {
+        name _generation;
+        type dvrk::generation;
+        visibility private;
+        default GENERATION_UNDEFINED;
+        accessors none;
+    }
+
+    member {
+        name kinematic;
+        type std::string;
+        visibility public;
+    }
+
+    member {
+        name mounting_pitch;
+        type double;
+        visibility public;
+        default 0.0;
+    }
+
+    inline-header {
+
+    public:
+
+        inline void set_generation(const dvrk::generation generation) {
+            m_generation = generation;
+        }
+
+        inline dvrk::generation generation(void) const {
+            if (m_generation == dvrk::GENERATION_UNDEFINED) {
+                CMN_LOG_INIT_ERROR << "dvrk::arm_configuration: trying to access generation before it is set"
+                                   << std::endl;
+                exit(EXIT_FAILURE);
+            }
+            return m_generation;
+        }
+    }
+}

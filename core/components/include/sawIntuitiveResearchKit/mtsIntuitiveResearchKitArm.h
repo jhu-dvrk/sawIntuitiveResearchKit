@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2024 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -40,13 +40,16 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmInverseKinematicsResponse.h>
 #include <cisstParameterTypes/prmForwardKinematicsRequest.h>
 #include <cisstParameterTypes/prmForwardKinematicsResponse.h>
+#include <cisstParameterTypes/prmStateCartesian.h>
 
 #include <cisstRobot/robManipulator.h>
 #include <cisstRobot/robReflexxes.h>
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
-#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmTypes.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitControlTypes.h>
+#include <sawIntuitiveResearchKit/arm_configuration.h>
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
+#include <sawIntuitiveResearchKit/robGravityCompensation.h>
 
 // forward declarations
 class osaCartesianImpedanceController;
@@ -57,8 +60,6 @@ class osaCartesianImpedanceController;
 class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 {
     CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
-
-    friend class mtsIntuitiveResearchKitConsole;
 
  public:
     mtsIntuitiveResearchKitArm(const std::string & componentName, const double periodInSeconds = mtsIntuitiveResearchKit::ArmPeriod);
@@ -78,12 +79,16 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         m_calibration_mode = mode;
     }
 
-    typedef enum {GENERATION_UNDEFINED, GENERATION_Classic, GENERATION_Si} GenerationType;
-    virtual inline GenerationType generation(void) const {
+    virtual inline dvrk::generation generation(void) const {
         return m_generation;
     }
 
+    virtual void set_base_frame(const prmPositionCartesianSet & newBaseFrame);
+
  protected:
+    virtual void ConfigureGC(const Json::Value & CMN_UNUSED(armConfig),
+                             const cmnPath & CMN_UNUSED(configPath),
+                             const std::string & CMN_UNUSED(filename)) {};
 
     /*! Define wrench reference frame */
     typedef enum {WRENCH_UNDEFINED, WRENCH_SPATIAL, WRENCH_BODY} WrenchType;
@@ -100,7 +105,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     inline virtual void PostConfigure(const Json::Value & CMN_UNUSED(jsonConfig),
                                       const cmnPath & CMN_UNUSED(configPath),
                                       const std::string & CMN_UNUSED(filename)) {};
-    inline virtual void set_generation(const GenerationType generation) {
+    inline virtual void set_generation(const dvrk::generation generation) {
         m_generation = generation;
     }
 
@@ -184,7 +189,12 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual void servo_jp_internal(const vctDoubleVec & jp,
                                    const vctDoubleVec & jv);
     virtual void servo_jf_internal(const vctDoubleVec & jf);
-    inline virtual void update_feed_forward(vctDoubleVec & CMN_UNUSED(feedForward)) {};
+    virtual void servo_js_internal(const prmStateJoint & js);
+    virtual void feed_forward_jf_internal(const vctDoubleVec & jf);
+    // compute a joint-space feed forward to send to PID
+    virtual bool should_use_gravity_compensation(void);
+    // compute and apply effort feed forward (e.g. gravity compensation)
+    virtual void apply_feed_forward(void);
 
     /*! Methods used for commands */
     virtual void hold(void);
@@ -195,18 +205,15 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual void move_jr(const prmPositionJointSet & jp);
     virtual void servo_cp(const prmPositionCartesianSet & cp);
     virtual void servo_cr(const prmPositionCartesianSet & difference);
+    virtual void servo_cs(const prmStateCartesian & cs);
     virtual void move_cp(const prmPositionCartesianSet & cp);
     virtual void servo_jf(const prmForceTorqueJointSet & jf);
-    virtual void pid_feed_forward_servo_jf(const prmForceTorqueJointSet & jf);
     virtual void spatial_servo_cf(const prmForceCartesianSet & cf);
     virtual void body_servo_cf(const prmForceCartesianSet & cf);
     /*! Apply the wrench relative to the body or to reference frame (i.e. absolute). */
     virtual void body_set_cf_orientation_absolute(const bool & absolute);
     virtual void use_gravity_compensation(const bool & gravityCompensation);
     virtual void servo_ci(const prmCartesianImpedance & gains);
-
-    /*! Set base coordinate frame, this will be added to the kinematics */
-    virtual void set_base_frame(const prmPositionCartesianSet & newBaseFrame);
 
     /*! Event handler for PID position limit. */
     virtual void PositionLimitEventHandler(const vctBoolVec & flags);
@@ -225,12 +232,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         return (number_of_brakes() > 0);
     }
 
-    inline virtual bool use_PID_tracking_error(void) const {
+    inline virtual bool should_use_measured_setpoint_check(void) const {
         return true;
-    }
-
-    inline virtual bool use_feed_forward(void) const {
-        return false;
     }
 
     /*! Inverse kinematics must be redefined for each arm type. */
@@ -272,19 +275,19 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     // Interface to PID component
     mtsInterfaceRequired * PIDInterface;
     struct {
-        mtsFunctionWrite Enable;
-        mtsFunctionWrite EnableJoints;
-        mtsFunctionRead  Enabled;
+        mtsFunctionWrite enable;
+        mtsFunctionWrite enable_joints;
+        mtsFunctionRead  enabled;
         mtsFunctionRead  measured_js;
         mtsFunctionRead  setpoint_js;
         mtsFunctionWrite servo_jp;
-        mtsFunctionWrite feed_forward_jf;
+        mtsFunctionWrite feed_forward_servo_jf;
         mtsFunctionWrite enforce_position_limits;
         mtsFunctionWrite EnableTorqueMode;
         mtsFunctionWrite servo_jf;
-        mtsFunctionWrite EnableTrackingError;
-        mtsFunctionWrite SetTrackingErrorTolerance;
-        vctDoubleVec DefaultTrackingErrorTolerance;
+        mtsFunctionWrite enable_measured_setpoint_check;
+        mtsFunctionWrite set_measured_setpoint_tolerance;
+        vctDoubleVec measured_setpoint_tolerance;
     } PID;
 
     // Interface to IO component
@@ -323,7 +326,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     // cache cartesian goal position and increment
     bool m_pid_new_goal = false;
-    prmPositionCartesianSet m_servo_cp;
+    prmStateCartesian m_servo_cs;
     vctFrm3 mCartesianRelative;
 
     // internal kinematics
@@ -338,11 +341,12 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     prmPositionCartesianGet m_setpoint_cp;
     vctFrm4x4 m_setpoint_cp_frame;
 
+    prmStateCartesian m_measured_cs;
+
     // joints
     prmPositionJointSet m_servo_jp_param;
     vctDoubleVec m_servo_jp;
     vctDoubleVec m_servo_jv;
-    prmForceTorqueJointSet m_pid_feed_forward_servo_jf;
     prmStateJoint
         m_pid_measured_js,
         m_pid_setpoint_js,
@@ -359,6 +363,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     prmForceTorqueJointSet
         m_servo_jf_param, // number of joints PID, used in servo_jf_internal
         m_servo_jf; // number of joints for kinematics
+    prmForceTorqueJointSet m_feed_forward_jf_param;
     vctDoubleVec m_servo_jf_vector; // number of joints for kinematics, more convenient type than prmForceTorqueJointSet
     // to estimate wrench from joint efforts
     nmrPInverseDynamicData
@@ -375,10 +380,11 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     vctDoubleVec mEffortOrientationJoint;
     vctMatRot3 mEffortOrientation;
     // use gravity compensation or not
-    bool m_gravity_compensation = false;
+    bool m_gravity_compensation = true; // on by default if arm has GC
     double m_mounting_pitch = std::numeric_limits<double>::infinity(); // used for ECMs Classic and Si as well as PSMs Si
-    // compute effort for gravity compensation based on current state, called in get_robot_data
-    virtual void gravity_compensation(vctDoubleVec & efforts);
+    // used in get_robot_data to compute gravity compensation setpoint
+    // ! Note: non-owning pointer - subclass should own actual instance
+    robGravityCompensation* gravity_compensation = nullptr;
 
     // Velocities
     prmVelocityCartesianGet
@@ -392,12 +398,12 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     bool m_powered = false;
 
-    mtsIntuitiveResearchKitArmTypes::ControlSpace m_control_space;
-    mtsIntuitiveResearchKitArmTypes::ControlMode m_control_mode;
+    mtsIntuitiveResearchKitControlTypes::ControlSpace m_control_space;
+    mtsIntuitiveResearchKitControlTypes::ControlMode m_control_mode;
 
     /*! Method used to check if the arm is ready and throttle messages sent. */
     bool ArmIsReady(const std::string & methodName,
-                    const mtsIntuitiveResearchKitArmTypes::ControlSpace space);
+                    const mtsIntuitiveResearchKitControlTypes::ControlSpace space);
     size_t mArmNotReadyCounter;
     double mArmNotReadyTimeLastMessage;
 
@@ -430,16 +436,16 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
       callbacks will be using the methods provided in this class.
       If either the space or mode is "USER", a callback must be
       provided. */
-    void SetControlSpaceAndMode(const mtsIntuitiveResearchKitArmTypes::ControlSpace space,
-                                const mtsIntuitiveResearchKitArmTypes::ControlMode mode,
+    void SetControlSpaceAndMode(const mtsIntuitiveResearchKitControlTypes::ControlSpace space,
+                                const mtsIntuitiveResearchKitControlTypes::ControlMode mode,
                                 mtsCallableVoidBase * callback = 0);
 
     /*! Set the control space and mode along with a callback for
       control.  The callback method will be use only if either the
       space or the mode is "USER". */
     template <class __classType>
-        inline void SetControlSpaceAndMode(const mtsIntuitiveResearchKitArmTypes::ControlSpace space,
-                                           const mtsIntuitiveResearchKitArmTypes::ControlMode mode,
+        inline void SetControlSpaceAndMode(const mtsIntuitiveResearchKitControlTypes::ControlSpace space,
+                                           const mtsIntuitiveResearchKitControlTypes::ControlMode mode,
                                            void (__classType::*method)(void),
                                            __classType * classInstantiation) {
         this->SetControlSpaceAndMode(space, mode,
@@ -469,7 +475,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     virtual void control_servo_jp(void);
     virtual void control_move_jp(void);
-    virtual void control_servo_cp(void);
+    virtual void control_servo_cs(void);
     virtual void control_move_cp(void);
     virtual void control_servo_jf(void);
     virtual void control_servo_cf(void);
@@ -526,7 +532,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     double m_homing_timer;
 
     // generation
-    GenerationType m_generation = GENERATION_UNDEFINED;
+    dvrk::generation m_generation
+        = dvrk::generation::GENERATION_UNDEFINED;
 
     // flag to determine if this is connected to actual IO/hardware or simulated
     bool m_simulated = false;

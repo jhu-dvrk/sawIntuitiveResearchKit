@@ -1,0 +1,12 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "arms":
+    [
+        {
+            "name": "ECM",
+            "type": "ECM",
+            "simulation": "KINEMATIC",
+            "arm_file": "arm/ECM_KIN_SIMULATED_STRAIGHT.json"
+        }
+    ]
+}

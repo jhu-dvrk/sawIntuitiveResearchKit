@@ -1,0 +1,12 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "arms":
+    [
+        {
+            "name": "PSM2",
+            "type": "PSM",
+            "simulation": "KINEMATIC",
+            "arm_file": "arm/PSM_KIN_SIMULATED_LARGE_NEEDLE_DRIVER_400006.json"
+        }
+    ]
+}

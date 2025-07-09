@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Nicole Ortega
   Created on: 2016-01-21
 
-  (C) Copyright 2016-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -28,6 +28,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionJointSet.h>
 
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
+#include <sawIntuitiveResearchKit/teleop_ECM_configuration.h>
 
 // always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
@@ -54,12 +55,11 @@ protected:
     virtual void Init(void);
 
     // Event Handler
-    void MTMLErrorEventHandler(const mtsMessage & message);
-    void MTMRErrorEventHandler(const mtsMessage & message);
-    void ECMErrorEventHandler(const mtsMessage & message);
-
-    void ClutchEventHandler(const prmEventButton & button);
+    void arm_error_event_handler(const mtsMessage & message);
+    void clutch_event_handler(const prmEventButton & button);
     void Clutch(const bool & clutch);
+
+    dvrk::teleop_ECM_configuration m_config;
 
     // Functions for events
     struct {
@@ -114,7 +114,6 @@ protected:
         prmPositionJointSet m_servo_jp;
     } mECM;
 
-    double m_scale;
     mtsStateTable * mConfigurationStateTable;
 
     bool m_clutched;

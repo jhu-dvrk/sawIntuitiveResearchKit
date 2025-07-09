@@ -1,0 +1,65 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "component-manager": {
+        "components":
+        [
+            {
+                "shared-library": "sawSensablePhantom",
+                "class-name": "mtsSensableHD",
+                "constructor-arg": {
+                    "Name": "Sensable"
+                },
+                "configure-parameter": "sawSensablePhantomDefault.json"
+            }
+        ]
+    }
+    ,
+    "console-inputs":
+    {
+        "operator-present": {
+            "component": "Sensable",
+            "interface": "armButton1"
+        }
+        ,
+        "clutch": {
+            "component": "Sensable",
+            "interface": "armButton2"
+        }
+    }
+    ,
+    "arms":
+    [
+        {
+            "name": "MTMR",  // created previously using custom components
+            "type": "MTM_GENERIC",
+            "component": "Sensable",
+            "interface": "arm"
+        }
+        ,
+        {
+            "name": "PSM1",
+            "type": "PSM",
+            "simulation": "KINEMATIC",
+            "arm": "arm/PSM_KIN_SIMULATED_LARGE_NEEDLE_DRIVER_400006.json",
+            "base_frame":  {
+                "reference_frame": "Omni",
+                "transform": [[ -1.0,  0.0,  0.0,  0.0],
+                              [  0.0,  0.0,  1.0,  0.0 ],
+                              [  0.0,  1.0,  0.0,  0.0 ],
+                              [  0.0,  0.0,  0.0,  1.0 ]]
+            }
+        }
+    ]
+    ,
+    "PSM-teleops":
+    [
+        {
+            "MTM": "MTMR",
+            "PSM": "PSM1",
+            "configure-parameter": {
+                "ignore_jaw": true,
+                "align_mtm": false
+            }
+        }
+    ]
+}

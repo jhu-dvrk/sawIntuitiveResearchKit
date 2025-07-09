@@ -1,0 +1,51 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    // see dVRK user guide
+    "DH": {
+        "convention": "modified",
+        "links": [
+            { // 1
+                "name": "yaw",
+                "alpha":  1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
+                "type": "revolute",
+                "mode": "active",
+                "offset":  1.5708,
+                "qmin": -1.5708, // -90
+                "qmax":  1.5708, //  90
+                "ftmax": 26.93208
+            },
+            { // 2
+                "name": "pitch",
+                "alpha": -1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
+                "type": "revolute",
+                "mode": "active",
+                "offset": -1.5708,
+                "qmin": -0.76794, // -44
+                "qmax":  1.1344, //   65
+                "ftmax": 26.93208
+            },
+            { // 3
+                "name": "insertion",
+                "alpha":  1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
+                "type": "prismatic",
+                "mode": "active",
+                "offset": -0.3822,
+                "qmin": 0.0,
+                "qmax": 0.255, // meters
+                "ftmax": 80.6589483,
+                "mass": 0.0000, // mass is set in code, depending on endoscope type
+                "cx":   0.0000, "cy":   0.0000, "cz":  -0.1000 // approximative position of endoscope center of gravity
+            },
+            { // 4
+                "name": "roll",
+                "alpha":  0.0000, "A":  0.0000, "theta":  0.0000, "D":  0.3829,
+                "type": "revolute",
+                "mode": "active",
+                "offset":  0.0000,
+                "qmin": -1.552, // -88
+                "qmax":  1.552, //  88
+                "ftmax": 0.87658808
+            }
+        ]
+    }
+}

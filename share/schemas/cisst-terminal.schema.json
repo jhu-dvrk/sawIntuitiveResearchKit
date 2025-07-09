@@ -1,0 +1,21 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "cisst-terminal.schema.json",
+    "title": "cisstMultiTask terminal",
+    "type": "object",
+    "description": "`Name of a cisstMultiTask component and interface (required or provided) used to connect a component.\n[Schema file](cisst-terminal.schema.json)",
+    "additionalProperties": false,
+    "required": ["component", "interface"],
+    "properties": {
+
+        "component": {
+            "type": "string",
+            "description": "Component name"
+        },
+
+        "interface": {
+            "type": "string",
+            "description": "Component name"
+        }
+    }
+}

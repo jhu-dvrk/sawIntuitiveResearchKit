@@ -1,0 +1,14 @@
+{
+    "components":
+    [
+        {
+            "shared-library": "cisstInteractive",
+            "class-name": "ireTask",
+            "constructor-arg": {
+                "Name": "IRE",
+                "Shell": "IRE_IPYTHON",
+                "Startup": ""
+            }
+        }
+    ]
+}
