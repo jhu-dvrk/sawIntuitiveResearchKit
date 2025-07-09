@@ -674,6 +674,11 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
             m_re_home = jsonAlwaysHome.asBool();
         }
 
+        // optionally disable GC
+        const Json::Value jsonDisableGC = jsonConfig["disable_gravity_compensation"];
+        if (jsonDisableGC.isBool()) {
+            m_gravity_compensation = !jsonDisableGC.asBool();
+        }
         // arm specific configuration for gravity compensation
         ConfigureGC(jsonConfig, configPath, filename);
 

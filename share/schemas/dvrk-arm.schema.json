@@ -11,15 +11,21 @@
             "type": "string"
         },
 
+        "disable_gravity_compensation": {
+            "description": "Option to start arm with gravity compensation disabled - can be later enabled while running",
+            "type": "boolean",
+            "default": false
+        },
+
         "kinematic_gc": {
             "description": "Gravity compensation configuration file, i.e. DH parameters (with mass and center of mass) for `robManipulator`.",
             "type": "string"
         },
 
         "generation": {
-                "description": "Arm generation, either a Standard (aka Classic) or Si.",
-                "type": "string",
-                "enum": ["Classic", "Si"]
+            "description": "Arm generation, either a Standard (aka Classic) or Si.",
+            "type": "string",
+            "enum": ["Classic", "Si"]
         },
 
         "re_home": {
@@ -29,9 +35,9 @@
         },
 
         "mounting_pitch": {
-                "description": "Angle representing how pitched the arm is when mounted.  This number is in radians.  This is used to figure out the direction of gravity depending on how the arm is mounted.  For example, the Classic ECM, when mounted on the SUJ is pitched by -45.0 degrees.  For the Si system, PSM1 and PSM2 are pitched 45 degrees down (-45.0) and the ECM is pitched 70 degrees down.  This parameter is NOT used for MTMs as we assume they are always straight.  It is not used on the Classic PSMs since we don't compute any gravity compensation for these arms.",
-                "type": "number",
-                "default": 0.0
+            "description": "Angle representing how pitched the arm is when mounted.  This number is in radians.  This is used to figure out the direction of gravity depending on how the arm is mounted.  For example, the Classic ECM, when mounted on the SUJ is pitched by -45.0 degrees.  For the Si system, PSM1 and PSM2 are pitched 45 degrees down (-45.0) and the ECM is pitched 70 degrees down.  This parameter is NOT used for MTMs as we assume they are always straight.  It is not used on the Classic PSMs since we don't compute any gravity compensation for these arms.",
+            "type": "number",
+            "default": 0.0
         },
 
         "homing_zero_position": {
