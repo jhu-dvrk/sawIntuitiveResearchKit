@@ -23,6 +23,10 @@
 
 - [ ] (De)Serialization
 
+- [ ] Base frames
+- [ ] Child components
+- [ ] Teleop disable rotation
+
 - [ ] Full I/O config model (port address, etc.)
 - [ ] Full arm config model
 - [ ] Full teleop config model
@@ -63,6 +67,7 @@
 - [ ] Footpedal/head sensor I/O
 - [x] Simple arm editor
 - [x] Available native arm list in editor
+- [ ] Arm base frames
 - [ ] Extended arm editor (derived/generic/socket types)
 - [x] Teleop editor
 - [ ] Derived teleop editor

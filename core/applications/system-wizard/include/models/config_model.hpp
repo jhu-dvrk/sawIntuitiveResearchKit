@@ -16,8 +16,10 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef SYSTEM_WIZARD_CONFIG_MODEL
 #define SYSTEM_WIZARD_CONFIG_MODEL
 
+#include "json/value.h"
 #include <QtCore>
 
+#include <cstddef>
 #include <filesystem>
 #include <fstream>
 #include <memory>
@@ -31,6 +33,59 @@ http://www.cisst.org/cisst/license.txt.
 #include "models/list_model.hpp"
 
 namespace system_wizard {
+
+class ComponentConfig {
+public:
+    static std::unique_ptr<ComponentConfig> fromJSON(Json::Value json) {
+        auto config = std::make_unique<ComponentConfig>();
+        config->library_name = json.get("shared-library", "").asString();
+        config->class_name = json.get("class-name", "").asString();
+        config->name = json["constructor-arg"].get("Name", "").asString();
+        config->configure_parameter = json.get("configure-parameter", "").asString();
+
+        return config;
+    }
+
+    Json::Value toJSON() const {
+        Json::Value value;
+
+        value["shared-library"] = library_name;
+        value["class-name"] = class_name;
+
+        Json::Value constructor_args;
+        constructor_args["Name"] = name;
+        value["constructor-args"] = constructor_args;
+
+        value["configure_parameter"] = configure_parameter;
+
+        return value;
+    }
+
+    std::string library_name;
+    std::string class_name;
+    std::string name;
+    std::string configure_parameter;
+};
+
+class ComponentInterfaceConfig {
+public:
+    static std::unique_ptr<ComponentInterfaceConfig> fromJSON(Json::Value json) {
+        auto config = std::make_unique<ComponentInterfaceConfig>();
+        config->component_name = json.get("component", "").asString();
+        config->interface_name = json.get("interface", "").asString();
+        return config;
+    }
+
+    Json::Value toJSON() const {
+        Json::Value json;
+        json["component"] = component_name;
+        json["interface"] = interface_name;
+        return json;
+    }
+
+    std::string component_name;
+    std::string interface_name;
+};
 
 enum class ArmConfigType {
     NATIVE,
@@ -567,25 +622,24 @@ public:
     IOConfig(std::string name)
         : name(name),
           port(IOPort::Value::FIREWIRE),
-          protocol(IOProtocol::Value::SEQUENTIAL_READ_SEQUENTIAL_WRITE),
-          period_ms(1.0 / 1500.0),
-          watchdog_timeout_ms(30.0)
+          protocol(IOProtocol::Value::SEQUENTIAL_READ_SEQUENTIAL_WRITE)
         { }
 
     static std::unique_ptr<IOConfig> fromJSON(Json::Value value) {
         auto config = std::make_unique<IOConfig>("io");
-        if (value.isMember("footpedals")) {
-            config->foot_pedals = value["footpedals"].asString();
-        }
+        config->name = value.get("name", "").asString();
+
         auto port = IOPort::deserialize(value["port"].asString());
         if (port.has_value()) { config->port = port.value(); }
-        auto protocol = IOProtocol::deserialize(value["firewire-protocol"].asString());
+        auto protocol = IOProtocol::deserialize(value["protocol"].asString());
         if (protocol.has_value()) { config->protocol = protocol.value(); }
 
-        config->period_ms = value.get("period", Json::Value(1.0/1500)).asDouble();
+        if (value.isMember("period")) {
+            config->period_ms = value["period"].asDouble();
+        }
 
         if (value.isMember("watchdog-timeoue")) {
-            config->watchdog_timeout_ms = value.get("watchdog-timeout", Json::Value(30.0)).asDouble();
+            config->watchdog_timeout_ms = value["watchdog-timeout"].asDouble();
         }
 
         return config;
@@ -594,13 +648,13 @@ public:
     Json::Value toJSON() const {
         Json::Value value;
 
-        if (foot_pedals) {
-            value["footpedals"] = foot_pedals.value().string();
-        }
-
+        value["name"] = name;
         value["port"] = port.serialize();
-        value["firewire-protocol"] = protocol.serialize();
-        value["period"] = period_ms;
+        value["protocol"] = protocol.serialize();
+
+        if (period_ms) {
+            value["period"] = period_ms.value();
+        }
 
         if (watchdog_timeout_ms) {
             value["watchdog-timeout"] = watchdog_timeout_ms.value();
@@ -610,24 +664,31 @@ public:
     }
 
     std::string name;
-    std::optional<std::filesystem::path> foot_pedals;
     IOPort port;
     IOProtocol protocol;
-    double period_ms;
+    std::optional<double> period_ms;
     std::optional<double> watchdog_timeout_ms;
 };
 
 class ArmConfig {
 public:
-    ArmConfig(std::string name, ArmType type, ArmConfigType config_type)
-    : name(name), type(type), config_type(config_type) { }
+    ArmConfig(std::string name, ArmType type, ArmConfigType config_type) :
+        name(name), type(type), config_type(config_type)
+    { }
 
     static std::unique_ptr<ArmConfig> fromJSON(Json::Value value) {
         std::string name = value["name"].asString();
         ArmType type = ArmType::deserialize(value["type"].asString()).value();
+
         ArmConfigType config_type = ArmConfigType::NATIVE;
 
         auto config = std::make_unique<ArmConfig>(name, type, config_type);
+
+        if (value.isMember("component")) {
+            config->component = ComponentInterfaceConfig();
+            config->component->component_name = value["component"].asString();
+            config->component->interface_name = value["interface"].asString();
+        }
 
         if (value.isMember("serial")) {
             config->serial_number = value["serial"].asString();
@@ -645,12 +706,17 @@ public:
         value["name"] = name;
         value["type"] = type.serialize();
 
+        if (io_name) {
+            value["IO"] = io_name.value();
+        }
+
         if (serial_number) {
             value["serial"] = serial_number.value();
         }
 
-        if (io_name) {
-            value["IO"] = io_name.value();
+        if (component) {
+            value["component"] = component->component_name;
+            value["interface"] = component->interface_name;
         }
 
         return value;
@@ -667,8 +733,7 @@ public:
     std::optional<std::string> serial_number;
     std::optional<bool> skip_ros_bridge;
 
-    std::optional<std::string> component_name; // if not provided, uses Arm::name
-    std::string interface_name;
+    std::optional<ComponentInterfaceConfig> component;
 };
 
 class TeleopConfig {
@@ -676,18 +741,18 @@ public:
     TeleopConfig(std::string name, TeleopType type) : name(name), type(type) { }
 
     static std::unique_ptr<TeleopConfig> fromJSON(Json::Value value) {
-        if (value.isMember("ecm")) {
+        if (value.isMember("ECM")) {
             auto config = std::make_unique<TeleopConfig>("ECM Teleop", TeleopType::Value::ECM_TELEOP);
             config->arm_names = {
-                value["ecm"].asString(),
-                value["mtm-left"].asString(),
-                value["mtm-right"].asString()
+                value["ECM"].asString(),
+                value["MTML"].asString(),
+                value["MTMR"].asString()
             };
             return config;
         } else {
             std::vector<std::string> arm_names = {
-                value["mtm"].asString(),
-                value["psm"].asString()
+                value["MTM"].asString(),
+                value["PSM"].asString()
             };
             std::string name = arm_names[0] + "-" + arm_names[1] + " Teleop";
             auto config = std::make_unique<TeleopConfig>(name, TeleopType::Value::PSM_TELEOP);
@@ -700,12 +765,12 @@ public:
         Json::Value value;
 
         if (type == TeleopType::Value::PSM_TELEOP) {
-            value["mtm"] = arm_names.at(0);
-            value["psm"] = arm_names.at(1);
+            value["MTM"] = arm_names.at(0);
+            value["PSM"] = arm_names.at(1);
         } else if (type == TeleopType::Value::ECM_TELEOP) {
-            value["ecm"] = arm_names.at(0);
-            value["mtm-left"] = arm_names.at(1);
-            value["mtm-right"] = arm_names.at(2);
+            value["ECM"] = arm_names.at(0);
+            value["MTML"] = arm_names.at(1);
+            value["MTMR"] = arm_names.at(2);
         }
 
         return value;
@@ -722,13 +787,12 @@ public:
     enum class Value {
         NONE,
         FOOT_PEDALS,
-        FORCE_DIMENSION_BUTTONS,
-        CUSTOM_BUTTONS
+        FORCE_DIMENSION_BUTTONS
     };
 
     ConsoleInputType(Value value) : value(value) {}
 
-    static int count() { return 4; }
+    static int count() { return 3; }
 
     int id() const { return static_cast<int>(value); }
 
@@ -740,8 +804,6 @@ public:
             return "Foot pedals";
         case Value::FORCE_DIMENSION_BUTTONS:
             return "ForceDimension inputs";
-        case Value::CUSTOM_BUTTONS:
-            return "Custom inputs";
         default:
             return "UNKNOWN";
         }
@@ -755,8 +817,6 @@ public:
             return "User input from surgeon console foot pedals";
         case Value::FORCE_DIMENSION_BUTTONS:
             return "User input from buttons on ForceDimension haptic device";
-        case Value::CUSTOM_BUTTONS:
-            return "Custom user inputs";
         default:
             return "UNKNOWN";
         }
@@ -797,7 +857,7 @@ public:
         case Value::ISI:
             return "Original ISI head sensor";
         case Value::DVRK:
-            return "dVRK head sensor";
+            return "Open-source dVRK head sensor";
         default:
             return "UNKNOWN";
         }
@@ -810,9 +870,9 @@ public:
         case Value::GOOVIS:
             return "Built-in head sensor from Goovis HMD";
         case Value::ISI:
-            return "Original head sensor from daVinci surgeon console";
+            return "Original ISI head sensor from surgeon console";
         case Value::DVRK:
-            return "Open-source retrofit dVRK head sensor";
+            return "Open-source dVRK head sensor retrofit on to surgeon console";
         default:
             return "UNKNOWN";
         }
@@ -835,17 +895,139 @@ class FootPedalsConfig : public QObject {
 public:
     FootPedalsConfig() : QObject() {}
 
+    static std::unique_ptr<FootPedalsConfig> fromJSON(Json::Value value) {
+        std::string io_file = value.get("IO_file", "").asString();
+        if (io_file == "") { return nullptr; }
+
+        std::string prefix = "sawRobotIO1394-";
+        std::string suffix = "-foot-pedals";
+        size_t start_idx = io_file.find(prefix) + prefix.size();
+        size_t end_idx = io_file.find(suffix);
+
+        if (end_idx == std::string::npos || start_idx == std::string::npos || end_idx <= start_idx) {
+            return nullptr;
+        }
+
+        std::string arm_name = io_file.substr(start_idx, end_idx - start_idx);
+
+        std::string dqla_suffix = "-DQLA.xml";
+        size_t n = dqla_suffix.size();
+        bool is_dqla = io_file.size() >= n && io_file.substr(io_file.size() - n, n) == dqla_suffix;
+        
+        auto config = std::make_unique<FootPedalsConfig>();
+        config->source_arm_name = arm_name;
+        config->source_io_name = value.get("IO", "").asString();
+        config->source_is_dqla = is_dqla;
+        return config;
+    }
+
+    Json::Value toJSON() const {
+        auto source = getSource();
+        std::string io_name = source && source->io_name ? *source->io_name : source_io_name;
+        bool is_dqla = source ? false : source_is_dqla;
+
+        Json::Value value;
+        value["IO"] = io_name;
+        value["IO_file"] = "io/sawRobotIO1394-" + source_arm_name + "-foot-pedals" + (is_dqla ? "-DQLA" : "") + ".xml";
+
+        return value;
+    }
+
+    void provideSources(ListModelT<ArmConfig> const& arms) {
+        this->arms = &arms;
+    }
+
+    bool source_is_dqla;
     std::string source_arm_name;
+    std::string source_io_name;
+
+private:
+    ListModelT<ArmConfig> const* arms = nullptr;
+
+    std::optional<ArmConfig> getSource() const {
+        if (arms == nullptr) { return {}; }
+
+        std::optional<ArmConfig> source = arms->find(
+            [this](const ArmConfig& arm){ return arm.name == source_arm_name; }
+        );
+
+        return source;
+    }
 };
 
 class HeadSensorConfig : public QObject {
     Q_OBJECT
 
 public:
-    HeadSensorConfig() : QObject(), head_sensor_type(HeadSensorType::Value::NONE) {}
+    HeadSensorConfig(HeadSensorType type) : QObject(), type(type) {}
 
-    HeadSensorType head_sensor_type;
+    static std::unique_ptr<HeadSensorConfig> fromJSON(Json::Value value) {
+        std::string input_type = value.get("input_type", "").asString();
+        if (input_type == "PEDALS_GOOVIS_HEAD_SENSOR") {
+            return std::make_unique<HeadSensorConfig>(HeadSensorType::Value::GOOVIS);
+        } else if (input_type == "PEDALS_ISI_HEAD_SENSOR" || input_type == "PEDALS_DVRK_HEAD_SENSOR") {
+            std::string io_file = value.get("IO_file", "").asString();
+            if (io_file == "") { return nullptr; }
+
+            std::string prefix = "sawRobotIO1394-";
+            std::string suffix = "-dv-head-sensor";
+            size_t start_idx = io_file.find(prefix) + prefix.size();
+            size_t end_idx = io_file.find(suffix);
+
+            if (end_idx == std::string::npos || start_idx == std::string::npos || end_idx <= start_idx) {
+                return nullptr;
+            }
+
+            std::string arm_name = io_file.substr(start_idx, end_idx - start_idx);
+            bool is_ISI = input_type == "PEDALS_ISI_HEAD_SENSOR";
+            HeadSensorType type = is_ISI ? HeadSensorType::Value::ISI : HeadSensorType::Value::DVRK;
+            auto config = std::make_unique<HeadSensorConfig>(type);
+            config->source_arm_name = arm_name;
+            return config;
+        } else {
+            return std::make_unique<HeadSensorConfig>(HeadSensorType::Value::NONE);
+        }
+    }
+
+    Json::Value toJSON() const {
+        if (type == HeadSensorType::Value::GOOVIS) {
+            Json::Value value;
+            value["HID_file"] = "hid/goovis-hd.json";
+            return value;
+        } else if (type == HeadSensorType::Value::ISI || type == HeadSensorType::Value::DVRK) {
+            auto source = getSource();
+            if (!source.has_value()) { return Json::Value(); }
+
+            Json::Value value;
+            Json::Value io;
+            io["IO"] = source->io_name.value_or("");
+            io["IO_file"] = "io/sawRobotIO1394-" + source->name + "-dv-head-sensor.xml";
+            value["IO_head_sensor"] = io;
+            return value;
+        } else {
+            return Json::Value();
+        }
+    }
+
+    HeadSensorType type;
     std::string source_arm_name;
+
+    void provideSources(ListModelT<ArmConfig> const& arms) {
+        this->arms = &arms;
+    }
+
+private:
+    ListModelT<ArmConfig> const* arms = nullptr;
+
+    std::optional<ArmConfig> getSource() const {
+        if (arms == nullptr) { return {}; }
+
+        std::optional<ArmConfig> source = arms->find(
+            [this](const ArmConfig& arm){ return arm.name == source_arm_name; }
+        );
+
+        return source;
+    }
 };
 
 class ForceDimensionButtonInputConfig : public QObject {
@@ -854,37 +1036,176 @@ class ForceDimensionButtonInputConfig : public QObject {
 public:
     ForceDimensionButtonInputConfig() : QObject() {}
 
+    static std::unique_ptr<ForceDimensionButtonInputConfig> fromJSON(Json::Value json) {
+        auto operator_present = json["operator_present"];
+        auto clutch = json["clutch"];
+        auto camera = json["camera"];
+
+        auto getComponent = [](Json::Value json) -> std::string {
+            return json.get("component", "").asString();
+        };
+    
+        auto getInterface = [](Json::Value json) -> std::string {
+            std::string button_interface = json.get("interface", "").asString();
+            size_t start_idx = 0;
+            size_t end_idx = button_interface.find("/");
+            if (end_idx == 0 || end_idx == std::string::npos) {
+                return "";
+            }
+
+            return button_interface.substr(start_idx, end_idx - start_idx);
+        };
+
+        std::string component_name = getComponent(operator_present);
+        std::string interface_name = getInterface(operator_present);
+
+        bool components_match = component_name == getComponent(clutch) && component_name == getComponent(camera);
+        bool interfaces_match = interface_name == getInterface(clutch) && interface_name == getInterface(camera);
+
+        if (component_name == "" || !components_match) {
+            return nullptr;
+        }
+
+        if (interface_name == "" || !interfaces_match) {
+            return nullptr;
+        }
+
+        auto config = std::make_unique<ForceDimensionButtonInputConfig>();
+        // Assume interface name used is always the arm name
+        config->source_arm_name = interface_name;
+        return config;
+    }
+
+    Json::Value toJSON() const {
+        auto source = getSource();
+        if (!source.has_value()) { return Json::Value(); }
+
+        auto operator_present = ComponentInterfaceConfig();
+        auto clutch = ComponentInterfaceConfig();
+        auto camera = ComponentInterfaceConfig();
+
+        if (source->component.has_value()) {
+            operator_present = source->component.value();
+            operator_present.interface_name += "/center";
+            clutch = source->component.value();
+            operator_present.interface_name += "/top";
+            camera = source->component.value();
+            operator_present.interface_name += "/left";
+        }
+
+        Json::Value json;
+        json["operator_present"] = operator_present.toJSON();
+        json["clutch"] = clutch.toJSON();
+        json["camera"] = camera.toJSON();
+        return json;
+    }
+
     std::string source_arm_name;
-};
 
-class CustomButtonInputConfig : public QObject {
-    Q_OBJECT
+    void provideSources(ListModelT<ArmConfig> const& arms) {
+        this->arms = &arms;
+    }
 
-public:
-    CustomButtonInputConfig() : QObject() {}
+private:
+    ListModelT<ArmConfig> const* arms = nullptr;
 
-    std::string operator_present_component;
-    std::string operator_present_interface;
-    
-    std::string clutch_component;
-    std::string clutch_interface;
-    
-    std::string camera_component;
-    std::string camera_interface;
+    std::optional<ArmConfig> getSource() const {
+        if (arms == nullptr) { return {}; }
+
+        std::optional<ArmConfig> source = arms->find(
+            [this](const ArmConfig& arm){ return arm.name == source_arm_name; }
+        );
+
+        return source;
+    }
 };
 
 class ConsoleInputConfig : public QObject {
     Q_OBJECT
 
 public:
-    ConsoleInputConfig() : QObject(), type(ConsoleInputType::Value::NONE) {}
+    ConsoleInputConfig() :
+        QObject(),
+        type(ConsoleInputType::Value::NONE),
+        pedals(std::make_unique<FootPedalsConfig>()),
+        head_sensor(std::make_unique<HeadSensorConfig>(HeadSensorType::Value::NONE)),
+        force_dimension_buttons(std::make_unique<ForceDimensionButtonInputConfig>())
+    {}
+
+    static std::unique_ptr<ConsoleInputConfig> fromJSON(Json::Value value) {
+        auto startsWith = [](std::string name, std::string prefix) {
+            return name.size() >= prefix.size() && name.substr(0, prefix.size()) == prefix;
+        };
+
+        auto config = std::make_unique<ConsoleInputConfig>();
+
+        std::string type_name = value.get("input_type", "").asString();
+        if (startsWith(type_name, "PEDALS_")) {
+            config->type = ConsoleInputType::Value::FOOT_PEDALS;
+        } else if (type_name == "COMPONENTS") {
+            config->type = ConsoleInputType::Value::FORCE_DIMENSION_BUTTONS;
+        }
+
+        auto pedals = FootPedalsConfig::fromJSON(value["IO_pedals"]);
+        if (pedals != nullptr) {
+            config->pedals = std::move(pedals);
+        }
+
+        auto head_sensor = HeadSensorConfig::fromJSON(value);
+        if (head_sensor != nullptr) {
+            config->head_sensor = std::move(head_sensor);
+        }
+
+        auto force_dimension_buttons = ForceDimensionButtonInputConfig::fromJSON(value);
+        if (force_dimension_buttons != nullptr) {
+            config->force_dimension_buttons = std::move(force_dimension_buttons);
+        }
+
+        return config;
+    }
+
+    Json::Value toJSON() const {
+        Json::Value value;
+
+        if (type == ConsoleInputType::Value::FOOT_PEDALS) {
+            value["IO_pedals"] = pedals->toJSON();
+            if (head_sensor->type == HeadSensorType::Value::GOOVIS) {
+                value["input_type"] = "PEDALS_GOOVIS_HEAD_SENSOR";
+            } else if (head_sensor->type == HeadSensorType::Value::DVRK) {
+                value["input_type"] = "PEDALS_DVRK_HEAD_SENSOR";
+            } else if (head_sensor->type == HeadSensorType::Value::ISI) {
+                value["input_type"] = "PEDALS_ISI_HEAD_SENSOR";
+            } else {
+                value["input_type"] = "PEDALS_ONLY";
+            }
+
+            Json::Value sibling = head_sensor->toJSON();
+            for (const std::string& k : sibling.getMemberNames()) {
+                value[k] = sibling[k];
+            }
+        } else {
+            value["input_type"] = "COMPONENTS";
+
+            Json::Value sibling = force_dimension_buttons->toJSON();
+            for (const std::string& k : sibling.getMemberNames()) {
+                value[k] = sibling[k];
+            }
+        }
+
+        return value;
+    }
+
+    void provideSources(ListModelT<ArmConfig> const& arms) {
+        pedals->provideSources(arms);
+        head_sensor->provideSources(arms);
+        force_dimension_buttons->provideSources(arms);
+    }
 
     ConsoleInputType type;
 
-    FootPedalsConfig pedals;
-    HeadSensorConfig head_sensor;
-    ForceDimensionButtonInputConfig force_dimension_buttons;
-    CustomButtonInputConfig custom_buttons;
+    std::unique_ptr<FootPedalsConfig> pedals;
+    std::unique_ptr<HeadSensorConfig> head_sensor;
+    std::unique_ptr<ForceDimensionButtonInputConfig> force_dimension_buttons;
 };
 
 class ConsoleConfig : public QObject {
@@ -892,6 +1213,7 @@ class ConsoleConfig : public QObject {
 
 public:
     ConsoleConfig() : QObject() {
+        inputs = std::make_unique<ConsoleInputConfig>();
         psm_teleops = std::make_unique<ListModelT<TeleopConfig>>();
         ecm_teleops = std::make_unique<ListModelT<TeleopConfig>>();
     }
@@ -901,6 +1223,7 @@ public:
         Json::Value json_value;
 
         config->name = json_config["name"].asString();
+        config->inputs = ConsoleInputConfig::fromJSON(json_config);
 
         json_value = json_config["teleop_PSMs"];
         if (!json_value.empty() && json_value.isArray()) {
@@ -928,12 +1251,22 @@ public:
         value["teleop_PSMs"] = psm_teleops->toJSON();
         value["teleop_ECMs"] = ecm_teleops->toJSON();
 
+        // need to merge in console input config
+        Json::Value sibling = inputs->toJSON();
+        for (const std::string& k : sibling.getMemberNames()) {
+            value[k] = sibling[k];
+        }
+
         return value;
+    }
+
+    void provideSources(ListModelT<ArmConfig> const& arms) {
+        inputs->provideSources(arms);
     }
 
     std::string name;
 
-    ConsoleInputConfig inputs;
+    std::unique_ptr<ConsoleInputConfig> inputs;
 
     std::unique_ptr<ListModelT<TeleopConfig>> psm_teleops;
     std::unique_ptr<ListModelT<TeleopConfig>> ecm_teleops;
@@ -989,6 +1322,10 @@ public:
             if (model->console_configs == nullptr) {
                 return nullptr;
             }
+
+            for (int idx = 0; idx < model->console_configs->count(); idx++) {
+                model->console_configs->ref(idx).provideSources(*model->arm_configs);
+            }
         }
 
         return model;
@@ -1001,10 +1338,17 @@ public:
         config["arms"] = arm_configs->toJSON();
         config["consoles"] = console_configs->toJSON();
 
+        Json::StreamWriterBuilder writer_builder;
+        writer_builder["indentation"] = "    "; // four spaces
+        auto writer = std::unique_ptr<Json::StreamWriter>(writer_builder.newStreamWriter());
+        
         std::ofstream json_stream;
         json_stream.open(config_file.c_str());
-        json_stream << config << std::endl;
+        if (!json_stream.is_open()) {
+            return false;
+        }
 
+        writer->write(config, &json_stream);
         return true;
     }
 

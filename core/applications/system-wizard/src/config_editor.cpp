@@ -85,7 +85,8 @@ ConfigEditor::ConfigEditor(std::unique_ptr<SystemConfigModel> config_model, Conf
 
     // Console config panel
 
-    Accordion* console_panel = new Accordion("Consoles", "SteelBlue", true, this);
+    bool has_consoles = model->console_configs->count() > 0;
+    Accordion* console_panel = new Accordion("Consoles", "SteelBlue", has_consoles, this);
     ConsolesContainer* consoles = new ConsolesContainer(*model);
     console_panel->setWidget(consoles);
 

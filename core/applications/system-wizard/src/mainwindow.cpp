@@ -54,7 +54,7 @@ void MainWindow::createActions() {
     connect(&directory_chooser, &QDialog::accepted, this, &MainWindow::folder_chosen);
 
     new_config = new QAction(style()->standardIcon(QStyle::SP_FileIcon),
-                         "Open config file", this);
+                         "New config file", this);
     new_config->setShortcuts(QKeySequence::New);
     new_config->setStatusTip("New config file");
     connect(new_config, &QAction::triggered, editor, &Editor::newConfig);

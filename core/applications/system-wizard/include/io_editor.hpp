@@ -51,8 +51,6 @@ private:
     QSpinBox* frequency_input;
     QDoubleSpinBox* watchdog_timeout_input;
 
-    QLineEdit* foot_pedals_file;
-
     QComboBox* port_selector;
     EnumListModel<IOPort> port_model;
 

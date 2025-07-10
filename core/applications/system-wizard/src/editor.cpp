@@ -16,6 +16,7 @@ http://www.cisst.org/cisst/license.txt.
 #include "editor.hpp"
 
 #include "config_editor.hpp"
+#include "models/config_model.hpp"
 
 namespace system_wizard {
 
@@ -59,6 +60,11 @@ Editor::Editor(ConfigSources& config_sources, QWidget* parent)
 void Editor::newConfig() {
     std::unique_ptr<SystemConfigModel> model = std::make_unique<SystemConfigModel>();
     model->io_configs->appendItem(IOConfig("io")); // default I/O
+
+    std::unique_ptr<ConsoleConfig> default_console = std::make_unique<ConsoleConfig>();
+    default_console->name = "Console";
+    model->console_configs->appendItem(std::move(default_console));
+
     std::unique_ptr<ConfigEditor> editor = std::make_unique<ConfigEditor>(std::move(model), *config_sources);
     createTab(std::move(editor));
 }

@@ -8,7 +8,7 @@ namespace system_wizard {
 ConsoleEditor::ConsoleEditor(ConsoleConfig& config, SystemConfigModel& model, QWidget* parent) :
     QWidget(parent),
     config(&config),
-    inputs_editor(new ConsoleInputsEditor(config.inputs, *model.arm_configs)),
+    inputs_editor(new ConsoleInputsEditor(*config.inputs, *model.arm_configs)),
     teleop_editor(config, *model.arm_configs)
 {
     QVBoxLayout* layout = new QVBoxLayout(this);
@@ -103,7 +103,9 @@ ConsolesContainer::ConsolesContainer(SystemConfigModel& model, QWidget* parent) 
     QObject::connect(add_console_button, &QToolButton::clicked, this, &ConsolesContainer::addConsole);
     QObject::connect(this->tabBar(), &QTabBar::tabCloseRequested, this, [this](int index){ removeConsole(index); });
 
-    addConsole();
+    for (int idx = 0; idx < model.console_configs->count(); idx++) {
+        openConsole(model.console_configs->ref(idx));
+    }
 }
 
 void ConsolesContainer::addConsole() {
@@ -112,9 +114,13 @@ void ConsolesContainer::addConsole() {
     ConsoleConfig* config_ptr = config.get();
     model->console_configs->appendItem(std::move(config));
 
-    std::unique_ptr<ConsoleEditor> editor = std::make_unique<ConsoleEditor>(*config_ptr, *model);
+    openConsole(*config_ptr);
+}
+
+void ConsolesContainer::openConsole(ConsoleConfig& config) {
+    std::unique_ptr<ConsoleEditor> editor = std::make_unique<ConsoleEditor>(config, *model);
     ConsoleEditor* ptr = editor.get(); // save non-owning pointer
-    this->addTab(editor.release(), QString::fromStdString(config_ptr->name)); // transfer ownership to Qt GUI tree
+    this->addTab(editor.release(), QString::fromStdString(config.name)); // transfer ownership to Qt GUI tree
 
     auto update_tab_title = [this, ptr](std::string name) {
         // get tab index in case it has changed (earlier tab closed or tabs re-arranged)

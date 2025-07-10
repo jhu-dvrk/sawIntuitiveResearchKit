@@ -14,6 +14,7 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 #include "arm_editor.hpp"
+#include "models/config_model.hpp"
 
 #include <cisstCommon/cmnPortability.h>
 
@@ -64,7 +65,6 @@ QuickArmPage::QuickArmPage(ArmConfig& config, const SystemConfigModel& model, Co
         ConfigSources::Arm source = available_arms->get(index);
         *this->config = ArmConfig(source.name, source.type, ArmConfigType::NATIVE);
         this->config->serial_number = source.serial_number;
-        this->config->interface_name = "Arm";
 
         next_page_id = -1;
         this->wizard()->accept();
@@ -76,7 +76,6 @@ QuickArmPage::QuickArmPage(ArmConfig& config, const SystemConfigModel& model, Co
             ConfigSources::Arm source = available_arms->get(index);
             *this->config = ArmConfig(source.name, source.type, ArmConfigType::NATIVE);
             this->config->serial_number = source.serial_number;
-            this->config->interface_name = "Arm";
         }
     });
     QObject::connect(arm_list_view, &ListView::selected, this, &QWizardPage::completeChanged);
@@ -242,11 +241,15 @@ HapticMTMPage::HapticMTMPage(ArmConfig& config, QWidget *parent) : QWizardPage(p
     QObject::connect(left_right_selector, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this, config_file_name](int index) {
         if (index == 0) {
             this->config->name = "MTML";
-            this->config->interface_name = "MTML";
+            this->config->component = ComponentInterfaceConfig();
+            this->config->component->component_name = "ForceDimensionSDK";
+            this->config->component->interface_name = "MTML";
             config_file_name->setText("sawForceDimensionSDK-MTML.json");
         } else if (index == 1) {
             this->config->name = "MTMR";
-            this->config->interface_name = "MTMR";
+            this->config->component = ComponentInterfaceConfig();
+            this->config->component->component_name = "ForceDimensionSDK";
+            this->config->component->interface_name = "MTMR";
             config_file_name->setText("sawForceDimensionSDK-MTMR.json");
         }
     });
@@ -289,9 +292,9 @@ void HapticMTMPage::showEvent(QShowEvent *CMN_UNUSED(event)) {
             haptic_device_selector->setCurrentIndex(config->haptic_device.value());
         }
 
-        if (config->interface_name == "MTML") {
+        if (config->component && config->component->interface_name == "MTML") {
             left_right_selector->setCurrentIndex(0);
-        } else if (config->interface_name == "MTMR") {
+        } else if (config->component && config->component->interface_name == "MTMR") {
             left_right_selector->setCurrentIndex(1);
         }
     }
