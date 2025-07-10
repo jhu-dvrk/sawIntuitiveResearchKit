@@ -57,47 +57,20 @@ IOEditPage::IOEditPage(IOConfig& config, const SystemConfigModel& model, QWidget
     });
 
     frequency_input = new QSpinBox();
-    frequency_input->setRange(1, 10000);
+    frequency_input->setRange(0, 10000);
     frequency_input->setSingleStep(100);
-    frequency_input->setValue(1500);
+    frequency_input->setSpecialValueText("Default");
     QObject::connect(frequency_input, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int hz) {
-        this->config->period_ms = 1.0 / hz;
+        this->config->period_ms = hz > 0 ? 1.0 / hz : std::optional<double>();
     });
 
     watchdog_timeout_input = new QDoubleSpinBox();
     watchdog_timeout_input->setRange(0.0, 5000.0);
     watchdog_timeout_input->setSingleStep(1.0);
-    watchdog_timeout_input->setValue(10.0);
+    watchdog_timeout_input->setSpecialValueText("Default");
     QObject::connect(watchdog_timeout_input, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [this](double timeout) {
-        this->config->watchdog_timeout_ms = timeout;
+        this->config->watchdog_timeout_ms = timeout > 0 ? timeout : std::optional<double>();
     });
-
-    QHBoxLayout* foot_pedals_layout = new QHBoxLayout();
-    QFileDialog* file_dialog = new QFileDialog(this);
-    file_dialog->setFileMode(QFileDialog::ExistingFile);
-    file_dialog->setViewMode(QFileDialog::List);
-    file_dialog->setOptions(QFileDialog::DontResolveSymlinks);
-    foot_pedals_file = new QLineEdit();
-    QRegularExpression file_regex("\\S*"); // zero or more non-whitespace
-    QValidator *file_validator = new QRegularExpressionValidator(file_regex, this);
-    foot_pedals_file->setValidator(file_validator);
-
-    QPushButton* foot_pedals_browse_button = new QPushButton("Browse");
-    QObject::connect(foot_pedals_browse_button, &QPushButton::clicked, file_dialog, &QDialog::open);
-    QObject::connect(file_dialog, &QFileDialog::fileSelected, this, [this](const QString& file_name) {
-        if (file_name.isEmpty()) { return; }
-        this->foot_pedals_file->setText(file_name);
-    });
-    QObject::connect(foot_pedals_file, &QLineEdit::textChanged, this, [this](const QString& file_name) {
-        if (file_name.isEmpty()) {
-            this->config->foot_pedals = std::optional<std::filesystem::path>();
-        } else {
-            this->config->foot_pedals = file_name.toStdString();
-        }
-    });
-    foot_pedals_file->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
-    foot_pedals_layout->addWidget(foot_pedals_file);
-    foot_pedals_layout->addWidget(foot_pedals_browse_button);
 
     QLabel* name_label = new QLabel("Name:");
     name_label->setToolTip("I/O name - typically just \"io\"");
@@ -111,10 +84,6 @@ IOEditPage::IOEditPage(IOConfig& config, const SystemConfigModel& model, QWidget
     QLabel* protocol_label = new QLabel("Protocol:");
     protocol_label->setToolTip("Communication protocol");
     form->addRow(protocol_label, protocol_selector);
-
-    QLabel* foot_pedals_label = new QLabel("Foot pedals:");
-    foot_pedals_label->setToolTip("(Optional) config file for foot pedal inputs");
-    form->addRow(foot_pedals_label, foot_pedals_layout);
 
     QLabel* frequency_label = new QLabel("Frequency (hz):");
     frequency_label->setToolTip("(Optional) frequency to run I/O at, default 1500 Hz. If set too high, system will not be able to keep up and I/O errors may trigger.");
@@ -134,10 +103,12 @@ void IOEditPage::initializePage() {
 
     name_input->setText(QString::fromStdString(config->name));
     protocol_selector->setCurrentIndex(config->protocol.id());
-    QString foot_pedals_name = config->foot_pedals.has_value() ? QString::fromStdString(config->foot_pedals->string()) : "";
-    foot_pedals_file->setText(foot_pedals_name);
-    frequency_input->setValue(int(1.0/config->period_ms));
-    watchdog_timeout_input->setValue(config->watchdog_timeout_ms.value_or(10.0));
+    if (config->period_ms.has_value()) {
+        frequency_input->setValue(int(1.0/config->period_ms.value()));
+    }
+    if (config->watchdog_timeout_ms.has_value()) {
+        watchdog_timeout_input->setValue(config->watchdog_timeout_ms.value());
+    }
     emit completeChanged();
 }
 
@@ -159,8 +130,7 @@ bool IOEditPage::nameAlreadyUsed() const {
 
 bool IOEditPage::isComplete() const {
     return !nameAlreadyUsed() &&
-           name_input->hasAcceptableInput() &&
-           foot_pedals_file->hasAcceptableInput();
+           name_input->hasAcceptableInput();
 }
 
 IOEditor::IOEditor(SystemConfigModel& model, QWidget* parent) : QWizard(parent), model(&model), config("") {

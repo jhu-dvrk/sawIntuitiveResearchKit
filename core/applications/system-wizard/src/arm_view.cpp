@@ -14,6 +14,7 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 #include "arm_view.hpp"
+#include "models/config_model.hpp"
 
 namespace system_wizard {
 
@@ -40,7 +41,12 @@ void ArmView::updateData(int id) {
     this->id = id;
 
     const ArmConfig& arm = model->arm_configs->get(id);
-    QString text = QString::fromStdString(arm.name + " (" + arm.type.name() + ")");
+    QString text = QString::fromStdString(arm.name);
+    if (arm.config_type == ArmConfigType::ROS_ARM) {
+        text += " (Arm from ROS)";
+    } else if (arm.config_type == ArmConfigType::HAPTIC_MTM) {
+        text += " (Haptic MTM)";
+    }
     display->setText(text);
     display->setToolTip(QString::fromStdString(arm.type.acronym_expansion()));
 }

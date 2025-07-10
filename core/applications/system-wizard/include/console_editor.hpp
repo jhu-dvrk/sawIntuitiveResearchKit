@@ -51,6 +51,7 @@ public:
     ConsolesContainer(SystemConfigModel& model, QWidget* parent = nullptr);
 
 private:
+    void openConsole(ConsoleConfig& config);
     void addConsole();
     void removeConsole(int index);
 

@@ -14,8 +14,10 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 #include "console_inputs_editor.hpp"
+
 #include "models/config_model.hpp"
 #include "models/list_model.hpp"
+
 #include <qboxlayout.h>
 #include <qcombobox.h>
 #include <qobject.h>
@@ -84,34 +86,24 @@ ConsoleInputsEditor::ConsoleInputsEditor(ConsoleInputConfig& model, ListModelT<A
     forcedimension_input_layout->addWidget(available_forcedimensions);
     forcedimension_input_layout->addStretch();
 
-    /* Custom component inputs configuration */
-
-    QWidget* custom_inputs = new QWidget();
-    QFormLayout* custom_inputs_layout = new QFormLayout(custom_inputs);
-    QLabel* custom_input_label = new QLabel("Select component/interfaces that will provide user input button events:");
-    custom_input_label->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    custom_inputs_layout->addRow(custom_input_label);
-    custom_inputs_layout->addRow("Operator present button:", new QLineEdit("ForceDimensionSDK"));
-    custom_inputs_layout->addRow("Clutch button:", new QLineEdit("ForceDimensionSDK"));
-    custom_inputs_layout->addRow("Camera teleop button:", new QLineEdit("ForceDimensionSDK"));
-
     QStackedWidget* user_input_stack = new QStackedWidget();
     user_input_stack->addWidget(new QWidget());
     user_input_stack->addWidget(foot_pedal_details);
     user_input_stack->addWidget(forcedimension_input);
-    user_input_stack->addWidget(custom_inputs);
     layout->addWidget(user_input_stack);
 
-    QObject::connect(input_type, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [user_input_stack](int index) {
+    QObject::connect(input_type, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this, user_input_stack](int index) {
         if (index < user_input_stack->count()) {
             user_input_stack->setCurrentIndex(index);
+            this->model->type = static_cast<ConsoleInputType::Value>(index);;
         } else {
             user_input_stack->setCurrentIndex(0);
         }
     });
 
-    QObject::connect(head_sensor_type, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [head_sensor_stack](int index) {
+    QObject::connect(head_sensor_type, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this, head_sensor_stack](int index) {
         HeadSensorType::Value type = static_cast<HeadSensorType::Value>(index);
+        this->model->head_sensor->type = type;
         if (type == HeadSensorType::Value::DVRK || type == HeadSensorType::Value::ISI) {
             head_sensor_stack->setCurrentIndex(1);
         } else {
@@ -119,7 +111,37 @@ ConsoleInputsEditor::ConsoleInputsEditor(ConsoleInputConfig& model, ListModelT<A
         }
     });
 
+    QObject::connect(pedals_available_mtms, &QComboBox::currentTextChanged, this, [this](QString text) {
+        std::string arm_name = text.toStdString();
+        this->model->pedals->source_arm_name = arm_name;
+    });
+
+    QObject::connect(head_sensor_available_mtms, &QComboBox::currentTextChanged, this, [this](QString text) {
+        std::string arm_name = text.toStdString();
+        this->model->head_sensor->source_arm_name = arm_name;
+    });
+
+    QObject::connect(available_forcedimensions, &QComboBox::currentTextChanged, this, [this](QString text) {
+        std::string arm_name = text.toStdString();
+        this->model->force_dimension_buttons->source_arm_name = arm_name;
+    });
+
     updateAvailableArms();
+
+    if (model.head_sensor != nullptr) {
+        head_sensor_type->setCurrentIndex(model.head_sensor->type.id());
+        head_sensor_available_mtms->setCurrentText(QString::fromStdString(model.head_sensor->source_arm_name));
+    }
+
+    if (model.type == ConsoleInputType::Value::FOOT_PEDALS) {
+        input_type->setCurrentIndex(1);
+        user_input_stack->setCurrentIndex(1);
+        pedals_available_mtms->setCurrentText(QString::fromStdString(model.pedals->source_arm_name));
+    } else if (model.type == ConsoleInputType::Value::FORCE_DIMENSION_BUTTONS) {
+        input_type->setCurrentIndex(2);
+        user_input_stack->setCurrentIndex(2);
+        available_forcedimensions->setCurrentText(QString::fromStdString(model.force_dimension_buttons->source_arm_name));
+    }
 }
 
 void ConsoleInputsEditor::updateAvailableArms() {
@@ -137,6 +159,16 @@ void ConsoleInputsEditor::updateAvailableArms() {
         if (arm.config_type == ArmConfigType::HAPTIC_MTM && arm.type.isMTM()) {
             available_forcedimensions->addItem(QString::fromStdString(arm.name));
         }
+    }
+
+    if (model->pedals != nullptr) {
+        pedals_available_mtms->setCurrentText(QString::fromStdString(model->pedals->source_arm_name));
+    }
+    if (model->head_sensor != nullptr) {
+        head_sensor_available_mtms->setCurrentText(QString::fromStdString(model->head_sensor->source_arm_name));
+    }
+    if (model->force_dimension_buttons != nullptr) {
+        available_forcedimensions->setCurrentText(QString::fromStdString(model->force_dimension_buttons->source_arm_name));
     }
 }
 

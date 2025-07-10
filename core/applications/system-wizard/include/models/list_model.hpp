@@ -17,6 +17,8 @@ http://www.cisst.org/cisst/license.txt.
 #define SYSTEM_WIZARD_LIST_MODEL
 
 #include <algorithm>
+#include <functional>
+#include <optional>
 
 #include <QtCore>
 #include <json/json.h>
@@ -94,6 +96,16 @@ public:
 
     T& ref(int index) {
         return items.at(index);
+    }
+
+    std::optional<T> find(std::function<bool(const T&)> predicate) const {
+        for (int i = 0; i < this->count(); i++) {
+            if (predicate(items.at(i))) {
+                return items.at(i);
+            }
+        }
+
+        return {};
     }
 
     void clear() {
