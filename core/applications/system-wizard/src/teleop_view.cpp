@@ -15,8 +15,6 @@ http://www.cisst.org/cisst/license.txt.
 
 #include "teleop_view.hpp"
 
-#include <numeric>
-
 namespace system_wizard {
 
 PSMTeleopView::PSMTeleopView(ConsoleConfig& config, ListView& list_view, int idx, QWidget* parent)

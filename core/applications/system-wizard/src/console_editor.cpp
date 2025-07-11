@@ -23,7 +23,11 @@ ConsoleEditor::ConsoleEditor(ConsoleConfig& config, SystemConfigModel& model, QW
     header->addStretch();
     layout->addLayout(header);
 
-    QObject::connect(name_input, &QLineEdit::textChanged, this, [this](QString s){ emit nameChanged(s.toStdString()); });
+    QObject::connect(name_input, &QLineEdit::textChanged, this, [this](QString s){
+        emit nameChanged(s.toStdString());
+        this->config->name = s.toStdString();
+        emit this->config->updated();
+    });
 
     QFrame *header_separator = new QFrame();
     header_separator->setFrameShape(QFrame::HLine);
