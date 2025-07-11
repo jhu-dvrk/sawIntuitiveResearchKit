@@ -68,7 +68,7 @@ public slots:
     void setId(int id);
 
 private:
-    void done();
+    void save();
 
     IOEditPage* edit_page;
 

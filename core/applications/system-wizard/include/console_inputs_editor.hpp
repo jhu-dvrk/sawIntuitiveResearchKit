@@ -17,8 +17,6 @@ http://www.cisst.org/cisst/license.txt.
 #define SYSTEM_WIZARD_CONSOLE_INPUTS_EDITOR
 
 #include <QtWidgets>
-#include <qcombobox.h>
-#include <qobject.h>
 
 #include "models/config_model.hpp"
 #include "models/enum_list_model.hpp"

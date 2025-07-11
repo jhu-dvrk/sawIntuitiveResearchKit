@@ -14,9 +14,14 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 #include "arm_editor.hpp"
-#include "models/config_model.hpp"
 
+#include <cmath>
+
+#include "cisstCommon/cmnConstants.h"
 #include <cisstCommon/cmnPortability.h>
+#include "cisstVector/vctTransformationTypes.h"
+
+#include "models/config_model.hpp"
 
 namespace system_wizard {
 
@@ -61,22 +66,21 @@ QuickArmPage::QuickArmPage(ArmConfig& config, const SystemConfigModel& model, Co
     };
     arm_list_view = new ListView(*available_arms, arm_view_factory, SelectionMode::SINGLE);
     arm_list_view->setEmptyMessage("No arms available - open a config folder");
-    QObject::connect(arm_list_view, &ListView::choose, this, [this](int index){
+    auto choose_arm = [this](int index){
+        this->next_page_id = ArmEditor::PAGE_BASE_FRAME;
         ConfigSources::Arm source = available_arms->get(index);
         *this->config = ArmConfig(source.name, source.type, ArmConfigType::NATIVE);
-        this->config->serial_number = source.serial_number;
-
-        next_page_id = -1;
-        this->wizard()->accept();
-    });
-    QObject::connect(arm_list_view, &ListView::selected, this, [this](int index, bool selected){
-        if (selected) {
-            next_page_id = -1;
-
-            ConfigSources::Arm source = available_arms->get(index);
-            *this->config = ArmConfig(source.name, source.type, ArmConfigType::NATIVE);
+        this->config->arm_file = source.config_file.string();
+        if (!source.serial_number.empty()) {
             this->config->serial_number = source.serial_number;
         }
+    };
+    QObject::connect(arm_list_view, &ListView::choose, this, [this, choose_arm](int index) {
+        choose_arm(index);
+        this->wizard()->next();
+    });
+    QObject::connect(arm_list_view, &ListView::selected, this, [choose_arm](int index, bool selected){
+        if (selected) { choose_arm(index); }
     });
     QObject::connect(arm_list_view, &ListView::selected, this, &QWizardPage::completeChanged);
 
@@ -111,6 +115,7 @@ QuickArmPage::QuickArmPage(ArmConfig& config, const SystemConfigModel& model, Co
 }
 
 void QuickArmPage::initializePage() {
+    // Filter out already added arms
     {
         std::vector<ConfigSources::Arm> available;
         for (int i = 0; i < config_sources->getModel().count(); i++) {
@@ -161,27 +166,27 @@ ArmTypePage::ArmTypePage(ArmConfig& config, QWidget *parent) : QWizardPage(paren
     QLabel* haptic_label = new QLabel("If you want to use a haptic input device such as a ForceDimension, Falcon, or Omni in place of an MTM arm:");
     haptic_label->setWordWrap(true);
     layout->addWidget(haptic_label);
+
     QPushButton* haptic_input = new QPushButton("Configure haptic input device");
+    haptic_input->setFlat(true);
+    haptic_input->setAutoFillBackground(true);
     QObject::connect(haptic_input, &QPushButton::clicked, this, [this]() {
         this->config->config_type = ArmConfigType::HAPTIC_MTM;
         this->next_page_id = ArmEditor::PAGE_HAPTIC_MTM;
         this->wizard()->next();
     });
-
-    haptic_input->setFlat(true);
-    haptic_input->setAutoFillBackground(true);
     layout->addWidget(haptic_input);
     layout->addSpacing(10);
+
     layout->addWidget(new QLabel("If you want to add a remote or simulated PSM/MTM arm available via ROS:"));
     QPushButton* via_ros = new QPushButton("Client arm for remote/simulated ROS arm");
+    via_ros->setFlat(true);
+    via_ros->setAutoFillBackground(true);
     QObject::connect(via_ros, &QPushButton::clicked, this, [this]() {
         this->config->config_type = ArmConfigType::ROS_ARM;
         this->next_page_id = ArmEditor::PAGE_ROS_ARM;
         this->wizard()->next();
     });
-
-    via_ros->setFlat(true);
-    via_ros->setAutoFillBackground(true);
     layout->addWidget(via_ros);
 }
 
@@ -292,9 +297,11 @@ void HapticMTMPage::showEvent(QShowEvent *CMN_UNUSED(event)) {
             haptic_device_selector->setCurrentIndex(config->haptic_device.value());
         }
 
-        if (config->component && config->component->interface_name == "MTML") {
+        // Should detect e.g. MTML2 as a left MTM
+        std::string interface = config->component ? config->component->interface_name : "";
+        if (interface.size() >= 4 && interface.substr(0, 4) == "MTML") {
             left_right_selector->setCurrentIndex(0);
-        } else if (config->component && config->component->interface_name == "MTMR") {
+        } else if (interface.size() >= 4 && interface.substr(0, 4) == "MTMR") {
             left_right_selector->setCurrentIndex(1);
         }
     }
@@ -357,12 +364,190 @@ void ROSArmPage::showEvent(QShowEvent *CMN_UNUSED(event)) {
     }
 }
 
+BaseFramePage::BaseFramePage(ArmConfig& config, SystemConfigModel& system_model, QWidget *parent) :
+    QWizardPage(parent), config(&config), system_model(&system_model)
+{
+    setTitle("Arm base frame");
+
+    QVBoxLayout* layout = new QVBoxLayout(this);
+    QLabel* description1 = new QLabel("Base frame transform configuration for native dVRK arms");
+    description1->setWordWrap(true);
+    layout->addWidget(description1);
+    QLabel* description2 = new QLabel("Other arms, such as arms-from-ROS or haptic device MTMs, do not support base frames");
+    description2->setWordWrap(true);
+    layout->addWidget(description2);
+    QLabel* description3 = new QLabel("For optimal teleop behavior using an ECM and stereo display, the PSM's base frame should match the ECM, and the MTM should match the stereo display.\nIf teleop is done without a camera, then the PSM and MTM base frames should have the same orientation in the real world frame.");
+    description3->setWordWrap(true);
+    layout->addWidget(description3);
+
+    QFormLayout* form = new QFormLayout();
+
+    base_frame_type = new QComboBox();
+    base_frame_type->setPlaceholderText("select arm type");
+    base_frame_type->addItem("None", 0);
+    base_frame_type->addItem("ForceDimension device user", 1);
+    base_frame_type->addItem("Fixed ECM", 2);
+    base_frame_type->addItem("HRSV (Surgeon console stereo display)", 3);
+    base_frame_type->addItem("Setup Joints", 4);
+
+    QStackedWidget* details = new QStackedWidget();
+    details->addWidget(new QLabel()); // no details for "None" frame
+    details->addWidget(new QLabel("Re-orients a PSM to match ForceDimension convention for teleoperation (without a stereo camera/display)"));
+
+    QWidget* ecm_mounting_details = new QWidget();
+    QFormLayout* ecm_mounting_layout = new QFormLayout(ecm_mounting_details);
+    ecm_mounting_pitch = new QSpinBox();
+    ecm_mounting_pitch->setRange(-90, 0);
+    ecm_mounting_pitch->setSingleStep(5);
+    ecm_mounting_pitch->setValue(-45);
+    QLabel* fixed_ecm_description = new QLabel("Re-orients PSM base frame to match a fixed camera frame. Camera is assumed to have X-axis parallel to PSM X-axis, mounting pitch angle is then 0 degrees when camera is parallel to ground and -90 degrees have camera is pointing straight down.");
+    fixed_ecm_description->setWordWrap(true);
+    ecm_mounting_layout->addRow(fixed_ecm_description);
+    ecm_mounting_layout->addRow("Camera mounting pitch (degrees):", ecm_mounting_pitch);
+    details->addWidget(ecm_mounting_details);
+
+    QWidget* hrsv_mounting_details = new QWidget();
+    QFormLayout* hrsv_mounting_layout = new QFormLayout(hrsv_mounting_details);
+    hrsv_pitch = new QSpinBox();
+    hrsv_pitch->setRange(-90, 0);
+    hrsv_pitch->setSingleStep(5);
+    hrsv_pitch->setValue(-45);
+    QLabel* hrsv_description = new QLabel("Re-orients MTM base frame to match a stereo display. Pitch is 0 degrees when stereo display depth axis is parallel to ground, and -90 when pointing at ground. Typically mounting pitch is -30 or -45 degrees.");
+    hrsv_description->setWordWrap(true);
+    hrsv_mounting_layout->addRow(hrsv_description);
+    hrsv_mounting_layout->addRow("Stereo display pitch (degrees):", hrsv_pitch);
+    details->addWidget(hrsv_mounting_details);
+
+    QWidget* suj_details = new QWidget();
+    QFormLayout* suj_layout = new QFormLayout(suj_details);
+    suj_list = new QComboBox();
+    suj_list->setPlaceholderText("select SUJ");
+    QLabel* suj_description = new QLabel("For PSMs and ECMs mounted on passive setup joints, or fixed virtual setup joints determined by e.g. hand-eye registration");
+    suj_description->setWordWrap(true);
+    suj_layout->addRow(suj_description);
+    suj_layout->addRow("Setup Joints: ", suj_list);
+    details->addWidget(suj_details);
+
+    QObject::connect(ecm_mounting_pitch, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int){ updateBaseFrame(); });
+    QObject::connect(hrsv_pitch, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int){ updateBaseFrame(); });
+    QObject::connect(suj_list, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int){
+        if (block_suj_updates) { return; }
+        updateBaseFrame();
+        completeChanged();
+    });
+    QObject::connect(base_frame_type, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this, details](int index) {
+        details->setCurrentIndex(index);
+        updateBaseFrame();
+        completeChanged();
+    });
+
+    form->addRow("Base frame:", base_frame_type);
+    layout->addLayout(form);
+    layout->addWidget(details);
+}
+
+void BaseFramePage::initializePage() {
+    // temporarily block handling changes to selected SUJ, otherwise the
+    // the suj_list->addItem(...) calls will make suj_list emit currentIndexChanged,
+    // and the config's SUJ will be over-written with last SUJ to be added
+    block_suj_updates = true;
+
+    suj_list->clear();
+    for (int i = 0; i < system_model->arm_configs->count(); i++) {
+        auto arm = system_model->arm_configs->get(i);
+        if (arm.type.isSUJ()) {
+            suj_list->addItem(QString::fromStdString(arm.name));
+        }
+    }
+
+    block_suj_updates = false;
+
+    if (config->base_frame.has_value()) {
+        if (!config->base_frame->use_custom_transform) {
+            std::string suj_name = config->base_frame->base_frame_component.component_name;
+            base_frame_type->setCurrentIndex(4);
+            suj_list->setCurrentText(QString::fromStdString(suj_name));
+        } else if (config->base_frame->reference_frame_name == "user") {
+            base_frame_type->setCurrentIndex(1);
+        } else if (config->base_frame->reference_frame_name == "ECM") {
+            // rotation of Y-Axis around X-axis
+            double theta = std::atan2(config->base_frame->transform.at(2, 1), config->base_frame->transform.at(1, 1));
+            double pitch = theta + cmnPI_2;
+            base_frame_type->setCurrentIndex(2);
+            ecm_mounting_pitch->setValue(std::round(pitch * cmn180_PI));
+        } else if (config->base_frame->reference_frame_name == "HRSV") {
+            // rotation of Y-Axis around X-axis (but negative to rotation for flip about Y axis)
+            double theta = -std::atan2(config->base_frame->transform.at(2, 1), config->base_frame->transform.at(1, 1));
+            base_frame_type->setCurrentIndex(3);
+            hrsv_pitch->setValue(std::round(theta * cmn180_PI));
+        }
+    } else {
+        base_frame_type->setCurrentIndex(0);
+    }
+}
+
+bool BaseFramePage::isComplete() const {
+    return base_frame_type->currentIndex() != 4 || suj_list->currentIndex() != -1;
+}
+
+void BaseFramePage::updateBaseFrame() {
+    int frame_type = base_frame_type->currentIndex();
+    if (frame_type == 0) {
+        this->config->base_frame = {};
+    } else if (frame_type == 1) {
+        setFrameToHapticMTMUser();
+    } else if (frame_type == 2) {
+        setFrameToFixedECM();
+    } else if (frame_type == 3) {
+        setFrameToHRSV();
+    } else if (frame_type == 4) {
+        setFrameToSetupJoints();
+    }
+}
+
+void BaseFramePage::setFrameToFixedECM() {
+    this->config->base_frame = BaseFrameConfig();
+    this->config->base_frame->use_custom_transform = true;
+    this->config->base_frame->reference_frame_name = "ECM";
+    double mounting_pitch = cmnPI_180 * ecm_mounting_pitch->value(); // convert radians to degrees
+    double theta = mounting_pitch - cmnPI_2; // convert from pitch relative to horizontal to angle relative to PSM default base frame
+    this->config->base_frame->transform = vctFrm4x4(vctAxAnRot3(vct3(1.0, 0.0, 0.0), theta), vct3(0.0));
+}
+
+void BaseFramePage::setFrameToHRSV() {
+    this->config->base_frame = BaseFrameConfig();
+    this->config->base_frame->use_custom_transform = true;
+    this->config->base_frame->reference_frame_name = "HRSV";
+    double mounting_pitch = cmnPI_180 * hrsv_pitch->value(); // convert radians to degrees
+    // Rotate by display mounting pitch, then do 180 degree rotation to flip X-axis direction to match ECM/stereo display
+    vctRot3 rotation = vctRot3(vctAxAnRot3(vct3(0.0, 1.0, 0.0), cmnPI)) * vctRot3(vctAxAnRot3(vct3(1.0, 0.0, 0.0), mounting_pitch));
+    this->config->base_frame->transform = vctFrm4x4(rotation, vct3(0.0));
+}
+
+void BaseFramePage::setFrameToHapticMTMUser() {
+    this->config->base_frame = BaseFrameConfig();
+    this->config->base_frame->use_custom_transform = true;
+    this->config->base_frame->reference_frame_name = "user";
+    // -90 degree rotation about +Z axis
+    this->config->base_frame->transform = vctFrm4x4(vctAxAnRot3(vct3(0.0, 0.0, 1.0), -cmnPI_2), vct3(0.0));
+}
+
+void BaseFramePage::setFrameToSetupJoints() {
+    this->config->base_frame = BaseFrameConfig();
+    this->config->base_frame->use_custom_transform = false;
+    this->config->base_frame->base_frame_component = ComponentInterfaceConfig();
+    std::string suj_name = suj_list->currentText().toStdString();
+    this->config->base_frame->base_frame_component.component_name = suj_name;
+    this->config->base_frame->base_frame_component.interface_name = this->config->name;
+}
+
 ArmEditor::ArmEditor(SystemConfigModel& model, ConfigSources& config_sources, QWidget* parent)
     : QWizard(parent), model(&model), config("Arm", ArmType::Value::PSM, ArmConfigType::NATIVE) {
     setPage(PAGE_QUICK_ARM, new QuickArmPage(config, model, config_sources));
     setPage(PAGE_ARM_TYPE, new ArmTypePage(config));
     setPage(PAGE_HAPTIC_MTM, new HapticMTMPage(config));
     setPage(PAGE_ROS_ARM, new ROSArmPage(config));
+    setPage(PAGE_BASE_FRAME, new BaseFramePage(config, model));
 
     setWizardStyle(QWizard::ModernStyle);
     setOption(QWizard::NoBackButtonOnStartPage);
@@ -372,13 +557,14 @@ ArmEditor::ArmEditor(SystemConfigModel& model, ConfigSources& config_sources, QW
 
     setStartId(PAGE_QUICK_ARM);
 
-    QObject::connect(this, &QDialog::accepted, this, &ArmEditor::done);
+    QObject::connect(this, &QDialog::accepted, this, &ArmEditor::save);
 }
 
-void ArmEditor::done() {
+void ArmEditor::save() {
     if (id < 0) {
         model->arm_configs->appendItem(config);
     } else {
+        model->arm_configs->ref(id) = config;
         model->arm_configs->updateItem(id);
     }
 }
@@ -387,24 +573,11 @@ void ArmEditor::setId(int id) {
     this->id = id;
 
     if (id >= 0) {
+        setStartId(PAGE_BASE_FRAME);
         config = model->arm_configs->get(id);
-
-        switch (config.config_type) {
-        case ArmConfigType::NATIVE:
-            setStartId(PAGE_QUICK_ARM);
-            break;
-        case ArmConfigType::HAPTIC_MTM:
-            setStartId(PAGE_HAPTIC_MTM);
-            break;
-        case ArmConfigType::ROS_ARM:
-            setStartId(PAGE_ROS_ARM);
-            break;
-        default:
-            Q_ASSERT(false);
-            break;
-        }
     } else {
         setStartId(PAGE_QUICK_ARM);
+        config = ArmConfig("", ArmType::Value::PSM, ArmConfigType::NATIVE);
     }
 }
 
