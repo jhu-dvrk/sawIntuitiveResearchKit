@@ -116,13 +116,7 @@ void ConfigEditor::setSavePath(std::filesystem::path path) {
 
 bool ConfigEditor::save() {
     if (!save_path.has_value()) {
-        QString file_name = QFileDialog::getSaveFileName();
-        if (file_name.isEmpty()) {
-            return false;
-        }
-
-        std::filesystem::path file_path(file_name.toStdString());
-        setSavePath(file_path);
+        return saveAs();
     }
 
     changes_saved = model->save(save_path.value());
@@ -131,7 +125,7 @@ bool ConfigEditor::save() {
 }
 
 bool ConfigEditor::saveAs() {
-    QString file_name = QFileDialog::getSaveFileName();
+    QString file_name = QFileDialog::getSaveFileName(this, "Save system config", QString(), "Config file (*.json)");
     if (file_name.isEmpty()) {
         return false;
     }
