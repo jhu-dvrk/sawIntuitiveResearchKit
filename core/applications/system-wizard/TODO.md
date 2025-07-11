@@ -22,11 +22,10 @@
 - [x] Initial I/O config model
 - [x] Initial arm config model
 - [x] Initial teleop config model
-- [ ] Initial console config model
+- [x] Initial console config model
 
-- [ ] (De)Serialization
+- [x] (De)Serialization
 
-- [ ] Base frames
 - [ ] Child components
 - [ ] Teleop disable rotation
 - [ ] Arm name vs name_on_IO
@@ -50,7 +49,7 @@
 - [x] Arm config item view
 - [x] I/O config item view
 - [x] Teleop config item view
-- [ ] Console config item view
+- [x] Console config item view
 
 - [ ] Confirm delete
 
@@ -65,16 +64,18 @@
 - [ ] Clean up file dialog state
 - [ ] Intro view when no config is open
 - [ ] Chatty/path/audio volume stuff
-- [ ] Mark unsaved when console input config changes
+- [x] Mark unsaved when console input config changes
 
 ### Config item editors
 
 - [x] I/O editor
-- [ ] Footpedal/head sensor I/O
+- [x] Footpedal/head sensor I/O
+- [ ] Focus controller I/O
 - [x] Simple arm editor
 - [x] Available native arm list in editor
-- [ ] Arm base frames
+- [x] Arm base frames
 - [ ] Extended arm editor (derived/generic/socket types)
-- [x] Teleop editor
+- [ ] Teleop editor
 - [ ] Derived teleop editor
-- [ ] Console editor
+- [x] Console editor
+- [ ] Put item name in editor title

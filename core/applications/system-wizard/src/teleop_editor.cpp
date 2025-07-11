@@ -14,6 +14,7 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 #include "teleop_editor.hpp"
+#include "models/config_model.hpp"
 
 namespace system_wizard {
 
@@ -96,16 +97,16 @@ void TeleopEditor::setId(bool psm, int index) {
 
 void TeleopEditor::save() {
     if (index < 0) {
-        if (psm) {
+        if (psm && config.type.isPSM()) {
             console->psm_teleops->appendItem(config);
-        } else {
+        } else if (!psm && config.type.isECM()) {
             console->ecm_teleops->appendItem(config);
         }
     } else {
-        if (psm) {
+        if (psm && config.type.isPSM()) {
             console->psm_teleops->ref(index) = config;
             console->psm_teleops->updateItem(index);
-        } else {
+        } else if (!psm && config.type.isECM()) {
             console->ecm_teleops->ref(index) = config;
             console->ecm_teleops->updateItem(index);
         }

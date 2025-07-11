@@ -550,6 +550,14 @@ public:
 
     int id() const { return static_cast<int>(value); }
 
+    bool isPSM() const {
+        return value == Value::PSM_TELEOP || value == Value::PSM_TELEOP_DERIVED;
+    }
+
+    bool isECM() const {
+        return value == Value::ECM_TELEOP || value == Value::ECM_TELEOP_DERIVED;
+    }
+
     std::string name() const {
         switch (value) {
         case Value::PSM_TELEOP:
@@ -758,8 +766,8 @@ public:
         value["name"] = name;
         value["type"] = type.serialize();
 
-        if (arm_file) {
-            value["arm_file"] = arm_file.value();
+        if (arm_file.has_value()) {
+            value["arm_file"] = arm_file->string();
         }
 
         if (config_type == ArmConfigType::NATIVE) {
@@ -793,7 +801,7 @@ public:
     std::string name;
     ArmType type;
 
-    std::optional<std::string> arm_file;
+    std::optional<std::filesystem::path> arm_file;
 
     ArmConfigType config_type;
     std::optional<int> haptic_device;
@@ -1278,6 +1286,9 @@ public:
     std::unique_ptr<FootPedalsConfig> pedals;
     std::unique_ptr<HeadSensorConfig> head_sensor;
     std::unique_ptr<ForceDimensionButtonInputConfig> force_dimension_buttons;
+
+signals:
+    void updated();
 };
 
 class ConsoleConfig : public QObject {
@@ -1288,6 +1299,10 @@ public:
         inputs = std::make_unique<ConsoleInputConfig>();
         psm_teleops = std::make_unique<ListModelT<TeleopConfig>>();
         ecm_teleops = std::make_unique<ListModelT<TeleopConfig>>();
+
+        QObject::connect(inputs.get(), &ConsoleInputConfig::updated, this, &ConsoleConfig::updated);
+        QObject::connect(psm_teleops.get(), &ListModel::updated, this, &ConsoleConfig::updated);
+        QObject::connect(ecm_teleops.get(), &ListModel::updated, this, &ConsoleConfig::updated);
     }
 
     static std::unique_ptr<ConsoleConfig> fromJSON(Json::Value json_config) {
@@ -1295,7 +1310,12 @@ public:
         Json::Value json_value;
 
         config->name = json_config["name"].asString();
+
         config->inputs = ConsoleInputConfig::fromJSON(json_config);
+        if (config->inputs == nullptr) {
+            return {};
+        }
+        QObject::connect(config->inputs.get(), &ConsoleInputConfig::updated, config.get(), &ConsoleConfig::updated);
 
         json_value = json_config["teleop_PSMs"];
         if (!json_value.empty() && json_value.isArray()) {
@@ -1303,6 +1323,7 @@ public:
             if (config->psm_teleops == nullptr) {
                 return {};
             }
+            QObject::connect(config->psm_teleops.get(), &ListModel::updated, config.get(), &ConsoleConfig::updated);
         }
 
         json_value = json_config["teleop_ECMs"];
@@ -1311,6 +1332,7 @@ public:
             if (config->ecm_teleops == nullptr) {
                 return {};
             }
+            QObject::connect(config->ecm_teleops.get(), &ListModel::updated, config.get(), &ConsoleConfig::updated);
         }
 
         return config;
@@ -1342,6 +1364,9 @@ public:
 
     std::unique_ptr<ListModelT<TeleopConfig>> psm_teleops;
     std::unique_ptr<ListModelT<TeleopConfig>> ecm_teleops;
+
+signals:
+    void updated();
 };
 
 class SystemConfigModel : public QObject {
@@ -1378,6 +1403,7 @@ public:
             if (model->io_configs == nullptr) {
                 return nullptr;
             }
+            QObject::connect(model->io_configs.get(), &ListModelT<IOConfig>::updated, model.get(), &SystemConfigModel::updated);
         }
 
         json_value = json_config["arms"];
@@ -1386,6 +1412,7 @@ public:
             if (model->arm_configs == nullptr) {
                 return nullptr;
             }
+            QObject::connect(model->arm_configs.get(), &ListModelT<ArmConfig>::updated, model.get(), &SystemConfigModel::updated);
         }
 
         json_value = json_config["consoles"];
@@ -1395,15 +1422,12 @@ public:
                 return nullptr;
             }
 
+            QObject::connect(model->console_configs.get(), &ConsoleList_t::updated, model.get(), &SystemConfigModel::updated);
+
             for (int idx = 0; idx < model->console_configs->count(); idx++) {
                 model->console_configs->ref(idx).provideSources(*model->arm_configs);
             }
         }
-
-        // ListModel's have been replaced, need to connect signals
-        QObject::connect(model->io_configs.get(),      &ListModelT<IOConfig>::updated,  model.get(), &SystemConfigModel::updated);
-        QObject::connect(model->arm_configs.get(),     &ListModelT<ArmConfig>::updated, model.get(), &SystemConfigModel::updated);
-        QObject::connect(model->console_configs.get(), &ConsoleList_t::updated,         model.get(), &SystemConfigModel::updated);
 
         return model;
     }

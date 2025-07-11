@@ -156,6 +156,7 @@ template<typename T>
 class ListModelT<std::unique_ptr<T>> : public ListModel {
 public:
     void appendItem(std::unique_ptr<T> value) {
+        propagateUpdates(value.get());
         items.push_back(std::move(value));
         emit ListModel::itemAdded(items.size() - 1);
     }
@@ -202,6 +203,7 @@ public:
         for (unsigned int i = 0; i < value.size(); i++) {
             std::unique_ptr<T> item_value = T::fromJSON(value[i]);
             if (item_value != nullptr) {
+                list->propagateUpdates(item_value.get());
                 list->items.push_back(std::move(item_value));
             }
         }
@@ -211,6 +213,27 @@ public:
 
 private:
     std::vector<std::unique_ptr<T>> items;
+
+    void propagateUpdates(T* item) {
+        QMetaMethod this_updated;
+        for (int i = 0; i < this->metaObject()->methodCount(); i++) {
+            QMetaMethod method = this->metaObject()->method(i);
+            if (method.name() == "updated") {
+                this_updated = method;
+                break;
+            }
+        }
+
+        // Propagate item's updated() signals
+        const QMetaObject* meta_object = item->metaObject();
+        for (int i = 0; i < meta_object->methodCount(); i++) {
+            QMetaMethod method = meta_object->method(i);
+            if (method.methodType() == QMetaMethod::Signal && method.name() == "updated") {
+                QObject::connect(item, method, this, this_updated);
+                return;
+            }
+        }
+    }
 };
 
 }

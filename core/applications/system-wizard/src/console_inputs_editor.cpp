@@ -89,7 +89,8 @@ ConsoleInputsEditor::ConsoleInputsEditor(ConsoleInputConfig& model, ListModelT<A
     QObject::connect(input_type, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this, user_input_stack](int index) {
         if (index < user_input_stack->count()) {
             user_input_stack->setCurrentIndex(index);
-            this->model->type = static_cast<ConsoleInputType::Value>(index);;
+            this->model->type = static_cast<ConsoleInputType::Value>(index);
+            emit this->model->updated();
         } else {
             user_input_stack->setCurrentIndex(0);
         }
@@ -98,6 +99,7 @@ ConsoleInputsEditor::ConsoleInputsEditor(ConsoleInputConfig& model, ListModelT<A
     QObject::connect(head_sensor_type, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this, head_sensor_stack](int index) {
         HeadSensorType::Value type = static_cast<HeadSensorType::Value>(index);
         this->model->head_sensor->type = type;
+        emit this->model->updated();
         if (type == HeadSensorType::Value::DVRK || type == HeadSensorType::Value::ISI) {
             head_sensor_stack->setCurrentIndex(1);
         } else {
@@ -108,16 +110,19 @@ ConsoleInputsEditor::ConsoleInputsEditor(ConsoleInputConfig& model, ListModelT<A
     QObject::connect(pedals_available_mtms, &QComboBox::currentTextChanged, this, [this](QString text) {
         std::string arm_name = text.toStdString();
         this->model->pedals->source_arm_name = arm_name;
+        emit this->model->updated();
     });
 
     QObject::connect(head_sensor_available_mtms, &QComboBox::currentTextChanged, this, [this](QString text) {
         std::string arm_name = text.toStdString();
         this->model->head_sensor->source_arm_name = arm_name;
+        emit this->model->updated();
     });
 
     QObject::connect(available_forcedimensions, &QComboBox::currentTextChanged, this, [this](QString text) {
         std::string arm_name = text.toStdString();
         this->model->force_dimension_buttons->source_arm_name = arm_name;
+        emit this->model->updated();
     });
 
     updateAvailableArms();

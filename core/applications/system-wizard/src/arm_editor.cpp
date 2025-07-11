@@ -70,7 +70,7 @@ QuickArmPage::QuickArmPage(ArmConfig& config, const SystemConfigModel& model, Co
         this->next_page_id = ArmEditor::PAGE_BASE_FRAME;
         ConfigSources::Arm source = available_arms->get(index);
         *this->config = ArmConfig(source.name, source.type, ArmConfigType::NATIVE);
-        this->config->arm_file = source.config_file.string();
+        this->config->arm_file = source.config_file.filename().string();
         if (!source.serial_number.empty()) {
             this->config->serial_number = source.serial_number;
         }
