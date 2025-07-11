@@ -1,5 +1,7 @@
 # TODO List
 
+"Priority" issues to be completed for beta version are marked with a "⭐".
+
 ### General
 
 - [x] Non-templated list model
@@ -26,9 +28,9 @@
 
 - [x] (De)Serialization
 
-- [ ] Child components
-- [ ] Teleop disable rotation
-- [ ] Arm name vs name_on_IO
+- [ ] ⭐ Child components
+- [ ] ⭐ Teleop disable rotation for ForceDimension
+- [ ] ⭐ Arm name vs name_on_IO
 
 - [ ] Full I/O config model (port address, etc.)
 - [ ] Full arm config model
@@ -60,7 +62,7 @@
 - [x] Open config
 - [x] Save config
 - [x] Dirty/clean save state marker
-- [ ] File dialogs install *.json filter
+- [x] File dialogs install *.json filter
 - [ ] Clean up file dialog state
 - [ ] Intro view when no config is open
 - [ ] Chatty/path/audio volume stuff
@@ -75,7 +77,7 @@
 - [x] Available native arm list in editor
 - [x] Arm base frames
 - [ ] Extended arm editor (derived/generic/socket types)
-- [ ] Teleop editor
+- [ ] ⭐ Teleop editor
 - [ ] Derived teleop editor
 - [x] Console editor
-- [ ] Put item name in editor title
+- [ ] ⭐ Put item name in editor title

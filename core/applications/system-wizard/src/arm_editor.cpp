@@ -231,6 +231,7 @@ HapticMTMPage::HapticMTMPage(ArmConfig& config, QWidget *parent) : QWizardPage(p
     file_dialog->setFileMode(QFileDialog::ExistingFile);
     file_dialog->setViewMode(QFileDialog::List);
     file_dialog->setOptions(QFileDialog::DontResolveSymlinks);
+    file_dialog->setNameFilter("Config file (*.json)");
     QLineEdit* config_file_name = new QLineEdit();
     QPushButton* config_file_browse_button = new QPushButton("Browse");
     QObject::connect(config_file_browse_button, &QPushButton::clicked, file_dialog, &QDialog::open);
