@@ -16,19 +16,17 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef SYSTEM_WIZARD_CONFIG_MODEL
 #define SYSTEM_WIZARD_CONFIG_MODEL
 
-#include "json/value.h"
 #include <QtCore>
 
-#include <cstddef>
 #include <filesystem>
 #include <fstream>
 #include <memory>
 #include <optional>
-#include <qobjectdefs.h>
 #include <string>
 #include <vector>
 
 #include <json/json.h>
+#include "cisstVector/vctTransformationTypes.h"
 
 #include "models/list_model.hpp"
 
@@ -220,7 +218,7 @@ public:
             return Value::SUJ_CLASSIC;
         } else if (name == "SUJ_Si") {
             return Value::SUJ_SI;
-        } else if (name == "SUJ_FIXED") {
+        } else if (name == "SUJ_Fixed") {
             return Value::SUJ_FIXED;
         } else if (name == "MTM_DERIVED") {
             return Value::MTM_DERIVED;
@@ -256,7 +254,7 @@ public:
         case Value::SUJ_SI:
             return "SUJ_Si";
         case Value::SUJ_FIXED:
-            return "SUJ_FIXED";
+            return "SUJ_Fixed";
         case Value::MTM_DERIVED:
             return "MTM_DERIVED";
         case Value::MTM_GENERIC:
@@ -670,6 +668,45 @@ public:
     std::optional<double> watchdog_timeout_ms;
 };
 
+class BaseFrameConfig {
+public:
+    BaseFrameConfig() {}
+
+    static std::unique_ptr<BaseFrameConfig> fromJSON(Json::Value json) {
+        auto config = std::make_unique<BaseFrameConfig>();
+        config->use_custom_transform = json.isMember("reference_frame") && json.isMember("transform");
+
+        if (config->use_custom_transform) {
+            config->reference_frame_name = json["reference_frame"].asString();
+            cmnDataJSON<vctFrm4x4>::DeSerializeText(config->transform, json["transform"]);
+        } else {
+            config->transform = decltype(transform)::Identity();
+            auto base_frame = ComponentInterfaceConfig::fromJSON(json);
+            if (base_frame != nullptr) {
+                config->base_frame_component = *base_frame;
+            }
+        }
+
+        return config;
+    }
+
+    Json::Value toJSON() const {
+        if (use_custom_transform) {
+            Json::Value json;
+            json["reference_frame"] = reference_frame_name;
+            cmnDataJSON<vctFrm4x4>::SerializeText(transform, json["transform"]);
+            return json;
+        } else {
+            return base_frame_component.toJSON();
+        }
+    }
+
+    bool use_custom_transform;
+    std::string reference_frame_name;
+    vctFrm4x4 transform;
+    ComponentInterfaceConfig base_frame_component;
+};
+
 class ArmConfig {
 public:
     ArmConfig(std::string name, ArmType type, ArmConfigType config_type) :
@@ -678,16 +715,27 @@ public:
 
     static std::unique_ptr<ArmConfig> fromJSON(Json::Value value) {
         std::string name = value["name"].asString();
-        ArmType type = ArmType::deserialize(value["type"].asString()).value();
+        auto type = ArmType::deserialize(value["type"].asString());
+        if (!type.has_value()) {
+            return nullptr;
+        }
 
         ArmConfigType config_type = ArmConfigType::NATIVE;
 
-        auto config = std::make_unique<ArmConfig>(name, type, config_type);
+        auto config = std::make_unique<ArmConfig>(name, type.value(), config_type);
 
         if (value.isMember("component")) {
-            config->component = ComponentInterfaceConfig();
-            config->component->component_name = value["component"].asString();
-            config->component->interface_name = value["interface"].asString();
+            auto component = ComponentInterfaceConfig::fromJSON(value);
+            if (component != nullptr) {
+                config->component = *component;
+            }
+        }
+
+        if (value.isMember("base_frame")) {
+            auto base_frame = BaseFrameConfig::fromJSON(value["base_frame"]);
+            if (base_frame != nullptr) {
+                config->base_frame = *base_frame;
+            }
         }
 
         if (value.isMember("serial")) {
@@ -698,6 +746,10 @@ public:
             config->io_name = value["IO"].asString();
         }
 
+        if (value.isMember("arm_file")) {
+            config->arm_file = value["arm_file"].asString();
+        }
+
         return config;
     }
 
@@ -706,17 +758,33 @@ public:
         value["name"] = name;
         value["type"] = type.serialize();
 
-        if (io_name) {
-            value["IO"] = io_name.value();
+        if (arm_file) {
+            value["arm_file"] = arm_file.value();
         }
 
-        if (serial_number) {
-            value["serial"] = serial_number.value();
-        }
+        if (config_type == ArmConfigType::NATIVE) {
+            if (io_name) {
+                value["IO"] = io_name.value();
+            }
+            if (serial_number) {
+                value["serial"] = serial_number.value();
+            }
+            if (base_frame) {
+                value["base_frame"] = base_frame->toJSON();
+            }
+        } else if (config_type == ArmConfigType::HAPTIC_MTM) {
+            if (component) {
+                value["component"] = component->component_name;
+                value["interface"] = component->interface_name;
+            }
+        } else if (config_type == ArmConfigType::ROS_ARM) {
+            // Real/remote arm already publishes to ROS
+            value["skip_ROS_bridge"] = true;
 
-        if (component) {
-            value["component"] = component->component_name;
-            value["interface"] = component->interface_name;
+            if (component) {
+                value["component"] = component->component_name;
+                value["interface"] = component->interface_name;
+            }
         }
 
         return value;
@@ -725,14 +793,15 @@ public:
     std::string name;
     ArmType type;
 
+    std::optional<std::string> arm_file;
+
     ArmConfigType config_type;
     std::optional<int> haptic_device;
 
     std::optional<std::string> io_name;
-
     std::optional<std::string> serial_number;
-    std::optional<bool> skip_ros_bridge;
 
+    std::optional<BaseFrameConfig> base_frame;
     std::optional<ComponentInterfaceConfig> component;
 };
 
@@ -937,6 +1006,7 @@ public:
         this->arms = &arms;
     }
 
+    /* Store source arm name, and prefer retrieving IO name from current arm, so that changes to source arm config are reflected here */
     bool source_is_dqla;
     std::string source_arm_name;
     std::string source_io_name;
@@ -1009,6 +1079,7 @@ public:
         }
     }
 
+    /* Store source arm name, and prefer retrieving IO name from current arm, so that changes to source arm config are reflected here */
     HeadSensorType type;
     std::string source_arm_name;
 
@@ -1100,6 +1171,7 @@ public:
         return json;
     }
 
+    /* Store source arm name, and prefer retrieving IO name from current arm, so that changes to source arm config are reflected here */
     std::string source_arm_name;
 
     void provideSources(ListModelT<ArmConfig> const& arms) {
@@ -1327,6 +1399,11 @@ public:
                 model->console_configs->ref(idx).provideSources(*model->arm_configs);
             }
         }
+
+        // ListModel's have been replaced, need to connect signals
+        QObject::connect(model->io_configs.get(),      &ListModelT<IOConfig>::updated,  model.get(), &SystemConfigModel::updated);
+        QObject::connect(model->arm_configs.get(),     &ListModelT<ArmConfig>::updated, model.get(), &SystemConfigModel::updated);
+        QObject::connect(model->console_configs.get(), &ConsoleList_t::updated,         model.get(), &SystemConfigModel::updated);
 
         return model;
     }

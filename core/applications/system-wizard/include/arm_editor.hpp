@@ -18,21 +18,21 @@ http://www.cisst.org/cisst/license.txt.
  *
  * When creating a new arm, the editor appears as a multi-page
  * wizard. The pages are
- * 0: QuickArmPage - arms detected in config folder are available
- *                   to add as-is, or user can create arm from scratch
- * 1: ArmTypePage - for arm-from-scratch, user indicates arm type, such
- *                  as haptic input device, arm-from-ROS, etc.
- * 2: HapticMTMPage - for using Falcon/Omni/etc as an MTM
- * 3: ROSArmPage - for using MTM/PSM via ROS
- * 4: NativeArmPage - for editing/creating a native arm
+ *   0: QuickArmPage - arms detected in config folder are available
+ *                     to add as-is, or user to add a different type
+ *   1: ArmTypePage - choose type, i.e. haptic MTM or ROS arm
+ *   2: HapticMTMPage - for using Falcon/Omni/etc as an MTM
+ *   3: ROSArmPage - for using MTM/PSM via ROS
+ *   3: BaseFramePage - for editing native arm base frame config
  *
- *     start -> 0
- *         0 -> [end, 1]
- *         1 -> [2, 3, 5]
- * {2, 3, 4} -> end
+ *         start -> QuickArmPage
+ *  QuickArmPage -> [BaseFramePage, ArmTypePage]
+ *   ArmTypePage -> [ HapticMTMPage, ROSArmPage ]
+ * HapticMTMPage -> BaseFramePage
+ *    ROSArmPage -> BaseFramePage
+ * BaseFramePage -> end
  *
- * When editing an arm later, user goes directly to pages 2-4
- * depending on what type of arm they are editing.
+ * When editing an arm later, user goes directly to BaseFramePage
  */
 
 #ifndef SYSTEM_WIZARD_ARM_EDITOR
@@ -43,7 +43,6 @@ http://www.cisst.org/cisst/license.txt.
 #include "config_sources.hpp"
 #include "list_view.hpp"
 #include "models/config_model.hpp"
-#include "models/enum_list_model.hpp"
 
 namespace system_wizard {
 
@@ -66,7 +65,8 @@ public:
         PAGE_QUICK_ARM,
         PAGE_ARM_TYPE,
         PAGE_HAPTIC_MTM,
-        PAGE_ROS_ARM
+        PAGE_ROS_ARM,
+        PAGE_BASE_FRAME
     };
 
     ArmEditor(SystemConfigModel& model, ConfigSources& config_sources, QWidget* parent = nullptr);
@@ -77,7 +77,7 @@ public slots:
     void setId(int id);
 
 private:
-    void done();
+    void save();
 
     SystemConfigModel* model;
     ArmConfig config;
@@ -128,7 +128,7 @@ class HapticMTMPage : public QWizardPage {
 public:
     HapticMTMPage(ArmConfig& config, QWidget *parent = nullptr);
 
-    int nextId() const override { return -1; }
+    int nextId() const override { return ArmEditor::PAGE_BASE_FRAME; }
 
     void initializePage() override;
     void showEvent(QShowEvent *event) override;
@@ -147,7 +147,7 @@ class ROSArmPage : public QWizardPage {
 public:
     ROSArmPage(ArmConfig& config, QWidget *parent = nullptr);
     
-    int nextId() const override { return -1; }
+    int nextId() const override { return ArmEditor::PAGE_BASE_FRAME; }
 
     void initializePage() override;
     void showEvent(QShowEvent *event) override;
@@ -159,45 +159,36 @@ private:
     QLineEdit* arm_name;
 };
 
-// class NativeArmPage : public QWizardPage {
-//     Q_OBJECT
+class BaseFramePage : public QWizardPage {
+    Q_OBJECT
 
-// public:
-//     NativeArmPage(ArmConfig& config, QWidget *parent = nullptr);
+public:
+    BaseFramePage(ArmConfig& config, SystemConfigModel& system_model, QWidget *parent = nullptr);
 
-//     int nextId() const override {
-//         return ArmEditor::PAGE_ARM_DETAILS;
-//     }
+    int nextId() const override { return -1; }
 
-//     void initializePage() override;
+    void initializePage() override;
+    bool isComplete() const override;
 
-// private:
-//     ArmConfig* config;
+private:
+    ArmConfig* config;
+    SystemConfigModel* system_model;
 
-//     QCheckBox* add_socket_server;
-//     QCheckBox* skip_ros_bridge;
-// };
+    QComboBox* base_frame_type;
 
-// class ArmDetailsPage : public QWizardPage {
-//     Q_OBJECT
+    QSpinBox* ecm_mounting_pitch;
+    QSpinBox* hrsv_pitch;
+    QComboBox* suj_list;
 
-// public:
-//     ArmDetailsPage(ArmConfig& config, QWidget *parent = nullptr);
+    bool block_suj_updates;
 
-//     int nextId() const override {
-//         return -1;
-//     }
+    void updateBaseFrame();
 
-//     void showEvent(QShowEvent *event) override;
-
-//     void initializePage() override;
-
-// private:
-//     ArmConfig* config;
-
-//     QLineEdit* name;
-//     QComboBox* base_frame;
-// };
+    void setFrameToFixedECM();
+    void setFrameToHRSV();
+    void setFrameToHapticMTMUser();
+    void setFrameToSetupJoints();
+};
 
 }
 

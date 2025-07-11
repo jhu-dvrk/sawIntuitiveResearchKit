@@ -18,12 +18,6 @@ http://www.cisst.org/cisst/license.txt.
 #include "models/config_model.hpp"
 #include "models/list_model.hpp"
 
-#include <qboxlayout.h>
-#include <qcombobox.h>
-#include <qobject.h>
-#include <qstackedwidget.h>
-#include <qwidget.h>
-
 namespace system_wizard {
 
 ConsoleInputsEditor::ConsoleInputsEditor(ConsoleInputConfig& model, ListModelT<ArmConfig>& arms, QWidget* parent)

@@ -21,7 +21,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <QLabel>
 
 #include <filesystem>
-#include <memory>
 #include <vector>
 
 #include "models/config_model.hpp"

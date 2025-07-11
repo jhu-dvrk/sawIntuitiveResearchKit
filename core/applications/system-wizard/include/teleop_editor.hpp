@@ -18,11 +18,9 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <QtWidgets>
 
-#include "config_sources.hpp"
 #include "list_view.hpp"
 
 #include "models/config_model.hpp"
-#include "models/enum_list_model.hpp"
 #include "models/list_model.hpp"
 
 namespace system_wizard {
@@ -88,7 +86,7 @@ public slots:
     void setId(bool psm, int id);
 
 private:
-    void done();
+    void save();
 
     SuggestedTeleopsPage* suggested_teleops_page;
 

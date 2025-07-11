@@ -141,7 +141,7 @@ IOEditor::IOEditor(SystemConfigModel& model, QWidget* parent) : QWizard(parent),
     setOption(QWizard::NoBackButtonOnStartPage);
     setWindowTitle("I/O Config Editor");
 
-    QObject::connect(this, &QDialog::accepted, this, &IOEditor::done);
+    QObject::connect(this, &QDialog::accepted, this, &IOEditor::save);
 }
 
 void IOEditor::setId(int id) {
@@ -153,13 +153,13 @@ void IOEditor::setId(int id) {
     } else {
         config = IOConfig("");
     }
-
 }
 
-void IOEditor::done() {
+void IOEditor::save() {
     if (config_id < 0) {
         model->io_configs->appendItem(config);
     } else {
+        model->io_configs->ref(config_id) = config;
         model->io_configs->updateItem(config_id);
     }
 }

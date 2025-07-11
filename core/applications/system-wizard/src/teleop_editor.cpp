@@ -65,7 +65,7 @@ TeleopEditor::TeleopEditor(ConsoleConfig& console, const ListModelT<ArmConfig>& 
 
     setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
 
-    QObject::connect(this, &QDialog::accepted, this, &TeleopEditor::done);
+    QObject::connect(this, &QDialog::accepted, this, &TeleopEditor::save);
 }
 
 void TeleopEditor::setId(bool psm, int index) {
@@ -94,7 +94,7 @@ void TeleopEditor::setId(bool psm, int index) {
     }
 }
 
-void TeleopEditor::done() {
+void TeleopEditor::save() {
     if (index < 0) {
         if (psm) {
             console->psm_teleops->appendItem(config);
@@ -103,8 +103,10 @@ void TeleopEditor::done() {
         }
     } else {
         if (psm) {
+            console->psm_teleops->ref(index) = config;
             console->psm_teleops->updateItem(index);
         } else {
+            console->ecm_teleops->ref(index) = config;
             console->ecm_teleops->updateItem(index);
         }
     }

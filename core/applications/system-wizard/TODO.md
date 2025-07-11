@@ -5,7 +5,10 @@
 - [x] Non-templated list model
 - [x] Make edit/delete buttons styled as buttons
 - [x] Hover/select list items
+- [ ] Make sure config search paths are present
+- [ ] Warning/message when loading config fails
 - [ ] Disable delete button if not deletable
+- [ ] Disable edit button if not editable, e.g. arms which can't have base frames
 - [ ] Status/tool tips
 - [ ] Move edit/delete buttons to base ItemView?
 - [ ] Replace temporary in-line style sheets with custom QStyle
@@ -26,6 +29,7 @@
 - [ ] Base frames
 - [ ] Child components
 - [ ] Teleop disable rotation
+- [ ] Arm name vs name_on_IO
 
 - [ ] Full I/O config model (port address, etc.)
 - [ ] Full arm config model
@@ -60,6 +64,8 @@
 - [ ] File dialogs install *.json filter
 - [ ] Clean up file dialog state
 - [ ] Intro view when no config is open
+- [ ] Chatty/path/audio volume stuff
+- [ ] Mark unsaved when console input config changes
 
 ### Config item editors
 
