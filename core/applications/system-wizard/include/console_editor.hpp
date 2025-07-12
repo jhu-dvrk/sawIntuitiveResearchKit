@@ -39,7 +39,8 @@ signals:
 private:
     ConsoleConfig* config;
     ConsoleInputsEditor* inputs_editor;
-    TeleopEditor teleop_editor;
+    TeleopEditor psm_teleop_editor;
+    TeleopEditor ecm_teleop_editor;
 
     QLineEdit* name_input;
 };

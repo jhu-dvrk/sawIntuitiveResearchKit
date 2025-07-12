@@ -818,28 +818,36 @@ public:
     TeleopConfig(std::string name, TeleopType type) : name(name), type(type) { }
 
     static std::unique_ptr<TeleopConfig> fromJSON(Json::Value value) {
+        std::unique_ptr<TeleopConfig> config;
+
         if (value.isMember("ECM")) {
-            auto config = std::make_unique<TeleopConfig>("ECM Teleop", TeleopType::Value::ECM_TELEOP);
+            config = std::make_unique<TeleopConfig>("ECM Teleop", TeleopType::Value::ECM_TELEOP);
             config->arm_names = {
                 value["ECM"].asString(),
                 value["MTML"].asString(),
                 value["MTMR"].asString()
             };
-            return config;
         } else {
             std::vector<std::string> arm_names = {
                 value["MTM"].asString(),
                 value["PSM"].asString()
             };
             std::string name = arm_names[0] + "-" + arm_names[1] + " Teleop";
-            auto config = std::make_unique<TeleopConfig>(name, TeleopType::Value::PSM_TELEOP);
+            config = std::make_unique<TeleopConfig>(name, TeleopType::Value::PSM_TELEOP);
             config->arm_names = arm_names;
-            return config;
         }
+
+        Json::Value parameters = value["configure_parameter"];
+        if (parameters.isMember("scale")) {
+            config->scale = parameters["scale"].asDouble();
+        }
+
+        return config;
     }
 
     Json::Value toJSON() const {
         Json::Value value;
+        Json::Value parameters;
 
         if (type == TeleopType::Value::PSM_TELEOP) {
             value["MTM"] = arm_names.at(0);
@@ -850,12 +858,16 @@ public:
             value["MTMR"] = arm_names.at(2);
         }
 
+        parameters["scale"] = scale;
+        value["configure_parameter"] = parameters;
+
         return value;
     }
 
     std::string name;
     TeleopType type;
 
+    double scale = 0.5;
     std::vector<std::string> arm_names;
 };
 
