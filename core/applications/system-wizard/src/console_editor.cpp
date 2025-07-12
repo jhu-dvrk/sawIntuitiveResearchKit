@@ -9,7 +9,8 @@ ConsoleEditor::ConsoleEditor(ConsoleConfig& config, SystemConfigModel& model, QW
     QWidget(parent),
     config(&config),
     inputs_editor(new ConsoleInputsEditor(*config.inputs, *model.arm_configs)),
-    teleop_editor(config, *model.arm_configs)
+    psm_teleop_editor(*config.psm_teleops, TeleopType::Value::PSM_TELEOP, *model.arm_configs),
+    ecm_teleop_editor(*config.ecm_teleops, TeleopType::Value::ECM_TELEOP, *model.arm_configs)
 {
     QVBoxLayout* layout = new QVBoxLayout(this);
 
@@ -49,10 +50,10 @@ ConsoleEditor::ConsoleEditor(ConsoleConfig& config, SystemConfigModel& model, QW
     psm_teleop_list->setEmptyMessage("No PSM teleops added - teleoperation mode will not be available");
     psm_teleops->setWidget(psm_teleop_list);
 
-    QObject::connect(psm_teleop_list, &ListView::add, this, [this]() { teleop_editor.setId(true, -1); teleop_editor.open(); });
+    QObject::connect(psm_teleop_list, &ListView::add, this, [this]() { psm_teleop_editor.setId(-1); psm_teleop_editor.open(); });
     QObject::connect(psm_teleop_list, &ListView::try_delete, config.psm_teleops.get(), &ListModelT<TeleopConfig>::deleteItem);
-    QObject::connect(psm_teleop_list, &ListView::choose, this, [this](int id) { teleop_editor.setId(true, id); teleop_editor.open(); });
-    QObject::connect(psm_teleop_list, &ListView::edit, this, [this](int id) { teleop_editor.setId(true, id); teleop_editor.open(); });
+    QObject::connect(psm_teleop_list, &ListView::choose, this, [this](int id) { psm_teleop_editor.setId(id); psm_teleop_editor.open(); });
+    QObject::connect(psm_teleop_list, &ListView::edit, this, [this](int id) { psm_teleop_editor.setId(id); psm_teleop_editor.open(); });
 
     Accordion* ecm_teleops = new Accordion("ECM Teleops", "rgb(79, 146, 201)", true);
     auto ecm_teleop_factory = [&config](int index, ListView& view) {
@@ -62,10 +63,10 @@ ConsoleEditor::ConsoleEditor(ConsoleConfig& config, SystemConfigModel& model, QW
     ecm_teleop_list->setEmptyMessage("No ECM teleops added - camera movement will not be available");
     ecm_teleops->setWidget(ecm_teleop_list);
 
-    QObject::connect(ecm_teleop_list, &ListView::add, this, [this]() { teleop_editor.setId(false ,-1); teleop_editor.open(); });
+    QObject::connect(ecm_teleop_list, &ListView::add, this, [this]() { ecm_teleop_editor.setId(-1); ecm_teleop_editor.open(); });
     QObject::connect(ecm_teleop_list, &ListView::try_delete, config.ecm_teleops.get(), &ListModelT<TeleopConfig>::deleteItem);
-    QObject::connect(ecm_teleop_list, &ListView::choose, this, [this](int id) { teleop_editor.setId(false, id); teleop_editor.open(); });
-    QObject::connect(ecm_teleop_list, &ListView::edit, this, [this](int id) { teleop_editor.setId(false, id); teleop_editor.open(); });
+    QObject::connect(ecm_teleop_list, &ListView::choose, this, [this](int id) { ecm_teleop_editor.setId(id); ecm_teleop_editor.open(); });
+    QObject::connect(ecm_teleop_list, &ListView::edit, this, [this](int id) { ecm_teleop_editor.setId(id); ecm_teleop_editor.open(); });
 
     layout->addWidget(psm_teleops);
     layout->addWidget(ecm_teleops);

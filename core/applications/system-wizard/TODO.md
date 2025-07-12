@@ -12,6 +12,7 @@
 - [ ] Disable delete button if not deletable
 - [ ] Disable edit button if not editable, e.g. arms which can't have base frames
 - [ ] Status/tool tips
+- [ ] Make more keyboard friendly/better accessibility
 - [ ] Move edit/delete buttons to base ItemView?
 - [ ] Replace temporary in-line style sheets with custom QStyle
 - [ ] Help buttons e.g. on dialogs
@@ -77,7 +78,7 @@
 - [x] Available native arm list in editor
 - [x] Arm base frames
 - [ ] Extended arm editor (derived/generic/socket types)
-- [ ] ⭐ Teleop editor
+- [x] Teleop editor
 - [ ] Derived teleop editor
 - [x] Console editor
 - [ ] ⭐ Put item name in editor title
