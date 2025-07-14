@@ -63,6 +63,7 @@ dvrk::system_Qt_widget::system_Qt_widget(const std::string & _component_name):
         interface_required->AddFunction("set_volume", system.set_volume);
         interface_required->AddEventHandlerWrite(&dvrk::system_Qt_widget::volume_event_handler,
                                                  this, "volume");
+        interface_required->AddFunction("calibration_mode", system.calibration_mode);
     }
     setupUi();
 }
