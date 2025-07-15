@@ -1,0 +1,52 @@
+{
+    "component_manager": {
+        "components":
+        [
+            // this is to use the dvrk_arm_from_ros class
+            {
+                "shared-library": "dvrk_arm_from_ros",
+                "class-name": "dvrk_psm_from_ros",
+                "constructor-arg": {
+                    "Name": "PSM1",
+                    "Period": 0.01
+                }
+            }
+        ]
+    }
+    ,
+    "arms":
+    [
+        {
+            "name": "MTMR",
+            "type": "MTM",
+            "simulation": "KINEMATIC",
+            "arm_file": "arm/MTML_KIN_SIMULATED.json"
+        }
+	,
+	{
+            "name": "PSM1",  // created previously using custom components
+            "type": "PSM_GENERIC",
+            "component": "PSM1",
+            "interface": "PSM1",
+            "skip_ROS_bridge": true // this is to make sure we don't republish on the same topics as the remote PSM
+        }
+    ]
+    ,
+    "consoles":
+    [
+        {
+            "name": "console",
+            "input_type": "SIMULATED",
+            "teleop_PSMs":
+            [
+                {
+                    "MTM": "MTMR",
+                    "PSM": "PSM1",
+                    "configure_parameter": {
+                        "start_gripper_threshold": 0.0 // to start automatically when operator is present
+                    }
+                }
+	    ]
+	}
+    ]
+}
