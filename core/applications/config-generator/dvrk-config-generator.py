@@ -331,7 +331,7 @@ class ClassicPSM(Robot):
         if self.hardwareVersion == "QLA1":
             digitalInputBitIDs = [
                 (self.boardIDs[0], 0, "SUJ_clutch", 0.2),
-                (self.boardIDs[0], 2, "arm_lutch", 0.2),
+                (self.boardIDs[0], 2, "arm_clutch", 0.2),
                 (self.boardIDs[1], 7, "tool", 0.2),
                 (self.boardIDs[1], 10, "adapter", 0.2),
             ]
