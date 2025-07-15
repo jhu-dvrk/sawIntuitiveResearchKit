@@ -107,7 +107,7 @@ class UnitValue(Serializable):
 
 # dVRK board ID conventions
 def getBoardIDs(robotTypeName):
-    # Need to allow for MTML-Gripper/MTMR-Gripper
+    # Need to allow for MTML_gripper/MTMR_gripper
     if robotTypeName.startswith("MTML"):
         return (0, 1)
     elif robotTypeName.startswith("MTMR"):
@@ -330,17 +330,17 @@ class ClassicPSM(Robot):
     def generateDigitalInputs(self):
         if self.hardwareVersion == "QLA1":
             digitalInputBitIDs = [
-                (self.boardIDs[0], 0, "SUJClutch", 0.2),
-                (self.boardIDs[0], 2, "ManipClutch", 0.2),
-                (self.boardIDs[1], 7, "Tool", 0.2),
-                (self.boardIDs[1], 10, "Adapter", 0.2),
+                (self.boardIDs[0], 0, "SUJ_clutch", 0.2),
+                (self.boardIDs[0], 2, "arm_lutch", 0.2),
+                (self.boardIDs[1], 7, "tool", 0.2),
+                (self.boardIDs[1], 10, "adapter", 0.2),
             ]
         else: # DQLA, add 16 for second board
             digitalInputBitIDs = [
-                (self.boardIDs[0], 0, "SUJClutch", 0.2),
-                (self.boardIDs[0], 2, "ManipClutch", 0.2),
-                (self.boardIDs[0], 23, "Tool", 0.2),
-                (self.boardIDs[0], 26, "Adapter", 0.2),
+                (self.boardIDs[0], 0, "SUJ_clutch", 0.2),
+                (self.boardIDs[0], 2, "arm_clutch", 0.2),
+                (self.boardIDs[0], 23, "tool", 0.2),
+                (self.boardIDs[0], 26, "adapter", 0.2),
             ]
 
         for boardID, bitID, inputType, debounceTime in digitalInputBitIDs:
@@ -527,8 +527,8 @@ class ClassicECM(Robot):
 
     def generateDigitalInputs(self):
         digitalInputBitIDs = [
-            (self.boardIDs[0], 0, "ManipClutch", 0.2),
-            (self.boardIDs[0], 2, "SUJClutch", 0.2),
+            (self.boardIDs[0], 0, "arm_clutch", 0.2),
+            (self.boardIDs[0], 2, "SUJ_clutch", 0.2),
         ]
 
         for boardID, bitID, inputType, debounceTime in digitalInputBitIDs:
@@ -969,7 +969,7 @@ class DigitalInput(Serializable):
     def __init__(self, robotTypeName: str, type: str, bitID: int, boardID: int, pressed: int, debounceTime: float):
         self.bitID = bitID
         self.boardID = boardID
-        self.name = "{}-{}".format(robotTypeName, type)
+        self.name = "{}_{}".format(robotTypeName, type)
         self.pressed = pressed
         self.trigger = "all"
         self.debounceTime = debounceTime
@@ -989,7 +989,7 @@ class DigitalOutput(Serializable):
     def __init__(self, robotTypeName: str, type: str, bitID: int, boardID: int):
         self.bitID = bitID
         self.boardID = boardID
-        self.name = "{}-{}".format(robotTypeName, type)
+        self.name = "{}_{}".format(robotTypeName, type)
 
     def toDict(self):
         return {
@@ -1001,7 +1001,7 @@ class DigitalOutput(Serializable):
 
 class DallasChip(Serializable):
     def __init__(self, boardID, robotTypeName):
-        self.name = "{}-Dallas".format(robotTypeName)
+        self.name = "{}_dallas".format(robotTypeName)
         self.boardID = boardID
 
     def toDict(self):
