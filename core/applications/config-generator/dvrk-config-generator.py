@@ -2,7 +2,7 @@
 
 # Author(s):  Brendan Burkhart, Anton Deguet
 #
-# (C) Copyright 2023-2024 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2023-2025 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -33,7 +33,7 @@ class RobotType(Enum):
 
     def fromTypeName(robotTypeName):
         if robotTypeName[0:3] == "MTM":
-            if robotTypeName.endswith("-Gripper"):
+            if robotTypeName.endswith("_gripper"):
                 return RobotType.MTMGripper
             return RobotType.MTM
         elif robotTypeName[0:3] == "PSM":
@@ -442,11 +442,11 @@ class SiPSM(Robot):
 
     def generateDigitalInputs(self):
         digitalInputBitIDs = [
-            (self.boardIDs[0], 1, "SUJClutch2", 0.01),
-            (self.boardIDs[0], 4, "SUJClutch", 0.01),
-            (self.boardIDs[0], 9, "Tool", 1.5),
-            (self.boardIDs[0], 10, "Adapter", 1.6), # At least as high as tool so adapter is not detected before tool
-            (self.boardIDs[0], 13, "ManipClutch", 0.01),
+            (self.boardIDs[0], 1, "SUJ_clutch_2", 0.01),
+            (self.boardIDs[0], 4, "SUJ_clutch", 0.01),
+            (self.boardIDs[0], 9, "tool", 1.5),
+            (self.boardIDs[0], 10, "adapter", 1.6), # At least as high as tool so adapter is not detected before tool
+            (self.boardIDs[0], 13, "arm_clutch", 0.01),
         ]
 
         for boardID, bitID, inputType, debounceTime in digitalInputBitIDs:
@@ -624,9 +624,9 @@ class SiECM(Robot):
 
     def generateDigitalInputs(self):
         digitalInputBitIDs = [
-            (self.boardIDs[0], 4, "SUJClutch", 0.01),
-            (self.boardIDs[0], 13, "ManipClutch", 0.01),
-            (self.boardIDs[0], 16, "SUJClutch2", 0.01)
+            (self.boardIDs[0], 4, "SUJ_clutch", 0.01),
+            (self.boardIDs[0], 13, "arm_clutch", 0.01),
+            (self.boardIDs[0], 16, "SUJ_clutch_2", 0.01)
         ]
 
         for boardID, bitID, inputType, debounceTime in digitalInputBitIDs:
@@ -1210,7 +1210,7 @@ def generateConfig(calFileName, robotTypeName, hardwareVersion, serialNumber, ge
         gripperConfigFileName = (
             "sawRobotIO1394-" + robotTypeName + "-gripper-" + serialNumber
         )
-        gripperConfig = Config(calData, version, robotTypeName + "-Gripper", hardwareVersion, serialNumber, generation)
+        gripperConfig = Config(calData, version, robotTypeName + "_gripper", hardwareVersion, serialNumber, generation)
         saveConfigFile(gripperConfigFileName, gripperConfig, outputFormat)
 
     return serialNumber
