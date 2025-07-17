@@ -130,7 +130,12 @@ bool ConfigEditor::saveAs() {
         return false;
     }
 
+    // Ensure we save as .json, e.g. system-PSM1.json if user just types system-PSM1
     std::filesystem::path file_path(file_name.toStdString());
+    if (file_path.extension() != ".json") {
+        file_path += ".json";
+    }
+
     setSavePath(file_path);
     changes_saved = model->save(save_path.value());
     emit saveStateChanged(changes_saved);

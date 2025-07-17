@@ -25,12 +25,13 @@ http://www.cisst.org/cisst/license.txt.
  *   3: ROSArmPage - for using MTM/PSM via ROS
  *   3: BaseFramePage - for editing native arm base frame config
  *
- *         start -> QuickArmPage
- *  QuickArmPage -> [BaseFramePage, ArmTypePage]
- *   ArmTypePage -> [ HapticMTMPage, ROSArmPage ]
- * HapticMTMPage -> BaseFramePage
- *    ROSArmPage -> BaseFramePage
- * BaseFramePage -> end
+ *         start    -> QuickArmPage
+ *  QuickArmPage    -> [ BaseFramePage, ArmTypePage ]
+ *   ArmTypePage    -> [ HapticMTMPage, ROSArmPage, SimulatedArmPage ]
+ * HapticMTMPage    -> BaseFramePage
+ *    ROSArmPage    -> BaseFramePage
+ * SimulatedArmPage -> BaseFramePage
+ * BaseFramePage    -> end
  *
  * When editing an arm later, user goes directly to BaseFramePage
  */
@@ -61,11 +62,12 @@ class ArmEditor : public QWizard {
     Q_OBJECT
 
 public:
-    enum { 
+    enum {
         PAGE_QUICK_ARM,
         PAGE_ARM_TYPE,
         PAGE_HAPTIC_MTM,
         PAGE_ROS_ARM,
+        PAGE_KIN_SIM,
         PAGE_BASE_FRAME
     };
 
@@ -146,10 +148,26 @@ class ROSArmPage : public QWizardPage {
 
 public:
     ROSArmPage(ArmConfig& config, QWidget *parent = nullptr);
-    
+
     int nextId() const override { return ArmEditor::PAGE_BASE_FRAME; }
 
-    void initializePage() override;
+    void showEvent(QShowEvent *event) override;
+
+private:
+    ArmConfig* config;
+
+    QComboBox* arm_type;
+    QLineEdit* arm_name;
+};
+
+class SimulatedArmPage : public QWizardPage {
+    Q_OBJECT
+
+public:
+    SimulatedArmPage(ArmConfig& config, QWidget *parent = nullptr);
+
+    int nextId() const override { return ArmEditor::PAGE_BASE_FRAME; }
+
     void showEvent(QShowEvent *event) override;
 
 private:

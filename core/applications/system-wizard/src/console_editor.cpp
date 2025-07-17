@@ -146,6 +146,7 @@ void ConsolesContainer::removeConsole(int index) {
     ConsoleEditor* editor = qobject_cast<ConsoleEditor*>(this->widget(index));
     bool ok_to_close = editor->close();
     if (ok_to_close) {
+        model->console_configs->deleteItem(index);
         this->removeTab(index);
         delete editor;
     }

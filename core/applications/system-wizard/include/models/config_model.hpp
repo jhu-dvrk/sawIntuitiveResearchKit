@@ -750,6 +750,12 @@ public:
             config->serial_number = value["serial"].asString();
         }
 
+        if (value.isMember("simulation")) {
+            // simulation options are DYNAMIC (unsupported/unused), NONE, or KINEMATIC
+            bool is_kinematic_simulatation = value["simulation"].asString() == "KINEMATIC";
+            config->is_simulated = is_kinematic_simulatation;
+        }
+
         if (value.isMember("IO")) {
             config->io_name = value["IO"].asString();
         }
@@ -771,14 +777,19 @@ public:
         }
 
         if (config_type == ArmConfigType::NATIVE) {
-            if (io_name) {
-                value["IO"] = io_name.value();
-            }
-            if (serial_number) {
-                value["serial"] = serial_number.value();
-            }
             if (base_frame) {
                 value["base_frame"] = base_frame->toJSON();
+            }
+
+            if (is_simulated.has_value() && is_simulated.value()) {
+                value["simulation"] = "KINEMATIC";
+            } else {
+                if (io_name) {
+                    value["IO"] = io_name.value();
+                }
+                if (serial_number) {
+                    value["serial"] = serial_number.value();
+                }
             }
         } else if (config_type == ArmConfigType::HAPTIC_MTM) {
             if (component) {
@@ -808,6 +819,7 @@ public:
 
     std::optional<std::string> io_name;
     std::optional<std::string> serial_number;
+    std::optional<bool> is_simulated;
 
     std::optional<BaseFrameConfig> base_frame;
     std::optional<ComponentInterfaceConfig> component;
@@ -1002,7 +1014,7 @@ public:
         std::string dqla_suffix = "-DQLA.xml";
         size_t n = dqla_suffix.size();
         bool is_dqla = io_file.size() >= n && io_file.substr(io_file.size() - n, n) == dqla_suffix;
-        
+
         auto config = std::make_unique<FootPedalsConfig>();
         config->source_arm_name = arm_name;
         config->source_io_name = value.get("IO", "").asString();
@@ -1135,7 +1147,7 @@ public:
         auto getComponent = [](Json::Value json) -> std::string {
             return json.get("component", "").asString();
         };
-    
+
         auto getInterface = [](Json::Value json) -> std::string {
             std::string button_interface = json.get("interface", "").asString();
             size_t start_idx = 0;
@@ -1236,6 +1248,8 @@ public:
             config->type = ConsoleInputType::Value::FOOT_PEDALS;
         } else if (type_name == "COMPONENTS") {
             config->type = ConsoleInputType::Value::FORCE_DIMENSION_BUTTONS;
+        } else {
+            config->type = ConsoleInputType::Value::NONE;
         }
 
         auto pedals = FootPedalsConfig::fromJSON(value["IO_pedals"]);
@@ -1275,13 +1289,15 @@ public:
             for (const std::string& k : sibling.getMemberNames()) {
                 value[k] = sibling[k];
             }
-        } else {
+        } else if (type == ConsoleInputType::Value::FORCE_DIMENSION_BUTTONS) {
             value["input_type"] = "COMPONENTS";
 
             Json::Value sibling = force_dimension_buttons->toJSON();
             for (const std::string& k : sibling.getMemberNames()) {
                 value[k] = sibling[k];
             }
+        } else {
+            value["input_type"] = "SIMULATED";
         }
 
         return value;
@@ -1454,7 +1470,7 @@ public:
         Json::StreamWriterBuilder writer_builder;
         writer_builder["indentation"] = "    "; // four spaces
         auto writer = std::unique_ptr<Json::StreamWriter>(writer_builder.newStreamWriter());
-        
+
         std::ofstream json_stream;
         json_stream.open(config_file.c_str());
         if (!json_stream.is_open()) {

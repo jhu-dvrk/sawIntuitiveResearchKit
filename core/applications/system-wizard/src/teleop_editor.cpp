@@ -17,6 +17,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include "models/config_model.hpp"
 #include <iomanip>
+#include <ios>
 #include <sstream>
 
 namespace system_wizard {
@@ -69,9 +70,15 @@ void TeleopEditor::setId(int index) {
     if (index >= 0) {
         config = teleops->get(index);
         setStartId(PAGE_TELEOP_PARAMETERS);
+        setWindowTitle("Configure teleop: " + QString::fromStdString(config.name));
     } else {
+        config = TeleopConfig("", type);
         setStartId(PAGE_SUGGESTED_TELEOPS);
+        setWindowTitle("Configure new teleop");
     }
+
+    // Hack to make QWizard reset properly when it is opened
+    restart();
 }
 
 void TeleopEditor::save() {
@@ -200,28 +207,46 @@ TeleopParametersPage::TeleopParametersPage(TeleopConfig& config, QWidget *parent
     QFormLayout* form = new QFormLayout(this);
 
     scale_selector = new QSlider(Qt::Orientation::Horizontal);
-    scale_selector->setRange(0, 100);
+    scale_selector->setRange(5, 65);
     scale_selector->setToolTip("Reduction factor from MTM motion to PSM motion");
-    scale_selector->setTickInterval(25);
     scale_selector->setTickPosition(QSlider::TicksAbove);
-    scale_selector->setSingleStep(25);
+    scale_selector->setTickInterval(10);
+    scale_selector->setSingleStep(10);
 
-    QObject::connect(scale_selector, &QSlider::valueChanged, this, [this](int value) {
+    QWidget* scale_wrapper = new QWidget();
+    QHBoxLayout* scale_layout = new QHBoxLayout(scale_wrapper);
+    scale_layout->setAlignment(Qt::AlignCenter);
+    QLabel* scale_display = new QLabel("0.35");
+    scale_layout->addWidget(scale_display);
+    scale_layout->addWidget(scale_selector);
+    scale_layout->setMargin(0);
+    scale_layout->setContentsMargins(0, 0, 0, 0);
+
+    QObject::connect(scale_selector, &QSlider::valueChanged, this, [this, scale_display](int value) {
         this->config->scale = static_cast<double>(value) / 100.0;
 
+        // format as x.yz
         std::ostringstream scale_string;
-        scale_string << std::setprecision(2) << this->config->scale;
+        scale_string << std::fixed << std::setprecision(2) << this->config->scale;
         QString value_str = QString::fromStdString(scale_string.str());
 
-        int x_pos = QStyle::sliderPositionFromValue(0, 100, value, this->scale_selector->width());
+        // update display label with new value
+        scale_display->setText(value_str);
+
+        // show new value in tool tip next to mouse
+        int x_pos = QStyle::sliderPositionFromValue(
+            this->scale_selector->minimum(), this->scale_selector->maximum(),
+            value,
+            this->scale_selector->width()
+        );
         QPoint slider_handle = QPoint(x_pos, 0);
         QToolTip::showText(this->scale_selector->mapToGlobal(slider_handle), value_str);
     });
 
-    QLabel* description = new QLabel("MTM movements are scaled by a scale factor from 0.0 to 1.0 before they are sent to the teloperated arm.");
+    QLabel* description = new QLabel("MTM movements are reduced by a scale factor from 0.05 to 0.65 before they are sent to the teloperated arm.");
     description->setWordWrap(true);
     form->addRow(description);
-    form->addRow("Scale factor:", scale_selector);
+    form->addRow("Scale factor:", scale_wrapper);
 }
 
 void TeleopParametersPage::initializePage() {

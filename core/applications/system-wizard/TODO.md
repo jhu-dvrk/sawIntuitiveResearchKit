@@ -34,7 +34,7 @@
 - [ ] ⭐ Arm name vs name_on_IO
 
 - [ ] Full I/O config model (port address, etc.)
-- [ ] Full arm config model
+- [ ] Full arm config model (custom kinematic/PID files, etc.)
 - [ ] Full teleop config model
 - [ ] Full console config model
 
@@ -77,8 +77,8 @@
 - [x] Simple arm editor
 - [x] Available native arm list in editor
 - [x] Arm base frames
-- [ ] Extended arm editor (derived/generic/socket types)
+- [ ] Extended arm editor (derived/generic/simulation)
 - [x] Teleop editor
 - [ ] Derived teleop editor
 - [x] Console editor
-- [ ] ⭐ Put item name in editor title
+- [x] Put item name in editor title

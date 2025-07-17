@@ -150,9 +150,14 @@ void IOEditor::setId(int id) {
 
     if (config_id >= 0) {
         config = model->io_configs->get(config_id);
+        setWindowTitle("Configure I/O: " + QString::fromStdString(config.name));
     } else {
         config = IOConfig("");
+        setWindowTitle("Configure new I/O");
     }
+
+    // Hack to make QWizard reset properly when it is opened
+    restart();
 }
 
 void IOEditor::save() {

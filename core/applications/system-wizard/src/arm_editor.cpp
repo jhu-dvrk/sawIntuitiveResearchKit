@@ -188,6 +188,17 @@ ArmTypePage::ArmTypePage(ArmConfig& config, QWidget *parent) : QWizardPage(paren
         this->wizard()->next();
     });
     layout->addWidget(via_ros);
+
+    layout->addWidget(new QLabel("If you want to add a kinematic simulated arm:"));
+    QPushButton* kin_simulated = new QPushButton("Kinematic simulated arm");
+    kin_simulated->setFlat(true);
+    kin_simulated->setAutoFillBackground(true);
+    QObject::connect(kin_simulated, &QPushButton::clicked, this, [this]() {
+        this->config->config_type = ArmConfigType::NATIVE;
+        this->next_page_id = ArmEditor::PAGE_KIN_SIM;
+        this->wizard()->next();
+    });
+    layout->addWidget(kin_simulated);
 }
 
 HapticMTMPage::HapticMTMPage(ArmConfig& config, QWidget *parent) : QWizardPage(parent), config(&config) {
@@ -346,8 +357,6 @@ ROSArmPage::ROSArmPage(ArmConfig& config, QWidget *parent) : QWizardPage(parent)
     layout->addLayout(form);
 }
 
-void ROSArmPage::initializePage() { }
-
 void ROSArmPage::showEvent(QShowEvent *CMN_UNUSED(event)) {
     if (config->config_type != ArmConfigType::ROS_ARM) {
         *config = ArmConfig("Arm", ArmType::Value::PSM_GENERIC, ArmConfigType::ROS_ARM);
@@ -363,6 +372,62 @@ void ROSArmPage::showEvent(QShowEvent *CMN_UNUSED(event)) {
         }
         arm_name->setText(QString::fromStdString(config->name));
     }
+}
+
+SimulatedArmPage::SimulatedArmPage(ArmConfig& config, QWidget *parent) : QWizardPage(parent), config(&config) {
+    setTitle("Kinematic arm simulation");
+
+    QVBoxLayout* layout = new QVBoxLayout(this);
+    QLabel* description1 = new QLabel("Simple kinematic (no dynamics/collision/contact) simulation of a dVRK arm.");
+    description1->setWordWrap(true);
+    layout->addWidget(description1);
+
+    QFormLayout* form = new QFormLayout();
+
+    arm_type = new QComboBox();
+    arm_type->setPlaceholderText("select arm type");
+    arm_type->addItem("PSM", 0);
+    arm_type->addItem("MTM", 1);
+    arm_type->addItem("ECM", 2);
+    QObject::connect(arm_type, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index) {
+        if (index == 0) {
+            this->config->type = ArmType::Value::PSM;
+        } else if (index == 1) {
+            this->config->type = ArmType::Value::MTM;
+        } else if (index == 2) {
+            this->config->type = ArmType::Value::ECM;
+        }
+    });
+    form->addRow("Arm type:", arm_type);
+
+    arm_name = new QLineEdit();
+    form->addRow("Arm name:", arm_name);
+    QObject::connect(arm_name, &QLineEdit::textChanged, this, [this](const QString& text){
+        this->config->name = text.toStdString();
+    });
+
+    layout->addLayout(form);
+}
+
+void SimulatedArmPage::showEvent(QShowEvent *CMN_UNUSED(event)) {
+    if (config->config_type != ArmConfigType::NATIVE) {
+        *config = ArmConfig("Arm", ArmType::Value::PSM, ArmConfigType::NATIVE);
+        arm_type->setCurrentIndex(-1);
+        arm_name->setText("");
+    } else {
+        if (config->type == ArmType(ArmType::Value::PSM)) {
+            arm_type->setCurrentIndex(0);
+        } else if (config->type == ArmType(ArmType::Value::MTM)) {
+            arm_type->setCurrentIndex(1);
+        } else if (config->type == ArmType(ArmType::Value::ECM)) {
+            arm_type->setCurrentIndex(2);
+        } else {
+            arm_type->setCurrentIndex(-1);
+        }
+        arm_name->setText(QString::fromStdString(config->name));
+    }
+
+    config->is_simulated = true;
 }
 
 BaseFramePage::BaseFramePage(ArmConfig& config, SystemConfigModel& system_model, QWidget *parent) :
@@ -548,6 +613,7 @@ ArmEditor::ArmEditor(SystemConfigModel& model, ConfigSources& config_sources, QW
     setPage(PAGE_ARM_TYPE, new ArmTypePage(config));
     setPage(PAGE_HAPTIC_MTM, new HapticMTMPage(config));
     setPage(PAGE_ROS_ARM, new ROSArmPage(config));
+    setPage(PAGE_KIN_SIM, new SimulatedArmPage(config));
     setPage(PAGE_BASE_FRAME, new BaseFramePage(config, model));
 
     setWizardStyle(QWizard::ModernStyle);
@@ -574,12 +640,17 @@ void ArmEditor::setId(int id) {
     this->id = id;
 
     if (id >= 0) {
-        setStartId(PAGE_BASE_FRAME);
         config = model->arm_configs->get(id);
+        setStartId(PAGE_BASE_FRAME);
+        setWindowTitle("Configure arm: " + QString::fromStdString(config.name));
     } else {
-        setStartId(PAGE_QUICK_ARM);
         config = ArmConfig("", ArmType::Value::PSM, ArmConfigType::NATIVE);
+        setStartId(PAGE_QUICK_ARM);
+        setWindowTitle("Configure new arm");
     }
+
+    // Hack to make QWizard reset properly when it is opened
+    restart();
 }
 
 }
