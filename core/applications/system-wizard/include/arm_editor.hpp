@@ -28,12 +28,12 @@ http://www.cisst.org/cisst/license.txt.
  *         start    -> QuickArmPage
  *  QuickArmPage    -> [ BaseFramePage, ArmTypePage ]
  *   ArmTypePage    -> [ HapticMTMPage, ROSArmPage, SimulatedArmPage ]
- * HapticMTMPage    -> BaseFramePage
- *    ROSArmPage    -> BaseFramePage
+ * HapticMTMPage    -> end
+ *    ROSArmPage    -> end
  * SimulatedArmPage -> BaseFramePage
  * BaseFramePage    -> end
  *
- * When editing an arm later, user goes directly to BaseFramePage
+ * When editing a native arm later, user goes directly to BaseFramePage
  */
 
 #ifndef SYSTEM_WIZARD_ARM_EDITOR
@@ -130,7 +130,7 @@ class HapticMTMPage : public QWizardPage {
 public:
     HapticMTMPage(ArmConfig& config, QWidget *parent = nullptr);
 
-    int nextId() const override { return ArmEditor::PAGE_BASE_FRAME; }
+    int nextId() const override { return -1; }
 
     void initializePage() override;
     void showEvent(QShowEvent *event) override;
@@ -149,7 +149,7 @@ class ROSArmPage : public QWizardPage {
 public:
     ROSArmPage(ArmConfig& config, QWidget *parent = nullptr);
 
-    int nextId() const override { return ArmEditor::PAGE_BASE_FRAME; }
+    int nextId() const override { return -1; }
 
     void showEvent(QShowEvent *event) override;
 

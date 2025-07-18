@@ -25,16 +25,20 @@ ArmView::ArmView(SystemConfigModel& model, ListView& list_view, int id, QWidget*
     display = new QLabel();
     updateData(id);
 
-    QPushButton* edit_button = new QPushButton("Edit");
-    QPushButton* delete_button = new QPushButton("Delete");
-
     layout->addWidget(display);
     layout->addStretch();
-    layout->addWidget(edit_button);
-    layout->addWidget(delete_button);
 
-    QObject::connect(edit_button, &QPushButton::clicked, this, [this, &list_view](){ emit list_view.edit(this->id); });
+    const ArmConfig& arm = model.arm_configs->get(id);
+    bool has_base_frame = arm.config_type == ArmConfigType::NATIVE && !arm.type.isSUJ();
+    if (has_base_frame) {
+        QPushButton* edit_button = new QPushButton("Edit");
+        QObject::connect(edit_button, &QPushButton::clicked, this, [this, &list_view](){ emit list_view.edit(this->id); });
+        layout->addWidget(edit_button);
+    }
+
+    QPushButton* delete_button = new QPushButton("Delete");
     QObject::connect(delete_button, &QPushButton::clicked, this, [this, &list_view](){ emit list_view.try_delete(this->id); });
+    layout->addWidget(delete_button);
 }
 
 void ArmView::updateData(int id) {
@@ -43,10 +47,19 @@ void ArmView::updateData(int id) {
     const ArmConfig& arm = model->arm_configs->get(id);
     QString text = QString::fromStdString(arm.name);
     if (arm.config_type == ArmConfigType::ROS_ARM) {
-        text += " (Arm from ROS)";
+        text += " (from ROS)";
     } else if (arm.config_type == ArmConfigType::HAPTIC_MTM) {
-        text += " (Haptic MTM)";
+        text += " (haptic device)";
+    } else if (arm.is_simulated.value_or(false)) {
+        text += " (simulated)";
     }
+
+    if (arm.base_frame.has_value() && !arm.base_frame->reference_frame_name.empty()) {
+        text += ", base frame is " + QString::fromStdString(arm.base_frame->reference_frame_name);
+    } else if (arm.config_type == ArmConfigType::NATIVE) {
+        text += ", no base frame";
+    }
+
     display->setText(text);
     display->setToolTip(QString::fromStdString(arm.type.acronym_expansion()));
 }

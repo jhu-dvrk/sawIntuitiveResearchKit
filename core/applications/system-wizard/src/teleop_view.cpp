@@ -14,6 +14,9 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 #include "teleop_view.hpp"
+#include <iomanip>
+#include <ios>
+#include <sstream>
 
 namespace system_wizard {
 
@@ -41,7 +44,10 @@ void PSMTeleopView::updateData(int idx) {
 
     const auto& teleop = config->psm_teleops->get(id);
     std::string arms = teleop.arm_names[0] + ", " + teleop.arm_names[1];
-    QString text = QString::fromStdString(teleop.type.name() + ": " + arms);
+    std::stringstream display_stream;
+    display_stream << teleop.type.name() << ": " << arms
+                   << " @ " << std::fixed << std::setprecision(2) << teleop.scale << " scale";
+    QString text = QString::fromStdString(display_stream.str());
     display->setText(text);
 }
 
@@ -69,7 +75,10 @@ void ECMTeleopView::updateData(int idx) {
 
     const auto& teleop = config->ecm_teleops->get(id);
     std::string arms = teleop.arm_names[0] + ", " + teleop.arm_names[1] + ", " + teleop.arm_names[2];
-    QString text = QString::fromStdString(teleop.type.name() + ": " + arms);
+    std::stringstream display_stream;
+    display_stream << teleop.type.name() << ": " << arms
+                   << " @ " << std::fixed << std::setprecision(2) << teleop.scale << " scale";
+    QString text = QString::fromStdString(display_stream.str());
     display->setText(text);
 }
 

@@ -34,12 +34,12 @@ namespace system_wizard {
 
 class ComponentConfig {
 public:
-    static std::unique_ptr<ComponentConfig> fromJSON(Json::Value json) {
-        auto config = std::make_unique<ComponentConfig>();
-        config->library_name = json.get("shared-library", "").asString();
-        config->class_name = json.get("class-name", "").asString();
-        config->name = json["constructor-arg"].get("Name", "").asString();
-        config->configure_parameter = json.get("configure-parameter", "").asString();
+    static ComponentConfig fromJSON(Json::Value json) {
+        auto config = ComponentConfig();
+        config.library_name = json.get("shared-library", "").asString();
+        config.class_name = json.get("class-name", "").asString();
+        config.name = json["constructor-arg"].get("Name", "").asString();
+        config.configure_parameter = json.get("configure-parameter", "").asString();
 
         return config;
     }
@@ -83,13 +83,14 @@ public:
 
     std::string component_name;
     std::string interface_name;
+
+    std::optional<ComponentConfig> component;
 };
 
 enum class ArmConfigType {
     NATIVE,
     ROS_ARM,
-    HAPTIC_MTM,
-    SOCKET_PSM
+    HAPTIC_MTM
 };
 
 class ArmType {
@@ -105,7 +106,6 @@ public:
         MTM_GENERIC,
         PSM_DERIVED,
         PSM_GENERIC,
-        PSM_SOCKET,
         ECM_DERIVED,
         ECM_GENERIC,
         FOCUS_CONTROLLER,
@@ -139,8 +139,6 @@ public:
             return "Derived PSM";
         case Value::PSM_GENERIC:
             return "Generic PSM";
-        case Value::PSM_SOCKET:
-            return "Socket PSM";
         case Value::ECM_DERIVED:
             return "Derived ECM";
         case Value::ECM_GENERIC:
@@ -161,7 +159,6 @@ public:
         case Value::PSM:
         case Value::PSM_DERIVED:
         case Value::PSM_GENERIC:
-        case Value::PSM_SOCKET:
             return "Patient Side Manipulator";
         case Value::ECM:
         case Value::ECM_DERIVED:
@@ -198,8 +195,6 @@ public:
         case Value::PSM_GENERIC:
         case Value::ECM_GENERIC:
             return "for completely new arm code, e.g. a simulation";
-        case Value::PSM_SOCKET:
-            return "client for remote PSM via UDP socket (add socket server)";
         case Value::FOCUS_CONTROLLER:
             return "camera focus controller";
         default:
@@ -228,9 +223,7 @@ public:
             return Value::PSM_DERIVED;
         } else if (name == "PSM_GENERIC") {
             return Value::PSM_GENERIC;
-        } else if (name == "PSM_SOCKET") {
-            return Value::PSM_SOCKET;
-        } else if (name == "ECM_DERIVED") {
+        }  else if (name == "ECM_DERIVED") {
             return Value::ECM_DERIVED;
         } else if (name == "ECM_GENERIC") {
             return Value::ECM_GENERIC;
@@ -263,8 +256,6 @@ public:
             return "PSM_DERIVED";
         case Value::PSM_GENERIC:
             return "PSM_GENERIC";
-        case Value::PSM_SOCKET:
-            return "PSM_SOCKET";
         case Value::ECM_DERIVED:
             return "ECM_DERIVED";
         case Value::ECM_GENERIC:
@@ -281,7 +272,6 @@ public:
         case Value::PSM:
         case Value::PSM_DERIVED:
         case Value::PSM_GENERIC:
-        case Value::PSM_SOCKET:
             return true;
         default:
             return false;
@@ -729,7 +719,6 @@ public:
         }
 
         ArmConfigType config_type = ArmConfigType::NATIVE;
-
         auto config = std::make_unique<ArmConfig>(name, type.value(), config_type);
 
         if (value.isMember("component")) {
@@ -765,6 +754,21 @@ public:
         }
 
         return config;
+    }
+
+    void configureComponent(ComponentConfig config) {
+        if (!component.has_value()) {
+            component = ComponentInterfaceConfig();
+            component->component_name = config.name;
+            component->interface_name = name;
+        }
+
+        component->component = config;
+        if (config.library_name == "sawForceDimensionSDK") {
+            config_type = ArmConfigType::HAPTIC_MTM;
+        } else if (config.library_name == "dvrk_arm_from_ros") {
+            config_type = ArmConfigType::ROS_ARM;
+        }
     }
 
     Json::Value toJSON() const {
@@ -1191,9 +1195,9 @@ public:
             operator_present = source->component.value();
             operator_present.interface_name += "/center";
             clutch = source->component.value();
-            operator_present.interface_name += "/top";
+            clutch.interface_name += "/top";
             camera = source->component.value();
-            operator_present.interface_name += "/left";
+            camera.interface_name += "/left";
         }
 
         Json::Value json;
@@ -1457,6 +1461,21 @@ public:
             }
         }
 
+        json_value = json_config["component_manager"]["components"];
+        if (!json_value.empty() && json_value.isArray()) {
+            for (unsigned int idx = 0; idx < json_value.size(); idx++) {
+                auto component = ComponentConfig::fromJSON(json_value[idx]);
+
+                // Attempt to match each custom component to the arms which use it
+                for (int arm_idx = 0; arm_idx < model->arm_configs->count(); arm_idx++) {
+                    ArmConfig& arm = model->arm_configs->ref(arm_idx);
+                    if (arm.component && arm.component->component_name == component.name) {
+                        arm.configureComponent(component);
+                    }
+                }
+            }
+        }
+
         return model;
     }
 
@@ -1466,6 +1485,16 @@ public:
         config["IOs"] = io_configs->toJSON();
         config["arms"] = arm_configs->toJSON();
         config["consoles"] = console_configs->toJSON();
+
+        // Collect any components used by the arms
+        Json::Value component_configs;
+        for (int idx = 0; idx < arm_configs->count(); idx++) {
+            ArmConfig& arm = arm_configs->ref(idx);
+            if (arm.component && arm.component->component) {
+                component_configs.append(arm.component->component->toJSON());
+            }
+        }
+        config["component_manager"]["components"] = component_configs;
 
         Json::StreamWriterBuilder writer_builder;
         writer_builder["indentation"] = "    "; // four spaces

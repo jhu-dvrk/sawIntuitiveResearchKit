@@ -66,18 +66,27 @@ QuickArmPage::QuickArmPage(ArmConfig& config, const SystemConfigModel& model, Co
     };
     arm_list_view = new ListView(*available_arms, arm_view_factory, SelectionMode::SINGLE);
     arm_list_view->setEmptyMessage("No arms available - open a config folder");
-    auto choose_arm = [this](int index){
-        this->next_page_id = ArmEditor::PAGE_BASE_FRAME;
+    auto choose_arm = [this](int index) {
         ConfigSources::Arm source = available_arms->get(index);
         *this->config = ArmConfig(source.name, source.type, ArmConfigType::NATIVE);
         this->config->arm_file = source.config_file.filename().string();
         if (!source.serial_number.empty()) {
             this->config->serial_number = source.serial_number;
         }
+
+        if (source.type.isSUJ()) {
+            this->next_page_id = -1;
+        } else {
+            this->next_page_id = ArmEditor::PAGE_BASE_FRAME;
+        }
     };
     QObject::connect(arm_list_view, &ListView::choose, this, [this, choose_arm](int index) {
         choose_arm(index);
-        this->wizard()->next();
+        if (next_page_id == -1) {
+            this->wizard()->accept();
+        } else {
+            this->wizard()->next();
+        }
     });
     QObject::connect(arm_list_view, &ListView::selected, this, [choose_arm](int index, bool selected){
         if (selected) { choose_arm(index); }
@@ -137,6 +146,7 @@ void QuickArmPage::initializePage() {
     }
 
     arm_list_view->clearSelections();
+    next_page_id = ArmEditor::PAGE_BASE_FRAME;
 
     QList<QWizard::WizardButton> button_layout;
     button_layout << QWizard::Stretch << QWizard::BackButton << QWizard::NextButton << QWizard::FinishButton << QWizard::CancelButton;
@@ -258,17 +268,24 @@ HapticMTMPage::HapticMTMPage(ArmConfig& config, QWidget *parent) : QWizardPage(p
     QObject::connect(left_right_selector, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this, config_file_name](int index) {
         if (index == 0) {
             this->config->name = "MTML";
-            this->config->component = ComponentInterfaceConfig();
-            this->config->component->component_name = "ForceDimensionSDK";
-            this->config->component->interface_name = "MTML";
             config_file_name->setText("sawForceDimensionSDK-MTML.json");
         } else if (index == 1) {
             this->config->name = "MTMR";
-            this->config->component = ComponentInterfaceConfig();
-            this->config->component->component_name = "ForceDimensionSDK";
-            this->config->component->interface_name = "MTMR";
             config_file_name->setText("sawForceDimensionSDK-MTMR.json");
         }
+
+        // Configure ForceDimensionSDK component
+        auto component = ComponentConfig();
+        component.name = "ForceDimensionSDK";
+        component.library_name = "sawForceDimensionSDK";
+        component.class_name = "mtsForceDimensionSDK";
+        component.configure_parameter = config_file_name->text().toStdString();
+
+        // Configure arm's interface to component
+        this->config->component = ComponentInterfaceConfig();
+        this->config->component->component_name = component.name;
+        this->config->component->interface_name = this->config->name;
+        this->config->component->component = component;
     });
 
     details->addWidget(force_dimension);
