@@ -52,9 +52,11 @@ public:
 
         Json::Value constructor_args;
         constructor_args["Name"] = name;
-        value["constructor-args"] = constructor_args;
+        value["constructor-arg"] = constructor_args;
 
-        value["configure_parameter"] = configure_parameter;
+        if (!configure_parameter.empty()) {
+            value["configure-parameter"] = configure_parameter;
+        }
 
         return value;
     }
@@ -766,6 +768,7 @@ public:
         component->component = config;
         if (config.library_name == "sawForceDimensionSDK") {
             config_type = ArmConfigType::HAPTIC_MTM;
+            haptic_device = 0;
         } else if (config.library_name == "dvrk_arm_from_ros") {
             config_type = ArmConfigType::ROS_ARM;
         }
@@ -858,6 +861,12 @@ public:
             config->scale = parameters["scale"].asDouble();
         }
 
+        bool has_wrist_actuatation = parameters.get("align_MTM", true).asBool();
+        config->has_MTM_wrist_actuation = has_wrist_actuatation;
+
+        bool has_gripper = !parameters.get("ignore_jaw", false).asBool();
+        config->has_MTM_gripper = has_gripper;
+
         return config;
     }
 
@@ -875,6 +884,13 @@ public:
         }
 
         parameters["scale"] = scale;
+        if (!has_MTM_gripper) {
+            parameters["start_gripper_threshold"] = true;
+            parameters["ignore_jaw"] = true;
+        }
+        if (!has_MTM_wrist_actuation) {
+            parameters["align_MTM"] = false;
+        }
         value["configure_parameter"] = parameters;
 
         return value;
@@ -883,8 +899,28 @@ public:
     std::string name;
     TeleopType type;
 
-    double scale = 0.5;
     std::vector<std::string> arm_names;
+
+    double scale = 0.5;
+    bool has_MTM_gripper = false;
+    bool has_MTM_wrist_actuation = false;
+
+    void provideSources(ListModelT<ArmConfig> const& arms) {
+        this->arms = &arms;
+    }
+
+    std::optional<ArmConfig> getSource(std::string name) const {
+        if (arms == nullptr) { return {}; }
+
+        std::optional<ArmConfig> source = arms->find(
+            [&name](const ArmConfig& arm){ return arm.name == name; }
+        );
+
+        return source;
+    }
+
+private:
+    ListModelT<ArmConfig> const* arms = nullptr;
 };
 
 class ConsoleInputType {
@@ -1388,6 +1424,14 @@ public:
 
     void provideSources(ListModelT<ArmConfig> const& arms) {
         inputs->provideSources(arms);
+
+        for (int idx = 0; idx < psm_teleops->count(); idx++) {
+            psm_teleops->ref(idx).provideSources(arms);
+        }
+
+        for (int idx = 0; idx < ecm_teleops->count(); idx++) {
+            ecm_teleops->ref(idx).provideSources(arms);
+        }
     }
 
     std::string name;

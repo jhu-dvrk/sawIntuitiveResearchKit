@@ -31,7 +31,9 @@ Editor::Editor(ConfigSources& config_sources, QWidget* parent)
 
     QToolButton *add_config_button = new QToolButton();
     add_config_button->setText("+");
-    QLabel* no_tabs_view = new QLabel("Add config by pressing \"+\"");
+    QLabel* no_tabs_view = new QLabel("Add system config by pressing \"+\", or via File > New config file");
+    int default_font_size = no_tabs_view->font().pointSize();
+    no_tabs_view->setStyleSheet("color: black; font-size: " + QString::number(3 * default_font_size / 2) + "pt");
     no_tabs_view->setAlignment(Qt::AlignCenter);
     no_tabs_view->setMargin(10);
     // Add empty, not enabled dummy tab

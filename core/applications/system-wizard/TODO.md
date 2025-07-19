@@ -1,7 +1,5 @@
 # TODO List
 
-"Priority" issues to be completed for beta version are marked with a "⭐".
-
 ### General
 
 - [x] Non-templated list model
@@ -31,9 +29,9 @@
 - [x] (De)Serialization
 
 - [x] Child components
-- [ ] ⭐ Teleop disable rotation for ForceDimension
-- [ ] ⭐ Arm name vs name_on_IO
+- [x] Teleop disable rotation for ForceDimension
 
+- [ ] Arm name vs name_on_IO
 - [ ] Configure port address for I/O
 - [ ] Full arm config model (custom kinematic/PID files, etc.)
 

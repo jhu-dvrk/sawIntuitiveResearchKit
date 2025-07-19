@@ -18,6 +18,8 @@ http://www.cisst.org/cisst/license.txt.
 #include "models/config_model.hpp"
 #include <iomanip>
 #include <ios>
+#include <qboxlayout.h>
+#include <qcheckbox.h>
 #include <sstream>
 
 namespace system_wizard {
@@ -46,7 +48,7 @@ void TeleopOptionView::updateData(int index) {
 }
 
 TeleopEditor::TeleopEditor(ListModelT<TeleopConfig>& teleops, TeleopType type, const ListModelT<ArmConfig>& arms, QWidget* parent)
-    : QWizard(parent), teleops(&teleops), type(type), config("Teleop", type) {
+    : QWizard(parent), teleops(&teleops), type(type), arms(&arms), config("Teleop", type) {
     SuggestedTeleopsPage* suggested_teleops_page = new SuggestedTeleopsPage(arms, teleops, config);
     TeleopParametersPage* teleop_parameters_page = new TeleopParametersPage(config);
 
@@ -73,6 +75,7 @@ void TeleopEditor::setId(int index) {
         setWindowTitle("Configure teleop: " + QString::fromStdString(config.name));
     } else {
         config = TeleopConfig("", type);
+        config.provideSources(*arms);
         setStartId(PAGE_SUGGESTED_TELEOPS);
         setWindowTitle("Configure new teleop");
     }
@@ -142,6 +145,7 @@ void SuggestedTeleopsPage::initializePage() {
         }
 
         // candidate isn't used yet, add it to the suggested list
+        candidate.provideSources(*arms);
         suggested_teleops.appendItem(candidate);
     };
 
@@ -204,7 +208,8 @@ TeleopParametersPage::TeleopParametersPage(TeleopConfig& config, QWidget *parent
     : QWizardPage(parent), config(&config) {
     setTitle("Teleop parameters");
 
-    QFormLayout* form = new QFormLayout(this);
+    QVBoxLayout* layout = new QVBoxLayout(this);
+    QFormLayout* common_form = new QFormLayout();
 
     scale_selector = new QSlider(Qt::Orientation::Horizontal);
     scale_selector->setRange(5, 65);
@@ -225,32 +230,64 @@ TeleopParametersPage::TeleopParametersPage(TeleopConfig& config, QWidget *parent
     QObject::connect(scale_selector, &QSlider::valueChanged, this, [this, scale_display](int value) {
         this->config->scale = static_cast<double>(value) / 100.0;
 
-        // format as x.yz
+        // format as 0.yz
         std::ostringstream scale_string;
         scale_string << std::fixed << std::setprecision(2) << this->config->scale;
         QString value_str = QString::fromStdString(scale_string.str());
 
         // update display label with new value
         scale_display->setText(value_str);
-
-        // show new value in tool tip next to mouse
-        int x_pos = QStyle::sliderPositionFromValue(
-            this->scale_selector->minimum(), this->scale_selector->maximum(),
-            value,
-            this->scale_selector->width()
-        );
-        QPoint slider_handle = QPoint(x_pos, 0);
-        QToolTip::showText(this->scale_selector->mapToGlobal(slider_handle), value_str);
     });
 
     QLabel* description = new QLabel("MTM movements are reduced by a scale factor from 0.05 to 0.65 before they are sent to the teloperated arm.");
     description->setWordWrap(true);
-    form->addRow(description);
-    form->addRow("Scale factor:", scale_wrapper);
+    common_form->addRow(description);
+    common_form->addRow("Scale factor:", scale_wrapper);
+    layout->addLayout(common_form);
+    layout->addSpacing(10);
+
+    haptic_mtm_details = new QWidget();
+    QFormLayout* haptic_mtm_form = new QFormLayout(haptic_mtm_details);
+    has_gripper = new QCheckBox();
+    haptic_mtm_form->addRow("Does your haptic device MTM have a gripper?", has_gripper);
+    QObject::connect(has_gripper, &QCheckBox::toggled, this, [&config](bool checked) {
+        config.has_MTM_gripper = checked;
+    });
+
+    has_actuated_wrist = new QCheckBox();
+    haptic_mtm_form->addRow("Does your haptic device MTM have a motorized wrist mechanism?", has_actuated_wrist);
+    QObject::connect(has_actuated_wrist, &QCheckBox::toggled, this, [&config](bool checked) {
+        config.has_MTM_wrist_actuation = checked;
+    });
+
+    haptic_mtm_form->setMargin(0);
+    layout->addWidget(haptic_mtm_details);
 }
 
 void TeleopParametersPage::initializePage() {
     scale_selector->setValue(std::round(100.0 * config->scale));
+
+    haptic_mtm_details->setVisible(usesHapticMTM());
+    has_gripper->setChecked(config->has_MTM_gripper);
+    has_actuated_wrist->setChecked(config->has_MTM_wrist_actuation);
+}
+
+bool TeleopParametersPage::usesHapticMTM() const {
+    /** Check if haptic device is being used as an MTM */
+    if (!config->type.isPSM()) {
+        return false;
+    }
+
+    for (const auto& name : config->arm_names) {
+        auto arm = config->getSource(name);
+        if (!arm) { continue; }
+
+        if (arm->config_type == ArmConfigType::HAPTIC_MTM) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 }

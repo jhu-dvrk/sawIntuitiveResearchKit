@@ -55,6 +55,7 @@ private:
 
     ListModelT<TeleopConfig>* teleops;
     TeleopType type;
+    const ListModelT<ArmConfig>* arms;
     TeleopConfig config;
 
     int index = -1;
@@ -95,9 +96,15 @@ public:
     void initializePage() override;
 
 private:
+    bool usesHapticMTM() const;
+
     TeleopConfig* config;
 
     QSlider* scale_selector;
+
+    QWidget* haptic_mtm_details;
+    QCheckBox* has_gripper;
+    QCheckBox* has_actuated_wrist;
 };
 
 }

@@ -221,11 +221,9 @@ HapticMTMPage::HapticMTMPage(ArmConfig& config, QWidget *parent) : QWizardPage(p
     // as well as what shared library component we need to load
     haptic_device_selector = new QComboBox();
     haptic_device_selector->setPlaceholderText("select haptic device type");
-    haptic_device_selector->addItem("Novint Falcon",               0);
-    haptic_device_selector->addItem("ForceDimension omega/delta",  1);
-    haptic_device_selector->addItem("ForceDimension sigma/lambda", 2);
-    haptic_device_selector->addItem("Phantom Omni/Geomagic Touch", 3);
-    haptic_device_selector->addItem("Other",                       4);
+    haptic_device_selector->addItem("ForceDimension/Novint Falcon", 0);
+    haptic_device_selector->addItem("Phantom Omni/Geomagic Touch",  1);
+    haptic_device_selector->addItem("Other",                        2);
     device_type_form->addRow("Type of haptic input device:", haptic_device_selector);
     layout->addLayout(device_type_form);
 
@@ -297,8 +295,6 @@ HapticMTMPage::HapticMTMPage(ArmConfig& config, QWidget *parent) : QWizardPage(p
     QObject::connect(haptic_device_selector, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index) {
         switch (index) {
         case 0:
-        case 1:
-        case 2:
             details->setCurrentIndex(1);
             this->config->haptic_device = index;
             break;
@@ -349,17 +345,32 @@ ROSArmPage::ROSArmPage(ArmConfig& config, QWidget *parent) : QWizardPage(parent)
 
     QFormLayout* form = new QFormLayout();
 
+    auto update_component = [this]() {
+        // Configure dvrk_arm_from_ros component
+        auto component = ComponentConfig();
+        component.name = this->config->name;
+        component.library_name = "dvrk_arm_from_ros";
+        component.class_name = "dvrk_arm_from_ros";
+
+        // Configure arm's interface to component
+        this->config->component = ComponentInterfaceConfig();
+        this->config->component->component_name = this->config->name;
+        this->config->component->interface_name = this->config->name;
+        this->config->component->component = component;
+    };
+
     arm_name = new QLineEdit();
     form->addRow("Arm name:", arm_name);
-    QObject::connect(arm_name, &QLineEdit::textChanged, this, [this](const QString& text){
+    QObject::connect(arm_name, &QLineEdit::textChanged, this, [this, update_component](const QString& text){
         this->config->name = text.toStdString();
+        update_component();
     });
 
     arm_type = new QComboBox();
     arm_type->setPlaceholderText("select arm type");
     arm_type->addItem("PSM", 0);
     arm_type->addItem("MTM", 1);
-    QObject::connect(arm_type, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index) {
+    QObject::connect(arm_type, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this, update_component](int index) {
         if (index == 0) {
             this->config->type = ArmType::Value::PSM_GENERIC;
             this->config->config_type = ArmConfigType::ROS_ARM;
@@ -367,6 +378,8 @@ ROSArmPage::ROSArmPage(ArmConfig& config, QWidget *parent) : QWizardPage(parent)
             this->config->type = ArmType::Value::MTM_GENERIC;
             this->config->config_type = ArmConfigType::ROS_ARM;
         }
+
+        update_component();
     });
 
     form->addRow("Arm type:", arm_type);
@@ -658,8 +671,12 @@ void ArmEditor::setId(int id) {
 
     if (id >= 0) {
         config = model->arm_configs->get(id);
-        setStartId(PAGE_BASE_FRAME);
         setWindowTitle("Configure arm: " + QString::fromStdString(config.name));
+        if (config.config_type == ArmConfigType::HAPTIC_MTM) {
+            setStartId(PAGE_HAPTIC_MTM);
+        } else {
+            setStartId(PAGE_BASE_FRAME);
+        }
     } else {
         config = ArmConfig("", ArmType::Value::PSM, ArmConfigType::NATIVE);
         setStartId(PAGE_QUICK_ARM);
