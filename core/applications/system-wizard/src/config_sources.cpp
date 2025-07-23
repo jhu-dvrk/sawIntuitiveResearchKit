@@ -19,6 +19,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <optional>
 #include <regex>
 
+#include <cisstCommon/cmnXMLPath.h>
 #include <QTreeView>
 
 namespace system_wizard {
@@ -93,21 +94,29 @@ std::optional<ConfigSources::Arm> parse_arm(std::filesystem::path file_path) {
     std::string serial = base_match[4].str();
     std::string name = base_match[1].str() + base_match[3].str();
 
-    return ConfigSources::Arm(name, arm_type, serial, file_path);
+    std::string io_config_name = "sawRobotIO1394-" + base_match[0].str() + ".xml";
+    std::filesystem::path io_config_path = file_path.parent_path() / io_config_name;
+    cmnXMLPath io_config;
+    io_config.SetInputSource(io_config_path.string());
+    std::string hardware_version;
+    io_config.GetXMLValue("", "/Config/Robot/@HardwareVersion", hardware_version, "");
+    bool is_DQLA = hardware_version == "DQLA";
+
+    return ConfigSources::Arm(name, arm_type, serial, file_path, is_DQLA);
 }
 
 std::optional<ConfigSources::Arm> parse_suj(std::filesystem::path file_path) {
     std::string file_name = file_path.stem().string();
+
+    // currently there is a hard-coded assumption in dvrk_system that the SUJ component is named "SUJ"
+    std::string name = "SUJ";
+
     if (file_name == "suj-fixed") {
-        return ConfigSources::Arm("Fixed SUJ", ArmType::Value::SUJ_FIXED, "", file_path);
+        return ConfigSources::Arm(name, ArmType::Value::SUJ_FIXED, "", file_path, false);
     } else if (file_name == "suj-si") {
-        return ConfigSources::Arm("SUJ Si", ArmType::Value::SUJ_SI, "", file_path);
+        return ConfigSources::Arm(name, ArmType::Value::SUJ_SI, "", file_path, false);
     } else if (file_name.size() >= 3 && file_name.substr(0, 3) == "suj") {
-        std::string name = file_name.substr(3);
-        if (name.size() > 0 && (name.at(0) == '-' || name.at(0) == '_')) {
-            name = name.substr(1);
-        } 
-        return ConfigSources::Arm(name, ArmType::Value::SUJ_CLASSIC, "", file_path);
+        return ConfigSources::Arm(name, ArmType::Value::SUJ_CLASSIC, "", file_path, false);
     } else {
         return {};
     }

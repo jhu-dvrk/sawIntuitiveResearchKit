@@ -34,13 +34,14 @@ class ConfigSources : public QWidget {
 public:
     class Arm {
     public:
-        Arm(std::string name, ArmType type, std::string serial, std::filesystem::path config_file)
-            : name(name), type(type), serial_number(serial), config_file(config_file) {}
+        Arm(std::string name, ArmType type, std::string serial, std::filesystem::path config_file, bool is_DQLA)
+            : name(name), type(type), serial_number(serial), config_file(config_file), is_DQLA(is_DQLA) {}
 
         std::string name;
         ArmType type;
         std::string serial_number;
         std::filesystem::path config_file;
+        bool is_DQLA;
     };
 
     ConfigSources(QWidget* parent = nullptr);

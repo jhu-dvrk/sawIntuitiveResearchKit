@@ -69,9 +69,16 @@ QuickArmPage::QuickArmPage(ArmConfig& config, const SystemConfigModel& model, Co
     auto choose_arm = [this](int index) {
         ConfigSources::Arm source = available_arms->get(index);
         *this->config = ArmConfig(source.name, source.type, ArmConfigType::NATIVE);
+        this->config->is_DQLA = source.is_DQLA;
         this->config->arm_file = source.config_file.filename().string();
         if (!source.serial_number.empty()) {
             this->config->serial_number = source.serial_number;
+        }
+
+        // fixed/Si SUJ do not need IO
+        // only supply default IO if there is exactly one IO available, otherwise make user choose
+        if ((source.type != ArmType::Value::SUJ_FIXED && source.type != ArmType::Value::SUJ_SI) && this->model->io_configs->count() == 1) {
+            this->config->io_name = this->model->io_configs->get(0).name;
         }
 
         if (source.type.isSUJ()) {
@@ -79,6 +86,7 @@ QuickArmPage::QuickArmPage(ArmConfig& config, const SystemConfigModel& model, Co
         } else {
             this->next_page_id = ArmEditor::PAGE_BASE_FRAME;
         }
+        setFinalPage(this->next_page_id == -1);
     };
     QObject::connect(arm_list_view, &ListView::choose, this, [this, choose_arm](int index) {
         choose_arm(index);
@@ -88,10 +96,10 @@ QuickArmPage::QuickArmPage(ArmConfig& config, const SystemConfigModel& model, Co
             this->wizard()->next();
         }
     });
-    QObject::connect(arm_list_view, &ListView::selected, this, [choose_arm](int index, bool selected){
+    QObject::connect(arm_list_view, &ListView::selected, this, [this, choose_arm](int index, bool selected){
         if (selected) { choose_arm(index); }
+        emit completeChanged();
     });
-    QObject::connect(arm_list_view, &ListView::selected, this, &QWizardPage::completeChanged);
 
     layout->addWidget(arm_list_view);
 
@@ -546,7 +554,9 @@ void BaseFramePage::initializePage() {
     for (int i = 0; i < system_model->arm_configs->count(); i++) {
         auto arm = system_model->arm_configs->get(i);
         if (arm.type.isSUJ()) {
-            suj_list->addItem(QString::fromStdString(arm.name));
+            // We use arm.type.name() instead of arm.name since all SUJ components
+            // are currently named "SUJ"
+            suj_list->addItem(QString::fromStdString(arm.type.name()));
         }
     }
 
@@ -611,7 +621,7 @@ void BaseFramePage::setFrameToHRSV() {
     double mounting_pitch = cmnPI_180 * hrsv_pitch->value(); // convert radians to degrees
     // Rotate by display mounting pitch, then do 180 degree rotation to flip X-axis direction to match ECM/stereo display
     vctRot3 rotation = vctRot3(vctAxAnRot3(vct3(0.0, 1.0, 0.0), cmnPI)) * vctRot3(vctAxAnRot3(vct3(1.0, 0.0, 0.0), mounting_pitch));
-    this->config->base_frame->transform = vctFrm4x4(rotation, vct3(0.0));
+    this->config->base_frame->transform = vctFrm4x4(rotation, vct3(0.0, 0.400, 0.475));
 }
 
 void BaseFramePage::setFrameToHapticMTMUser() {
@@ -626,7 +636,8 @@ void BaseFramePage::setFrameToSetupJoints() {
     this->config->base_frame = BaseFrameConfig();
     this->config->base_frame->use_custom_transform = false;
     this->config->base_frame->base_frame_component = ComponentInterfaceConfig();
-    std::string suj_name = suj_list->currentText().toStdString();
+    // dvrk_system currently assumes name is always "SUJ"
+    std::string suj_name = "SUJ"; // suj_list->currentText().toStdString();
     this->config->base_frame->base_frame_component.component_name = suj_name;
     this->config->base_frame->base_frame_component.interface_name = this->config->name;
 }
@@ -641,7 +652,7 @@ ArmEditor::ArmEditor(SystemConfigModel& model, ConfigSources& config_sources, QW
     setPage(PAGE_BASE_FRAME, new BaseFramePage(config, model));
 
     setWizardStyle(QWizard::ModernStyle);
-    setOption(QWizard::NoBackButtonOnStartPage);
+    setOptions(QWizard::NoBackButtonOnStartPage);
     setWindowTitle("Arm Config Editor");
 
     setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);

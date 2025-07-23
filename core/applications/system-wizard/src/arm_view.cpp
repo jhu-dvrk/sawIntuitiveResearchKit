@@ -54,10 +54,15 @@ void ArmView::updateData(int id) {
         text += " (simulated)";
     }
 
-    if (arm.base_frame.has_value() && !arm.base_frame->reference_frame_name.empty()) {
-        text += ", base frame is " + QString::fromStdString(arm.base_frame->reference_frame_name);
-    } else if (arm.config_type == ArmConfigType::NATIVE) {
-        text += ", no base frame";
+    if (!arm.type.isSUJ()) {
+        if (arm.base_frame.has_value()) {
+            const BaseFrameConfig& bf = *arm.base_frame;
+            std::string base_frame_name = bf.use_custom_transform ? bf.reference_frame_name : bf.base_frame_component.component_name;
+            base_frame_name = base_frame_name.empty() ? "(no name)" : base_frame_name;
+            text += ", base frame is " + QString::fromStdString(base_frame_name);
+        } else if (arm.config_type == ArmConfigType::NATIVE) {
+            text += ", no base frame";
+        }
     }
 
     display->setText(text);

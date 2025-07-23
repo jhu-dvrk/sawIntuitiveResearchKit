@@ -827,6 +827,7 @@ public:
     std::optional<std::string> io_name;
     std::optional<std::string> serial_number;
     std::optional<bool> is_simulated;
+    bool is_DQLA = false;
 
     std::optional<BaseFrameConfig> base_frame;
     std::optional<ComponentInterfaceConfig> component;
@@ -1065,7 +1066,7 @@ public:
     Json::Value toJSON() const {
         auto source = getSource();
         std::string io_name = source && source->io_name ? *source->io_name : source_io_name;
-        bool is_dqla = source ? false : source_is_dqla;
+        bool is_dqla = source ? source->is_DQLA : source_is_dqla;
 
         Json::Value value;
         value["IO"] = io_name;
@@ -1079,8 +1080,8 @@ public:
     }
 
     /* Store source arm name, and prefer retrieving IO name from current arm, so that changes to source arm config are reflected here */
-    bool source_is_dqla;
     std::string source_arm_name;
+    bool source_is_dqla = false;
     std::string source_io_name;
 
 private:
@@ -1538,7 +1539,10 @@ public:
                 component_configs.append(arm.component->component->toJSON());
             }
         }
-        config["component_manager"]["components"] = component_configs;
+
+        if (component_configs.size() > 0) {
+            config["component_manager"]["components"] = component_configs;
+        }
 
         Json::StreamWriterBuilder writer_builder;
         writer_builder["indentation"] = "    "; // four spaces

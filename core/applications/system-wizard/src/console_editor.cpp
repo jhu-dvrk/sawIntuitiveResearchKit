@@ -12,6 +12,8 @@ ConsoleEditor::ConsoleEditor(ConsoleConfig& config, SystemConfigModel& model, QW
     psm_teleop_editor(*config.psm_teleops, TeleopType::Value::PSM_TELEOP, *model.arm_configs),
     ecm_teleop_editor(*config.ecm_teleops, TeleopType::Value::ECM_TELEOP, *model.arm_configs)
 {
+    config.provideSources(*model.arm_configs);
+
     QVBoxLayout* layout = new QVBoxLayout(this);
 
     QHBoxLayout* header = new QHBoxLayout();
