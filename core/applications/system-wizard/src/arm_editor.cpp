@@ -220,7 +220,6 @@ HapticMTMPage::HapticMTMPage(ArmConfig& config, QWidget *parent) : QWizardPage(p
     // Haptic device selector determines which config options we display below,
     // as well as what shared library component we need to load
     haptic_device_selector = new QComboBox();
-    haptic_device_selector->setPlaceholderText("select haptic device type");
     haptic_device_selector->addItem("ForceDimension/Novint Falcon", 0);
     haptic_device_selector->addItem("Phantom Omni/Geomagic Touch",  1);
     haptic_device_selector->addItem("Other",                        2);
@@ -238,7 +237,6 @@ HapticMTMPage::HapticMTMPage(ArmConfig& config, QWidget *parent) : QWizardPage(p
     QLabel* left_right_label = new QLabel("Do you want to use the haptic device as left or right input?");
     left_right_label->setWordWrap(true);
     left_right_selector = new QComboBox();
-    left_right_selector->setPlaceholderText("select left/right input");
     left_right_selector->addItem("MTML (left input arm)",  0);
     left_right_selector->addItem("MTMR (right input arm)", 1);
 
@@ -367,7 +365,6 @@ ROSArmPage::ROSArmPage(ArmConfig& config, QWidget *parent) : QWizardPage(parent)
     });
 
     arm_type = new QComboBox();
-    arm_type->setPlaceholderText("select arm type");
     arm_type->addItem("PSM", 0);
     arm_type->addItem("MTM", 1);
     QObject::connect(arm_type, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this, update_component](int index) {
@@ -415,7 +412,6 @@ SimulatedArmPage::SimulatedArmPage(ArmConfig& config, QWidget *parent) : QWizard
     QFormLayout* form = new QFormLayout();
 
     arm_type = new QComboBox();
-    arm_type->setPlaceholderText("select arm type");
     arm_type->addItem("PSM", 0);
     arm_type->addItem("MTM", 1);
     arm_type->addItem("ECM", 2);
@@ -479,7 +475,6 @@ BaseFramePage::BaseFramePage(ArmConfig& config, SystemConfigModel& system_model,
     QFormLayout* form = new QFormLayout();
 
     base_frame_type = new QComboBox();
-    base_frame_type->setPlaceholderText("select arm type");
     base_frame_type->addItem("None", 0);
     base_frame_type->addItem("ForceDimension device user", 1);
     base_frame_type->addItem("Fixed ECM", 2);
@@ -517,7 +512,6 @@ BaseFramePage::BaseFramePage(ArmConfig& config, SystemConfigModel& system_model,
     QWidget* suj_details = new QWidget();
     QFormLayout* suj_layout = new QFormLayout(suj_details);
     suj_list = new QComboBox();
-    suj_list->setPlaceholderText("select SUJ");
     QLabel* suj_description = new QLabel("For PSMs and ECMs mounted on passive setup joints, or fixed virtual setup joints determined by e.g. hand-eye registration");
     suj_description->setWordWrap(true);
     suj_layout->addRow(suj_description);

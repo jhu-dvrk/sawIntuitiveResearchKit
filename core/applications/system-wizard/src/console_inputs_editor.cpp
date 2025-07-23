@@ -42,7 +42,6 @@ ConsoleInputsEditor::ConsoleInputsEditor(ConsoleInputConfig& model, ListModelT<A
     QVBoxLayout* foot_pedal_layout = new QVBoxLayout(foot_pedal_details);
 
     this->pedals_available_mtms = new QComboBox();
-    pedals_available_mtms->setPlaceholderText("No native MTMS available");
     QHBoxLayout* pedal_mtms = new QHBoxLayout();
     pedal_mtms->addWidget(new QLabel("Which MTM controller are the foot pedals plugged into?"));
     pedal_mtms->addWidget(pedals_available_mtms);
@@ -58,7 +57,6 @@ ConsoleInputsEditor::ConsoleInputsEditor(ConsoleInputConfig& model, ListModelT<A
     foot_pedal_layout->addLayout(head_sensor_layout);
 
     this->head_sensor_available_mtms = new QComboBox();
-    head_sensor_available_mtms->setPlaceholderText("No native MTMS available");
     QStackedWidget* head_sensor_stack = new QStackedWidget();
     head_sensor_stack->addWidget(new QWidget());
     QWidget* head_sensor_mtms = new QWidget();
@@ -75,7 +73,6 @@ ConsoleInputsEditor::ConsoleInputsEditor(ConsoleInputConfig& model, ListModelT<A
     QWidget* forcedimension_input = new QWidget();
     QHBoxLayout* forcedimension_input_layout = new QHBoxLayout(forcedimension_input);
     this->available_forcedimensions = new QComboBox();
-    available_forcedimensions->setPlaceholderText("No haptic MTMS available");
     forcedimension_input_layout->addWidget(new QLabel("Select which arm to get button events from:"));
     forcedimension_input_layout->addWidget(available_forcedimensions);
     forcedimension_input_layout->addStretch();
