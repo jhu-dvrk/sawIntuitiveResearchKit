@@ -37,7 +37,7 @@ if (cisst_FOUND_AS_REQUIRED)
 
   if (CISST_HAS_QT AND CISST_HAS_JSON)
     set (CMAKE_AUTOMOC ON)
-    
+
     set (HEADER_FILES
          include/accordion.hpp
          include/arm_editor.hpp
@@ -76,10 +76,13 @@ if (cisst_FOUND_AS_REQUIRED)
          src/teleop_view.cpp
     )
 
+    qt5_add_resources (SOURCE_FILES resources/dvrk_logo.qrc)
+
     add_executable(sawIntuitiveResearchKitSystemWizard main.cpp ${HEADER_FILES} ${SOURCE_FILES})
     target_compile_features(sawIntuitiveResearchKitSystemWizard PUBLIC cxx_std_17)
 
     target_include_directories(sawIntuitiveResearchKitSystemWizard PRIVATE include)
+    target_include_directories (sawIntuitiveResearchKitSystemWizard PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
     # link against cisst libraries (and dependencies)
     cisst_target_link_libraries (sawIntuitiveResearchKitSystemWizard ${REQUIRED_CISST_LIBRARIES})

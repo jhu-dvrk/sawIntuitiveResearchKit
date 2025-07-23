@@ -99,7 +99,8 @@ ConsolesContainer::ConsolesContainer(SystemConfigModel& model, QWidget* parent) 
     QToolButton *add_console_button = new QToolButton();
     add_console_button->setText("+");
     // Add empty, not enabled dummy tab
-    QLabel* no_tabs_view = new QLabel("Add surgeon console by pressing \"+\"");
+    QLabel* no_tabs_view = new QLabel("Add console by pressing \"+\"");
+    no_tabs_view->setStyleSheet("color: palette(text);");
     no_tabs_view->setAlignment(Qt::AlignCenter);
     no_tabs_view->setMargin(10);
     this->addTab(no_tabs_view, QString());
