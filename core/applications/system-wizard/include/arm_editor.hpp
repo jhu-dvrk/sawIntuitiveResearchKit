@@ -41,7 +41,10 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <QtWidgets>
 
+#include <memory>
+
 #include "config_sources.hpp"
+#include "file_selector.hpp"
 #include "list_view.hpp"
 #include "models/config_model.hpp"
 
@@ -134,6 +137,7 @@ public:
 
     void initializePage() override;
     void showEvent(QShowEvent *event) override;
+    bool isComplete() const override;
 
 private:
     ArmConfig* config;
@@ -141,6 +145,8 @@ private:
     QComboBox* haptic_device_selector;
     QStackedWidget* details;
     QComboBox* left_right_selector;
+    QLineEdit* arm_name;
+    FileSelector* config_selector;
 };
 
 class ROSArmPage : public QWizardPage {
@@ -152,12 +158,14 @@ public:
     int nextId() const override { return -1; }
 
     void showEvent(QShowEvent *event) override;
+    bool isComplete() const override;
 
 private:
     ArmConfig* config;
 
     QComboBox* arm_type;
     QLineEdit* arm_name;
+    QDoubleSpinBox* period_input;
 };
 
 class SimulatedArmPage : public QWizardPage {
@@ -166,15 +174,18 @@ class SimulatedArmPage : public QWizardPage {
 public:
     SimulatedArmPage(ArmConfig& config, QWidget *parent = nullptr);
 
-    int nextId() const override { return ArmEditor::PAGE_BASE_FRAME; }
+    int nextId() const override { return next_page_id; }
 
     void showEvent(QShowEvent *event) override;
+    bool isComplete() const override;
 
 private:
     ArmConfig* config;
+    int next_page_id = ArmEditor::PAGE_BASE_FRAME;
 
     QComboBox* arm_type;
     QLineEdit* arm_name;
+    FileSelector* config_selector;
 };
 
 class BaseFramePage : public QWizardPage {

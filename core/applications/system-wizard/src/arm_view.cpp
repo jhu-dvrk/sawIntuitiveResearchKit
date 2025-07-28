@@ -28,13 +28,9 @@ ArmView::ArmView(SystemConfigModel& model, ListView& list_view, int id, QWidget*
     layout->addWidget(display);
     layout->addStretch();
 
-    const ArmConfig& arm = model.arm_configs->get(id);
-    bool has_base_frame = arm.config_type == ArmConfigType::NATIVE && !arm.type.isSUJ();
-    if (has_base_frame) {
-        QPushButton* edit_button = new QPushButton("Edit");
-        QObject::connect(edit_button, &QPushButton::clicked, this, [this, &list_view](){ emit list_view.edit(this->id); });
-        layout->addWidget(edit_button);
-    }
+    QPushButton* edit_button = new QPushButton("Edit");
+    QObject::connect(edit_button, &QPushButton::clicked, this, [this, &list_view](){ emit list_view.edit(this->id); });
+    layout->addWidget(edit_button);
 
     QPushButton* delete_button = new QPushButton("Delete");
     QObject::connect(delete_button, &QPushButton::clicked, this, [this, &list_view](){ emit list_view.try_delete(this->id); });
@@ -60,7 +56,7 @@ void ArmView::updateData(int id) {
             std::string base_frame_name = bf.use_custom_transform ? bf.reference_frame_name : bf.base_frame_component.component_name;
             base_frame_name = base_frame_name.empty() ? "(no name)" : base_frame_name;
             text += ", base frame is " + QString::fromStdString(base_frame_name);
-        } else if (arm.config_type == ArmConfigType::NATIVE) {
+        } else if (arm.config_type == ArmConfigType::NATIVE || arm.config_type == ArmConfigType::SIMULATED) {
             text += ", no base frame";
         }
     }

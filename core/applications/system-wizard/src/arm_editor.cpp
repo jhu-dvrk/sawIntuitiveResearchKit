@@ -19,6 +19,10 @@ http://www.cisst.org/cisst/license.txt.
 
 #include "cisstCommon/cmnConstants.h"
 #include <cisstCommon/cmnPortability.h>
+#include <qformlayout.h>
+#include <qlabel.h>
+#include <qline.h>
+#include <qlineedit.h>
 #include "cisstVector/vctTransformationTypes.h"
 
 #include "models/config_model.hpp"
@@ -189,7 +193,6 @@ ArmTypePage::ArmTypePage(ArmConfig& config, QWidget *parent) : QWizardPage(paren
     haptic_input->setFlat(true);
     haptic_input->setAutoFillBackground(true);
     QObject::connect(haptic_input, &QPushButton::clicked, this, [this]() {
-        this->config->config_type = ArmConfigType::HAPTIC_MTM;
         this->next_page_id = ArmEditor::PAGE_HAPTIC_MTM;
         this->wizard()->next();
     });
@@ -201,7 +204,6 @@ ArmTypePage::ArmTypePage(ArmConfig& config, QWidget *parent) : QWizardPage(paren
     via_ros->setFlat(true);
     via_ros->setAutoFillBackground(true);
     QObject::connect(via_ros, &QPushButton::clicked, this, [this]() {
-        this->config->config_type = ArmConfigType::ROS_ARM;
         this->next_page_id = ArmEditor::PAGE_ROS_ARM;
         this->wizard()->next();
     });
@@ -212,7 +214,6 @@ ArmTypePage::ArmTypePage(ArmConfig& config, QWidget *parent) : QWizardPage(paren
     kin_simulated->setFlat(true);
     kin_simulated->setAutoFillBackground(true);
     QObject::connect(kin_simulated, &QPushButton::clicked, this, [this]() {
-        this->config->config_type = ArmConfigType::NATIVE;
         this->next_page_id = ArmEditor::PAGE_KIN_SIM;
         this->wizard()->next();
     });
@@ -230,7 +231,6 @@ HapticMTMPage::HapticMTMPage(ArmConfig& config, QWidget *parent) : QWizardPage(p
     haptic_device_selector = new QComboBox();
     haptic_device_selector->addItem("ForceDimension/Novint Falcon", 0);
     haptic_device_selector->addItem("Phantom Omni/Geomagic Touch",  1);
-    haptic_device_selector->addItem("Other",                        2);
     device_type_form->addRow("Type of haptic input device:", haptic_device_selector);
     layout->addLayout(device_type_form);
 
@@ -251,48 +251,56 @@ HapticMTMPage::HapticMTMPage(ArmConfig& config, QWidget *parent) : QWizardPage(p
     force_dimension_layout->addWidget(left_right_label);
     force_dimension_layout->addWidget(left_right_selector);
 
-    QHBoxLayout* config_file_selector = new QHBoxLayout();
-    QFileDialog* file_dialog = new QFileDialog(this);
-    file_dialog->setFileMode(QFileDialog::ExistingFile);
-    file_dialog->setViewMode(QFileDialog::List);
-    file_dialog->setOptions(QFileDialog::DontResolveSymlinks);
-    file_dialog->setNameFilter("Config file (*.json)");
-    QLineEdit* config_file_name = new QLineEdit();
-    QPushButton* config_file_browse_button = new QPushButton("Browse");
-    QObject::connect(config_file_browse_button, &QPushButton::clicked, file_dialog, &QDialog::open);
-    QObject::connect(file_dialog, &QFileDialog::fileSelected, this, [config_file_name](const QString& file_name) {
-        if (file_name.isEmpty()) { return; }
-        config_file_name->setText(file_name);
-    });
-    config_file_name->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
-    config_file_selector->addWidget(config_file_name);
-    config_file_selector->addWidget(config_file_browse_button);
-    force_dimension_layout->addLayout(config_file_selector);
+    QFormLayout* force_dimension_form = new QFormLayout();
+    force_dimension_form->setMargin(0);
 
-    QObject::connect(left_right_selector, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this, config_file_name](int index) {
+    arm_name = new QLineEdit();
+    force_dimension_form->addRow("Arm name:", arm_name);
+    QObject::connect(arm_name, &QLineEdit::textChanged, this, [this](const QString& text){
+        this->config->name = text.toStdString();
+        emit completeChanged();
+    });
+
+    config_selector = new FileSelector();
+    QObject::connect(config_selector, &FileSelector::selected, this, [this](std::filesystem::path file) {
+        config_selector->setCurrentFile(file.string());
+        emit completeChanged();
+    });
+    force_dimension_form->addRow("Device config:", config_selector);
+    force_dimension_layout->addLayout(force_dimension_form);
+
+    QObject::connect(left_right_selector, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index) {
         if (index == 0) {
             this->config->name = "MTML";
-            config_file_name->setText("sawForceDimensionSDK-MTML.json");
+            arm_name->setText("MTMR");
+            config_selector->setCurrentFile("sawForceDimensionSDK-MTML.json");
         } else if (index == 1) {
             this->config->name = "MTMR";
-            config_file_name->setText("sawForceDimensionSDK-MTMR.json");
+            arm_name->setText("MTMR");
+            config_selector->setCurrentFile("sawForceDimensionSDK-MTMR.json");
         }
 
         // Configure ForceDimensionSDK component
         auto component = ComponentConfig();
         component.name = "ForceDimensionSDK";
         component.library_name = "sawForceDimensionSDK";
-        component.class_name = "mtsForceDimensionSDK";
-        component.configure_parameter = config_file_name->text().toStdString();
+        component.class_name = "mtsForceDimension";
+        if (config_selector->currentFile()) {
+            component.configure_parameter = config_selector->currentFile().value();
+        }
 
         // Configure arm's interface to component
         this->config->component = ComponentInterfaceConfig();
         this->config->component->component_name = component.name;
         this->config->component->interface_name = this->config->name;
         this->config->component->component = component;
+
+        emit completeChanged();
     });
 
     details->addWidget(force_dimension);
+
+    details->addWidget(new QLabel("Not supported yet - let us know if you want this feature!"));
 
     layout->addWidget(details);
     layout->addStretch();
@@ -308,20 +316,22 @@ HapticMTMPage::HapticMTMPage(ArmConfig& config, QWidget *parent) : QWizardPage(p
             details->setCurrentIndex(0);
             break;
         }
-    });
 
-    registerField("haptic.device*", haptic_device_selector);
+        emit completeChanged();
+    });
 }
 
 void HapticMTMPage::initializePage() {
     haptic_device_selector->setCurrentIndex(-1);
     details->setCurrentIndex(0);
     left_right_selector->setCurrentIndex(-1);
+    arm_name->setText("");
+    config_selector->setCurrentFile("");
 }
 
 void HapticMTMPage::showEvent(QShowEvent *CMN_UNUSED(event)) {
     if (config->config_type != ArmConfigType::HAPTIC_MTM) {
-        *config = ArmConfig("MTM", ArmType::Value::MTM_GENERIC, ArmConfigType::HAPTIC_MTM);
+        *config = ArmConfig("", ArmType::Value::MTM_GENERIC, ArmConfigType::HAPTIC_MTM);
     } else {
         config->type = ArmType::Value::MTM_GENERIC;
         if (config->haptic_device) {
@@ -335,14 +345,28 @@ void HapticMTMPage::showEvent(QShowEvent *CMN_UNUSED(event)) {
         } else if (interface.size() >= 4 && interface.substr(0, 4) == "MTMR") {
             left_right_selector->setCurrentIndex(1);
         }
+
+        arm_name->setText(QString::fromStdString(config->name));
+
+        if (config->component && config->component->component) {
+            auto comp = config->component->component;
+            config_selector->setCurrentFile(comp->configure_parameter);
+        }
     }
+}
+
+bool HapticMTMPage::isComplete() const {
+    bool device_selected = haptic_device_selector->currentIndex() != -1;
+    bool device_configured = left_right_selector->currentIndex() != -1 && !arm_name->text().isEmpty();
+
+    return device_selected && device_configured && config_selector->currentFile().has_value();
 }
 
 ROSArmPage::ROSArmPage(ArmConfig& config, QWidget *parent) : QWizardPage(parent), config(&config) {
     setTitle("Remote arm via ROS");
 
     QVBoxLayout* layout = new QVBoxLayout(this);
-    QLabel* description1 = new QLabel("Client arm for a remote dVRK arm available via ROS, either an actual arm or a simulated provided by e.g. the AMBF simulator.");
+    QLabel* description1 = new QLabel("Client arm for a remote dVRK arm available via ROS, either an actual arm or a simulateion provided by e.g. the AMBF simulator.");
     description1->setWordWrap(true);
     layout->addWidget(description1);
     QLabel* description2 = new QLabel("Client arm name (e.g. \"PSM1\") must match ROS namespace used for remote arm");
@@ -355,8 +379,19 @@ ROSArmPage::ROSArmPage(ArmConfig& config, QWidget *parent) : QWizardPage(parent)
         // Configure dvrk_arm_from_ros component
         auto component = ComponentConfig();
         component.name = this->config->name;
+        if (period_input->value() > 0.0) {
+            component.period = period_input->value();
+        } else {
+            component.period = 0.01; // 100 Hz default
+        }
         component.library_name = "dvrk_arm_from_ros";
-        component.class_name = "dvrk_arm_from_ros";
+        if (this->config->type.isPSM()) {
+          component.class_name = "dvrk_psm_from_ros";
+        } else if (this->config->type.isMTM()) {
+            component.class_name = "dvrk_mtm_from_ros";
+        } else {
+            component.class_name = "dvrk_arm_from_ros";
+        }
 
         // Configure arm's interface to component
         this->config->component = ComponentInterfaceConfig();
@@ -364,13 +399,6 @@ ROSArmPage::ROSArmPage(ArmConfig& config, QWidget *parent) : QWizardPage(parent)
         this->config->component->interface_name = this->config->name;
         this->config->component->component = component;
     };
-
-    arm_name = new QLineEdit();
-    form->addRow("Arm name:", arm_name);
-    QObject::connect(arm_name, &QLineEdit::textChanged, this, [this, update_component](const QString& text){
-        this->config->name = text.toStdString();
-        update_component();
-    });
 
     arm_type = new QComboBox();
     arm_type->addItem("PSM", 0);
@@ -385,16 +413,35 @@ ROSArmPage::ROSArmPage(ArmConfig& config, QWidget *parent) : QWizardPage(parent)
         }
 
         update_component();
+        emit completeChanged();
     });
 
     form->addRow("Arm type:", arm_type);
+
+    arm_name = new QLineEdit();
+    form->addRow("Arm name:", arm_name);
+    QObject::connect(arm_name, &QLineEdit::textChanged, this, [this, update_component](const QString& text){
+        this->config->name = text.toStdString();
+        update_component();
+        emit completeChanged();
+    });
+
+    period_input = new QDoubleSpinBox();
+    period_input->setRange(0.000, 0.050);
+    period_input->setSingleStep(0.001);
+    period_input->setSpecialValueText("Default (0.01 s/100 Hz)");
+    QObject::connect(period_input, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, update_component);
+
+    QLabel* period_label = new QLabel("Period (seconds):");
+    period_label->setToolTip("Period that ROS client component will run at");
+    form->addRow(period_label, period_input);
 
     layout->addLayout(form);
 }
 
 void ROSArmPage::showEvent(QShowEvent *CMN_UNUSED(event)) {
     if (config->config_type != ArmConfigType::ROS_ARM) {
-        *config = ArmConfig("Arm", ArmType::Value::PSM_GENERIC, ArmConfigType::ROS_ARM);
+        *config = ArmConfig("", static_cast<ArmType::Value>(-1), ArmConfigType::ROS_ARM);
         arm_type->setCurrentIndex(-1);
         arm_name->setText("");
     } else {
@@ -405,8 +452,18 @@ void ROSArmPage::showEvent(QShowEvent *CMN_UNUSED(event)) {
         } else {
             arm_type->setCurrentIndex(-1);
         }
+        if (config->component && config->component->component) {
+            const auto comp = config->component->component;
+            if (comp->period.has_value()) {
+                period_input->setValue(comp->period.value());
+            }
+        }
         arm_name->setText(QString::fromStdString(config->name));
     }
+}
+
+bool ROSArmPage::isComplete() const {
+    return !arm_name->text().isEmpty() && arm_type->currentIndex() != -1;
 }
 
 SimulatedArmPage::SimulatedArmPage(ArmConfig& config, QWidget *parent) : QWizardPage(parent), config(&config) {
@@ -416,6 +473,9 @@ SimulatedArmPage::SimulatedArmPage(ArmConfig& config, QWidget *parent) : QWizard
     QLabel* description1 = new QLabel("Simple kinematic (no dynamics/collision/contact) simulation of a dVRK arm.");
     description1->setWordWrap(true);
     layout->addWidget(description1);
+    QLabel* description2 = new QLabel("This is for the simple built-in dVRK simulation - if you want to use an external simulator (e.g. AMBF or Isaac Sim), please instead use a ROS arm and have the simulator communicate with the dVRK via ROS.");
+    description2->setWordWrap(true);
+    layout->addWidget(description2);
 
     QFormLayout* form = new QFormLayout();
 
@@ -423,6 +483,7 @@ SimulatedArmPage::SimulatedArmPage(ArmConfig& config, QWidget *parent) : QWizard
     arm_type->addItem("PSM", 0);
     arm_type->addItem("MTM", 1);
     arm_type->addItem("ECM", 2);
+    arm_type->addItem("SUJ", 3);
     QObject::connect(arm_type, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index) {
         if (index == 0) {
             this->config->type = ArmType::Value::PSM;
@@ -430,7 +491,13 @@ SimulatedArmPage::SimulatedArmPage(ArmConfig& config, QWidget *parent) : QWizard
             this->config->type = ArmType::Value::MTM;
         } else if (index == 2) {
             this->config->type = ArmType::Value::ECM;
+        } else if (index == 3) {
+            this->config->type = ArmType::Value::SUJ_CLASSIC;
         }
+        next_page_id = this->config->type.isSUJ() ? -1 : ArmEditor::PAGE_BASE_FRAME;
+        setFinalPage(next_page_id == -1);
+
+        emit completeChanged();
     });
     form->addRow("Arm type:", arm_type);
 
@@ -438,14 +505,22 @@ SimulatedArmPage::SimulatedArmPage(ArmConfig& config, QWidget *parent) : QWizard
     form->addRow("Arm name:", arm_name);
     QObject::connect(arm_name, &QLineEdit::textChanged, this, [this](const QString& text){
         this->config->name = text.toStdString();
+        emit completeChanged();
     });
+
+    config_selector = new FileSelector();
+    QObject::connect(config_selector, &FileSelector::selected, this, [this](std::filesystem::path file) {
+        this->config->arm_file = file;
+        emit completeChanged();
+    });
+    form->addRow("Kinematic config:", config_selector);
 
     layout->addLayout(form);
 }
 
 void SimulatedArmPage::showEvent(QShowEvent *CMN_UNUSED(event)) {
-    if (config->config_type != ArmConfigType::NATIVE) {
-        *config = ArmConfig("Arm", ArmType::Value::PSM, ArmConfigType::NATIVE);
+    if (config->config_type != ArmConfigType::SIMULATED) {
+        *config = ArmConfig("", static_cast<ArmType::Value>(-1), ArmConfigType::SIMULATED);
         arm_type->setCurrentIndex(-1);
         arm_name->setText("");
     } else {
@@ -455,13 +530,30 @@ void SimulatedArmPage::showEvent(QShowEvent *CMN_UNUSED(event)) {
             arm_type->setCurrentIndex(1);
         } else if (config->type == ArmType(ArmType::Value::ECM)) {
             arm_type->setCurrentIndex(2);
+        } else if (config->type == ArmType(ArmType::Value::SUJ_CLASSIC)) {
+            arm_type->setCurrentIndex(3);
         } else {
             arm_type->setCurrentIndex(-1);
         }
+
+        next_page_id = this->config->type.isSUJ() ? -1 : ArmEditor::PAGE_BASE_FRAME;
+        bool is_last_page = next_page_id == -1;
+        // prevent infinite recursion
+        if (isFinalPage() != is_last_page) {
+            setFinalPage(is_last_page);
+        }
+
         arm_name->setText(QString::fromStdString(config->name));
+        if (config->arm_file.has_value()) {
+            config_selector->setCurrentFile(config->arm_file.value());
+        }
     }
 
     config->is_simulated = true;
+}
+
+bool SimulatedArmPage::isComplete() const {
+    return !arm_name->text().isEmpty() && arm_type->currentIndex() != -1;
 }
 
 BaseFramePage::BaseFramePage(ArmConfig& config, SystemConfigModel& system_model, QWidget *parent) :
@@ -679,11 +771,15 @@ void ArmEditor::setId(int id) {
         setWindowTitle("Configure arm: " + QString::fromStdString(config.name));
         if (config.config_type == ArmConfigType::HAPTIC_MTM) {
             setStartId(PAGE_HAPTIC_MTM);
+        } else if (config.config_type == ArmConfigType::ROS_ARM) {
+            setStartId(PAGE_ROS_ARM);
+        }  else if (config.config_type == ArmConfigType::SIMULATED) {
+            setStartId(PAGE_KIN_SIM);
         } else {
             setStartId(PAGE_BASE_FRAME);
         }
     } else {
-        config = ArmConfig("", ArmType::Value::PSM, ArmConfigType::NATIVE);
+        config = ArmConfig("", static_cast<ArmType::Value>(-1), static_cast<ArmConfigType>(-1));
         setStartId(PAGE_QUICK_ARM);
         setWindowTitle("Configure new arm");
     }

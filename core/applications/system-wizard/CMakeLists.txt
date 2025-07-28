@@ -47,6 +47,7 @@ if (cisst_FOUND_AS_REQUIRED)
          include/console_editor.hpp
          include/console_inputs_editor.hpp
          include/editor.hpp
+         include/file_selector.hpp
          include/io_editor.hpp
          include/io_view.hpp
          include/list_view.hpp
@@ -68,6 +69,7 @@ if (cisst_FOUND_AS_REQUIRED)
          src/console_editor.cpp
          src/console_inputs_editor.cpp
          src/editor.cpp
+         src/file_selector.cpp
          src/io_editor.cpp
          src/io_view.cpp
          src/list_view.cpp

@@ -147,7 +147,8 @@ void ConsoleInputsEditor::updateAvailableArms() {
 
     for (int idx = 0; idx < arms->count(); idx++) {
         const ArmConfig& arm = arms->get(idx);
-        if (arm.config_type == ArmConfigType::NATIVE && arm.type.isMTM()) {
+        bool native_or_simulated = arm.config_type == ArmConfigType::NATIVE || arm.config_type == ArmConfigType::SIMULATED;
+        if (native_or_simulated && arm.type.isMTM()) {
             pedals_available_mtms->addItem(QString::fromStdString(arm.name));
             head_sensor_available_mtms->addItem(QString::fromStdString(arm.name));
         }

@@ -40,6 +40,9 @@ public:
         config.class_name = json.get("class-name", "").asString();
         config.name = json["constructor-arg"].get("Name", "").asString();
         config.configure_parameter = json.get("configure-parameter", "").asString();
+        if (json["constructor-arg"].isMember("Period")) {
+            config.period = json["constructor-arg"].get("Period", 0.01).asDouble();
+        }
 
         return config;
     }
@@ -52,6 +55,9 @@ public:
 
         Json::Value constructor_args;
         constructor_args["Name"] = name;
+        if (period.has_value()) {
+            constructor_args["Period"] = period.value();
+        }
         value["constructor-arg"] = constructor_args;
 
         if (!configure_parameter.empty()) {
@@ -65,6 +71,7 @@ public:
     std::string class_name;
     std::string name;
     std::string configure_parameter;
+    std::optional<double> period;
 };
 
 class ComponentInterfaceConfig {
@@ -92,7 +99,8 @@ public:
 enum class ArmConfigType {
     NATIVE,
     ROS_ARM,
-    HAPTIC_MTM
+    HAPTIC_MTM,
+    SIMULATED
 };
 
 class ArmType {
@@ -745,6 +753,7 @@ public:
             // simulation options are DYNAMIC (unsupported/unused), NONE, or KINEMATIC
             bool is_kinematic_simulatation = value["simulation"].asString() == "KINEMATIC";
             config->is_simulated = is_kinematic_simulatation;
+            config->config_type = ArmConfigType::SIMULATED;
         }
 
         if (value.isMember("IO")) {
@@ -783,7 +792,7 @@ public:
             value["arm_file"] = arm_file->string();
         }
 
-        if (config_type == ArmConfigType::NATIVE) {
+        if (config_type == ArmConfigType::NATIVE || config_type == ArmConfigType::SIMULATED) {
             if (base_frame) {
                 value["base_frame"] = base_frame->toJSON();
             }
@@ -885,12 +894,15 @@ public:
         }
 
         parameters["scale"] = scale;
-        if (!has_MTM_gripper) {
-            parameters["start_gripper_threshold"] = true;
-            parameters["ignore_jaw"] = true;
-        }
-        if (!has_MTM_wrist_actuation) {
-            parameters["align_MTM"] = false;
+
+        if (type.isPSM()) {
+            if (!has_MTM_gripper) {
+                parameters["start_gripper_threshold"] = 0.0;
+                parameters["ignore_jaw"] = true;
+            }
+            if (!has_MTM_wrist_actuation) {
+                parameters["align_MTM"] = false;
+            }
         }
         value["configure_parameter"] = parameters;
 

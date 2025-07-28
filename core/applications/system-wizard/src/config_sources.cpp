@@ -94,13 +94,17 @@ std::optional<ConfigSources::Arm> parse_arm(std::filesystem::path file_path) {
     std::string serial = base_match[4].str();
     std::string name = base_match[1].str() + base_match[3].str();
 
+    bool is_DQLA = false;
+
     std::string io_config_name = "sawRobotIO1394-" + base_match[0].str() + ".xml";
     std::filesystem::path io_config_path = file_path.parent_path() / io_config_name;
-    cmnXMLPath io_config;
-    io_config.SetInputSource(io_config_path.string());
-    std::string hardware_version;
-    io_config.GetXMLValue("", "/Config/Robot/@HardwareVersion", hardware_version, "");
-    bool is_DQLA = hardware_version == "DQLA";
+    if (std::filesystem::exists(io_config_path)) {
+        cmnXMLPath io_config;
+        io_config.SetInputSource(io_config_path.string());
+        std::string hardware_version;
+        io_config.GetXMLValue("", "/Config/Robot/@HardwareVersion", hardware_version, "");
+        is_DQLA = hardware_version == "DQLA";
+    }
 
     return ConfigSources::Arm(name, arm_type, serial, file_path, is_DQLA);
 }
