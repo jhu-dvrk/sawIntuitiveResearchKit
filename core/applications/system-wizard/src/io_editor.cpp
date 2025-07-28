@@ -14,6 +14,7 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 #include "io_editor.hpp"
+#include "accordion.hpp"
 
 namespace system_wizard {
 
@@ -21,7 +22,8 @@ IOEditPage::IOEditPage(IOConfig& config, const SystemConfigModel& model, QWidget
     : QWizardPage(parent), config(&config), model(&model) {
     setTitle("I/O Config Editor");
 
-    QFormLayout* form = new QFormLayout(this);
+    QVBoxLayout* layout = new QVBoxLayout(this);
+    QFormLayout* form = new QFormLayout();
 
     name_input = new QLineEdit();
     QRegularExpression name_regex("[a-zA-Z]\\w*"); // must start with letter, followed by 0+ letters/digits
@@ -85,13 +87,22 @@ IOEditPage::IOEditPage(IOConfig& config, const SystemConfigModel& model, QWidget
     protocol_label->setToolTip("Communication protocol");
     form->addRow(protocol_label, protocol_selector);
 
+    layout->addLayout(form);
+
+    Accordion* advanced_settings = new Accordion("Advanced", "palette(window)", false);
+    QWidget* advanced_settings_widget = new QWidget();
+    QFormLayout* advanced_settings_layout = new QFormLayout(advanced_settings_widget);
+
     QLabel* frequency_label = new QLabel("Frequency (hz):");
     frequency_label->setToolTip("(Optional) frequency to run I/O at, default 1500 Hz. If set too high, system will not be able to keep up and I/O errors may trigger.");
-    form->addRow(frequency_label, frequency_input);
+    advanced_settings_layout->addRow(frequency_label, frequency_input);
 
     QLabel* watchdog_label = new QLabel("Watchdog timeout (ms):");
     watchdog_label->setToolTip("(Optional) Watchdog timeout for controllers on this I/O, default 10 ms. Do not increase unless you know what you are doing!");
-    form->addRow(watchdog_label, watchdog_timeout_input);
+    advanced_settings_layout->addRow(watchdog_label, watchdog_timeout_input);
+
+    advanced_settings->setWidget(advanced_settings_widget);
+    layout->addWidget(advanced_settings);
 }
 
 void IOEditPage::initializePage() {
