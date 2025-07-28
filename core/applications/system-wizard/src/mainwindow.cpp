@@ -45,6 +45,16 @@ MainWindow::MainWindow() : directory_chooser(this, "Open config source folder") 
     setWindowTitle("dVRK System Wizard");
 }
 
+void MainWindow::newConfig() {
+    editor->newConfig();
+}
+
+void MainWindow::openConfigFile(std::filesystem::path config) {
+    std::filesystem::path source_dir = config.parent_path();
+    config_sources->add_source(QDir(QString::fromStdString(source_dir.string())));
+    editor->openConfigFile(config);
+}
+
 void MainWindow::createActions() {
     open_source = new QAction(style()->standardIcon(QStyle::SP_DirOpenIcon),
                          "Open source folder", this);

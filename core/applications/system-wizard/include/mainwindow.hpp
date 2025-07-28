@@ -18,6 +18,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <QMainWindow>
 #include <QMenu>
+#include <filesystem>
 
 #include "config_sources.hpp"
 #include "editor.hpp"
@@ -29,6 +30,10 @@ class MainWindow : public QMainWindow {
 
 public:
     MainWindow();
+
+public:
+    void newConfig();
+    void openConfigFile(std::filesystem::path config);
 
 private slots:
     void open_folder();

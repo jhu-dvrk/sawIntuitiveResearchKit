@@ -55,8 +55,6 @@ Editor::Editor(ConfigSources& config_sources, QWidget* parent)
 
     QObject::connect(close_config_shortcut, &QShortcut::activated, this, [this](){ closeConfig(tabs->currentIndex()); });
     QObject::connect(tabs->tabBar(), &QTabBar::tabCloseRequested, this, [this](int index){ closeConfig(index); });
-
-    newConfig();
 }
 
 void Editor::newConfig() {
@@ -79,6 +77,16 @@ void Editor::openConfig() {
 
     std::filesystem::path file_path(file_name.toStdString());
     std::unique_ptr<ConfigEditor> editor = ConfigEditor::open(file_path, *config_sources);
+    if (editor == nullptr) {
+        // TODO: display validation/error message
+        return;
+    }
+
+    createTab(std::move(editor));
+}
+
+void Editor::openConfigFile(std::filesystem::path config_file) {
+    std::unique_ptr<ConfigEditor> editor = ConfigEditor::open(config_file, *config_sources);
     if (editor == nullptr) {
         // TODO: display validation/error message
         return;

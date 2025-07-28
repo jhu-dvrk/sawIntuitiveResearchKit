@@ -20,7 +20,6 @@ http://www.cisst.org/cisst/license.txt.
 
 #include "config_editor.hpp"
 #include "config_sources.hpp"
-#include "models/config_model.hpp"
 
 namespace system_wizard {
 
@@ -33,6 +32,7 @@ public:
 public slots:
     void newConfig();
     void openConfig();
+    void openConfigFile(std::filesystem::path config_file);
 
     void save();
     void saveAs();
