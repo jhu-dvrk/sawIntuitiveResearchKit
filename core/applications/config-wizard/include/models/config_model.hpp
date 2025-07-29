@@ -103,6 +103,13 @@ enum class ArmConfigType {
     SIMULATED
 };
 
+enum class ControllerType {
+    QLA,
+    DQLA,
+    DRAC,
+    OTHER
+};
+
 class ArmType {
 public:
     enum class Value {
@@ -772,6 +779,10 @@ public:
             config->io_gripper_file = value["IO_gripper_file"].asString();
         }
 
+        if (type->isSUJ()) {
+            config->controller_type = ControllerType::OTHER;
+        }
+
         return config;
     }
 
@@ -854,7 +865,7 @@ public:
     std::optional<std::string> io_name;
     std::optional<std::string> serial_number;
     std::optional<bool> is_simulated;
-    bool is_DQLA = false;
+    ControllerType controller_type = ControllerType::QLA;
 
     std::optional<BaseFrameConfig> base_frame;
     std::optional<ComponentInterfaceConfig> component;
@@ -1105,7 +1116,7 @@ public:
     Json::Value toJSON() const {
         auto source = getSource();
         std::string io_name = source && source->io_name ? *source->io_name : source_io_name;
-        bool is_dqla = source ? source->is_DQLA : source_is_dqla;
+        bool is_dqla = source ? (source->controller_type == ControllerType::DQLA) : source_is_dqla;
 
         Json::Value value;
         value["IO"] = io_name;

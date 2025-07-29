@@ -21,7 +21,7 @@ http://www.cisst.org/cisst/license.txt.
 
 namespace config_wizard {
 
-SystemLauncher::SystemLauncher(QCoreApplication& app) : QObject(), application(&app), process(this) {
+SystemLauncher::SystemLauncher(QCoreApplication& app, bool dark_mode) : QObject(), application(&app), dark_mode(dark_mode), process(this) {
     QObject::connect(&process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, &SystemLauncher::onFinished);
     QObject::connect(&process, &QProcess::errorOccurred, this, &SystemLauncher::onError);
     QObject::connect(&process, &QProcess::stateChanged, this, &SystemLauncher::onStateChanged);
@@ -67,6 +67,11 @@ std::string SystemLauncher::launch(const SystemConfigModel& model) {
     }
 
     arguments << "-j" << temp_config_file.fileName();
+
+    if (dark_mode) {
+        arguments << "-D";
+    }
+
     process.start(program, arguments);
     return "";
 }

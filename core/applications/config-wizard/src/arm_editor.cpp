@@ -74,7 +74,7 @@ QuickArmPage::QuickArmPage(ArmConfig& config, const SystemConfigModel& model, Co
     auto choose_arm = [this](int index) {
         ConfigSources::Arm source = available_arms->get(index);
         *this->config = ArmConfig(source.name, source.type, ArmConfigType::NATIVE);
-        this->config->is_DQLA = source.is_DQLA;
+        this->config->controller_type = source.controller_type;
         this->config->arm_file = source.arm_file;
         this->config->io_file = source.io_file;
         this->config->io_gripper_file = source.io_gripper_file;

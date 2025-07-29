@@ -28,7 +28,7 @@ class SystemLauncher : public QObject {
     Q_OBJECT
 
 public:
-    SystemLauncher(QCoreApplication& app);
+    SystemLauncher(QCoreApplication& app, bool dark_mode = false);
 
     std::string launch(const SystemConfigModel& model);
 
@@ -47,6 +47,7 @@ private:
     void onError(QProcess::ProcessError error);
 
     QCoreApplication* application;
+    bool dark_mode;
 
     QProcess process;
     QTemporaryFile temp_config_file;

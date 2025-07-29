@@ -34,8 +34,12 @@ class ConfigSources : public QWidget {
 public:
     class Arm {
     public:
-        Arm(std::string name, ArmType type, std::string serial, std::filesystem::path arm_file, std::optional<std::filesystem::path> io_file, bool is_DQLA)
-            : name(name), type(type), serial_number(serial), arm_file(arm_file), io_file(io_file), is_DQLA(is_DQLA) {}
+        Arm(std::string name, ArmType type, std::string serial,
+            std::filesystem::path arm_file, std::optional<std::filesystem::path> io_file,
+            ControllerType controller_type)
+            : name(name), type(type), serial_number(serial),
+              arm_file(arm_file), io_file(io_file),
+              controller_type(controller_type) {}
 
         std::string name;
         ArmType type;
@@ -43,7 +47,7 @@ public:
         std::filesystem::path arm_file;
         std::optional<std::filesystem::path> io_file;
         std::optional<std::filesystem::path> io_gripper_file;
-        bool is_DQLA;
+        ControllerType controller_type;
     };
 
     ConfigSources(QWidget* parent = nullptr);

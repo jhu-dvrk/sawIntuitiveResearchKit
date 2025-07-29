@@ -96,7 +96,7 @@ std::optional<ConfigSources::Arm> parseArm(std::filesystem::path file_path) {
     std::string serial = base_match[4].str();
     std::string name = base_match[1].str() + base_match[3].str();
 
-    bool is_DQLA = false;
+    ControllerType controller_type = ControllerType::QLA;
 
     std::string io_config_name = "sawRobotIO1394-" + base_match[0].str() + ".xml";
     std::filesystem::path io_config_path = file_path.parent_path() / io_config_name;
@@ -105,13 +105,23 @@ std::optional<ConfigSources::Arm> parseArm(std::filesystem::path file_path) {
         io_config.SetInputSource(io_config_path.string());
         std::string hardware_version;
         io_config.GetXMLValue("", "/Config/Robot/@HardwareVersion", hardware_version, "");
-        is_DQLA = hardware_version == "DQLA";
+
+        if (hardware_version == "DQLA") {
+            controller_type = ControllerType::DQLA;
+        } else if (hardware_version == "dRA1") {
+            controller_type = ControllerType::DRAC;
+        } else if (hardware_version == "QLA1") {
+            controller_type = ControllerType::QLA;
+        } else {
+            std::cerr << "unknown controller hardware version \"" << hardware_version << "\" found in " << io_config_path.string() << std::endl;
+            return {};
+        }
     }
 
     std::string io_gripper_config_name = "sawRobotIO1394-" + base_match[1].str() + "-gripper-" + base_match[4].str() + ".xml";
     std::filesystem::path io_gripper_config_path = file_path.parent_path() / io_gripper_config_name;
 
-    auto arm = ConfigSources::Arm(name, arm_type, serial, file_path, io_config_path, is_DQLA);
+    auto arm = ConfigSources::Arm(name, arm_type, serial, file_path, io_config_path, controller_type);
 
     if (std::filesystem::exists(io_gripper_config_path)) {
         arm.io_gripper_file = io_gripper_config_path;
@@ -130,11 +140,11 @@ std::optional<ConfigSources::Arm> parseSUJ(std::filesystem::path file_path) {
     std::filesystem::path io_config_path = file_path.parent_path() / io_config_name;
 
     if (file_name == "suj-fixed") {
-        return ConfigSources::Arm(name, ArmType::Value::SUJ_FIXED, "", file_path, {}, false);
+        return ConfigSources::Arm(name, ArmType::Value::SUJ_FIXED, "", file_path, {}, ControllerType::OTHER);
     } else if (file_name == "suj-si") {
-        return ConfigSources::Arm(name, ArmType::Value::SUJ_SI, "", file_path, {}, false);
+        return ConfigSources::Arm(name, ArmType::Value::SUJ_SI, "", file_path, {}, ControllerType::OTHER);
     } else if (file_name.size() >= 3 && file_name.substr(0, 3) == "suj") {
-        return ConfigSources::Arm(name, ArmType::Value::SUJ_CLASSIC, "", file_path, io_config_path, false);
+        return ConfigSources::Arm(name, ArmType::Value::SUJ_CLASSIC, "", file_path, io_config_path, ControllerType::OTHER);
     } else {
         return {};
     }

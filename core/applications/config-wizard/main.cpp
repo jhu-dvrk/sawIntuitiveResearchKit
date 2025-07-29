@@ -55,7 +55,7 @@ int main(int argc, char** argv)
     application.setWindowIcon(QIcon(":/dVRK.png"));
     cmnQt::QApplicationExitsOnCtrlC();
 
-    config_wizard::SystemLauncher launcher(application);
+    config_wizard::SystemLauncher launcher(application, options.IsSet("dark-mode"));
 
     config_wizard::MainWindow window(launcher);
     if (options.IsSet("config")) {
