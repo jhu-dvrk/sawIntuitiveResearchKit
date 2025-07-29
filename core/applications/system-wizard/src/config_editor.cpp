@@ -40,6 +40,7 @@ ConfigEditor::ConfigEditor(
       changes_saved(true),
       io_editor(*model, this),
       arm_editor(*model, config_sources, this),
+      sources(&config_sources),
       launcher(&launcher) {
 
     // treat any update to model as resulting in unsaved changes
@@ -192,7 +193,19 @@ bool ConfigEditor::save() {
 }
 
 bool ConfigEditor::saveAs() {
-    QString file_name = QFileDialog::getSaveFileName(this, "Save system config", QString(), "Config file (*.json)");
+    QString dir = QString();
+    // open file picker in same location as current file
+    if (save_path.has_value()) {
+        dir = QString::fromStdString(save_path.value().parent_path());
+    // or in the source directory if config is unsaved
+    } else {
+        auto source_dir = sources->dir();
+        if (source_dir.has_value()) {
+            dir = QString::fromStdString(source_dir.value());
+        }
+    }
+
+    QString file_name = QFileDialog::getSaveFileName(this, "Save system config", dir, "Config file (*.json)");
     if (file_name.isEmpty()) {
         return false;
     }

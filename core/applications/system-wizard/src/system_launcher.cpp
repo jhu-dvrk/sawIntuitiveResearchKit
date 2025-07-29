@@ -14,11 +14,10 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 #include "system_launcher.hpp"
-#include "models/config_model.hpp"
+
 #include <QtCore>
-#include <iostream>
-#include <qbuffer.h>
-#include <qprocess.h>
+
+#include "models/config_model.hpp"
 
 namespace system_wizard {
 

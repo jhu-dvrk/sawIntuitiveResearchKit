@@ -29,20 +29,34 @@ class FileSelector : public QWidget {
 public:
     FileSelector(QWidget* parent = nullptr);
 
+    /** Where the file picker will open if not file is selected, if set */
     void setStartingDirectory(std::filesystem::path directory);
+
+    /** Files will be displayed/referenced relative to this folder if set */
+    void setReferenceDirectory(std::filesystem::path directory);
+
+    /** Can be either absolute path, or relative to reference dir */
     void setCurrentFile(std::string file);
+
+    /** Absolute path to current file, if any */
     std::optional<std::string> currentFile() const;
+
+    /** If child of reference dir, then relative to reference, otherwise full path */
+    std::optional<std::string> currentRelativeFile() const;
 
 signals:
     void selected(std::filesystem::path);
 
 private:
+    static bool isChild(std::filesystem::path p, std::filesystem::path base);
+
     QFileDialog* dialog;
     QPushButton* browse_button;
     QLineEdit* display;
 
     std::optional<std::string> current_file;
-    std::filesystem::path starting_directory;
+    std::optional<std::filesystem::path> starting_directory;
+    std::optional<std::filesystem::path> reference_directory;
 };
 
 }

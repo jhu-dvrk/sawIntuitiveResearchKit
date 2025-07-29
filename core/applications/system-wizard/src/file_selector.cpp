@@ -15,6 +15,8 @@ http://www.cisst.org/cisst/license.txt.
 
 #include "file_selector.hpp"
 
+#include <filesystem>
+
 namespace system_wizard {
 
 FileSelector::FileSelector(QWidget* parent) : QWidget(parent){
@@ -32,10 +34,19 @@ FileSelector::FileSelector(QWidget* parent) : QWidget(parent){
     display->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
 
     browse_button = new QPushButton("Browse");
-    QObject::connect(browse_button, &QPushButton::clicked, dialog, &QDialog::open);
+    QObject::connect(browse_button, &QPushButton::clicked, this, [this]() {
+        if (current_file.has_value()) {
+            std::filesystem::path p = current_file.value();
+            dialog->setDirectory(QString::fromStdString(p.parent_path()));
+        } else if (starting_directory.has_value()) {
+            dialog->setDirectory(QString::fromStdString(starting_directory->string()));
+        }
+
+        dialog->open();
+    });
     QObject::connect(dialog, &QFileDialog::fileSelected, this, [this](const QString& file_name) {
         if (file_name.isEmpty()) { return; }
-        display->setText(file_name);
+        setCurrentFile(file_name.toStdString());
         emit selected(file_name.toStdString());
     });
 
@@ -43,18 +54,51 @@ FileSelector::FileSelector(QWidget* parent) : QWidget(parent){
     layout->addWidget(browse_button);
 }
 
-void FileSelector::setStartingDirectory(std::filesystem::path file) {
-    dialog->setDirectory(QString::fromStdString(file.string()));
+void FileSelector::setStartingDirectory(std::filesystem::path dir) {
+    starting_directory = dir;
+}
+
+void FileSelector::setReferenceDirectory(std::filesystem::path dir) {
+    reference_directory = dir;
+    if (!starting_directory.has_value()) {
+        starting_directory = dir;
+    }
 }
 
 void FileSelector::setCurrentFile(std::string file) {
-    current_file = file;
-    display->setText(QString::fromStdString(file));
-    dialog->setDirectory(QString::fromStdString(file));
+    std::filesystem::path file_path = file;
+    if (reference_directory.has_value() && file_path.is_relative()) {
+        file_path = reference_directory.value() / file_path;
+    }
+
+    current_file = file_path;
+
+    std::string name = currentRelativeFile().value();
+    display->setText(QString::fromStdString(name));
 }
 
 std::optional<std::string> FileSelector::currentFile() const {
     return current_file;
+}
+
+std::optional<std::string> FileSelector::currentRelativeFile() const {
+    if (!current_file) {
+        return {};
+    }
+
+    if (reference_directory.has_value()) {
+        bool inside_dir = isChild(current_file.value(), reference_directory.value());
+        if (inside_dir) {
+            return std::filesystem::proximate(current_file.value(), reference_directory.value());
+        }
+    }
+
+    return current_file;
+}
+
+bool FileSelector::isChild(std::filesystem::path p, std::filesystem::path base) {
+    std::filesystem::path rel = std::filesystem::relative(p, base);
+    return !rel.empty() && *rel.begin() != "..";
 }
 
 }

@@ -75,6 +75,7 @@ private:
     ListView* arm_list;
     ConsolesContainer* console;
 
+    ConfigSources* sources;
     SystemLauncher* launcher;
 };
 

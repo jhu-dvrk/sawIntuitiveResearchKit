@@ -40,7 +40,7 @@ ConfigSources::ConfigSources(QWidget* parent) : QWidget(parent) {
     layout->addWidget(view);
 
     QDir pwd = QDir::current();
-    add_source(pwd);
+    addSource(pwd);
 
     // Hide all columns except file name (column 0)
     for (int column = 1; column < model->columnCount(); column++) {
@@ -54,14 +54,15 @@ ListModelT<ConfigSources::Arm>& ConfigSources::getModel() {
     return arm_list_model;
 }
 
-void ConfigSources::add_source(QDir directory) {
+void ConfigSources::addSource(QDir directory) {
     std::filesystem::path path = std::filesystem::canonical(directory.path().toStdString());
     source_dir_display->setText(QString::fromStdString(path.string()));
+    sources.push_back(path);
     auto index = model->setRootPath(QString::fromStdString(path.string()));
     view->setRootIndex(index);
 }
 
-std::optional<ConfigSources::Arm> parse_arm(std::filesystem::path file_path) {
+std::optional<ConfigSources::Arm> parseArm(std::filesystem::path file_path) {
     std::string file_name = file_path.stem().string();
 
     // Match one of e.g. PSM2, ECM, MTMR2, followed by -, followed by five or six digit serial
@@ -137,7 +138,7 @@ void ConfigSources::loaded(const QString &path) {
             continue;
         }
 
-        std::optional<Arm> arm = parse_arm(entry.path());
+        std::optional<Arm> arm = parseArm(entry.path());
         if (arm.has_value()) {
             new_arms.push_back(arm.value());
             continue;
@@ -151,6 +152,14 @@ void ConfigSources::loaded(const QString &path) {
     }
 
     arm_list_model.replace(std::move(new_arms));
+}
+
+std::optional<std::filesystem::path> ConfigSources::dir() {
+    if (sources.size() > 0) {
+        return sources[sources.size() - 1];
+    } else {
+        return {};
+    }
 }
 
 }

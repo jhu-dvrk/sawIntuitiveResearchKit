@@ -26,6 +26,7 @@ http://www.cisst.org/cisst/license.txt.
 #include "cisstVector/vctTransformationTypes.h"
 
 #include "models/config_model.hpp"
+#include "sawIntuitiveResearchKit/sawIntuitiveResearchKitConfig.h"
 
 namespace system_wizard {
 
@@ -256,37 +257,19 @@ HapticMTMPage::HapticMTMPage(ArmConfig& config, QWidget *parent) : QWizardPage(p
 
     arm_name = new QLineEdit();
     force_dimension_form->addRow("Arm name:", arm_name);
-    QObject::connect(arm_name, &QLineEdit::textChanged, this, [this](const QString& text){
+    QObject::connect(arm_name, &QLineEdit::textEdited, this, [this](const QString& text){
         this->config->name = text.toStdString();
         emit completeChanged();
     });
 
-    config_selector = new FileSelector();
-    QObject::connect(config_selector, &FileSelector::selected, this, [this](std::filesystem::path file) {
-        config_selector->setCurrentFile(file.string());
-        emit completeChanged();
-    });
-    force_dimension_form->addRow("Device config:", config_selector);
-    force_dimension_layout->addLayout(force_dimension_form);
-
-    QObject::connect(left_right_selector, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index) {
-        if (index == 0) {
-            this->config->name = "MTML";
-            arm_name->setText("MTMR");
-            config_selector->setCurrentFile("sawForceDimensionSDK-MTML.json");
-        } else if (index == 1) {
-            this->config->name = "MTMR";
-            arm_name->setText("MTMR");
-            config_selector->setCurrentFile("sawForceDimensionSDK-MTMR.json");
-        }
-
+    auto configure_force_dimension = [this]() {
         // Configure ForceDimensionSDK component
         auto component = ComponentConfig();
         component.name = "ForceDimensionSDK";
         component.library_name = "sawForceDimensionSDK";
         component.class_name = "mtsForceDimension";
-        if (config_selector->currentFile()) {
-            component.configure_parameter = config_selector->currentFile().value();
+        if (config_selector->currentRelativeFile()) {
+            component.configure_parameter = config_selector->currentRelativeFile().value();
         }
 
         // Configure arm's interface to component
@@ -296,6 +279,30 @@ HapticMTMPage::HapticMTMPage(ArmConfig& config, QWidget *parent) : QWizardPage(p
         this->config->component->component = component;
 
         emit completeChanged();
+    };
+
+    config_selector = new FileSelector();
+    std::filesystem::path share = sawIntuitiveResearchKit_SOURCE_CONFIG_DIR;
+    config_selector->setReferenceDirectory(share);
+    config_selector->setStartingDirectory(share);
+    QObject::connect(config_selector, &FileSelector::selected, this, configure_force_dimension);
+    force_dimension_form->addRow("Device config:", config_selector);
+    force_dimension_layout->addLayout(force_dimension_form);
+
+    QObject::connect(left_right_selector, QOverload<int>::of(&QComboBox::activated), this, [this, configure_force_dimension](int index) {
+        std::filesystem::path share = sawIntuitiveResearchKit_SOURCE_CONFIG_DIR;
+
+        if (index == 0) {
+            this->config->name = "MTML";
+            arm_name->setText("MTML");
+            config_selector->setCurrentFile(share / "sawForceDimensionSDK-MTML.json");
+        } else if (index == 1) {
+            this->config->name = "MTMR";
+            arm_name->setText("MTMR");
+            config_selector->setCurrentFile(share / "sawForceDimensionSDK-MTMR.json");
+        }
+
+        configure_force_dimension();
     });
 
     details->addWidget(force_dimension);
@@ -509,6 +516,9 @@ SimulatedArmPage::SimulatedArmPage(ArmConfig& config, QWidget *parent) : QWizard
     });
 
     config_selector = new FileSelector();
+    std::filesystem::path share = sawIntuitiveResearchKit_SOURCE_CONFIG_DIR;
+    config_selector->setStartingDirectory(share / "arm");
+    config_selector->setReferenceDirectory(share);
     QObject::connect(config_selector, &FileSelector::selected, this, [this](std::filesystem::path file) {
         this->config->arm_file = file;
         emit completeChanged();

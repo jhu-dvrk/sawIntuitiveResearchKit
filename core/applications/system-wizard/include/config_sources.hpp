@@ -48,8 +48,10 @@ public:
 
     ListModelT<Arm>& getModel();
 
+    std::optional<std::filesystem::path> dir();
+
 public slots:
-    void add_source(QDir directory);
+    void addSource(QDir directory);
     void loaded(const QString &path);
 
 private:

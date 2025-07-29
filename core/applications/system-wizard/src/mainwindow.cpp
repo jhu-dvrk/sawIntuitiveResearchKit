@@ -56,7 +56,7 @@ void MainWindow::newConfig() {
 
 void MainWindow::openConfigFile(std::filesystem::path config) {
     std::filesystem::path source_dir = config.parent_path();
-    config_sources->add_source(QDir(QString::fromStdString(source_dir.string())));
+    config_sources->addSource(QDir(QString::fromStdString(source_dir.string())));
     editor->openConfigFile(config);
 }
 
@@ -117,7 +117,7 @@ void MainWindow::folder_chosen() {
         return;
     }
 
-    config_sources->add_source(selected_directory);
+    config_sources->addSource(selected_directory);
 }
 
 }

@@ -23,6 +23,7 @@ set (REQUIRED_CISST_LIBRARIES
 
 # find cisst and make sure the required libraries have been compiled
 find_package (cisst 1.3.0 REQUIRED ${REQUIRED_CISST_LIBRARIES})
+find_package (sawIntuitiveResearchKit 2.3.1 REQUIRED)
 
 if (cisst_FOUND_AS_REQUIRED)
 
@@ -82,11 +83,12 @@ if (cisst_FOUND_AS_REQUIRED)
 
     qt5_add_resources (SOURCE_FILES resources/dvrk_logo.qrc)
 
-    add_executable(sawIntuitiveResearchKitSystemWizard main.cpp ${HEADER_FILES} ${SOURCE_FILES})
-    target_compile_features(sawIntuitiveResearchKitSystemWizard PUBLIC cxx_std_17)
+    add_executable (sawIntuitiveResearchKitSystemWizard main.cpp ${HEADER_FILES} ${SOURCE_FILES})
+    target_compile_features (sawIntuitiveResearchKitSystemWizard PUBLIC cxx_std_17)
 
-    target_include_directories(sawIntuitiveResearchKitSystemWizard PRIVATE include)
+    target_include_directories (sawIntuitiveResearchKitSystemWizard PRIVATE include)
     target_include_directories (sawIntuitiveResearchKitSystemWizard PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+    target_include_directories (sawIntuitiveResearchKitSystemWizard PRIVATE ${sawIntuitiveResearchKit_INCLUDE_DIR})
 
     # link against cisst libraries (and dependencies)
     cisst_target_link_libraries (sawIntuitiveResearchKitSystemWizard ${REQUIRED_CISST_LIBRARIES})

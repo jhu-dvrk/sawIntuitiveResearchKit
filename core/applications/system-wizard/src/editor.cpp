@@ -71,7 +71,13 @@ void Editor::newConfig() {
 }
 
 void Editor::openConfig() {
-    QString file_name = QFileDialog::getOpenFileName(this, "Open system config", QString(), "Config file (*.json)");
+    QString dir = QString();
+    auto source_dir = config_sources->dir();
+    if (source_dir.has_value()) {
+        dir = QString::fromStdString(source_dir.value());
+    }
+
+    QString file_name = QFileDialog::getOpenFileName(this, "Open system config", dir, "Config file (*.json)");
     if (file_name.isEmpty()) {
         return;
     }
