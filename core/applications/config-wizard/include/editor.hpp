@@ -13,8 +13,8 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#ifndef SYSTEM_WIZARD_EDITOR
-#define SYSTEM_WIZARD_EDITOR
+#ifndef CONFIG_WIZARD_EDITOR
+#define CONFIG_WIZARD_EDITOR
 
 #include <QtWidgets>
 
@@ -22,7 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 #include "config_sources.hpp"
 #include "system_launcher.hpp"
 
-namespace system_wizard {
+namespace config_wizard {
 
 class Editor : public QStackedWidget {
     Q_OBJECT
@@ -52,4 +52,4 @@ private:
 
 }
 
-#endif // SYSTEM_WIZARD_EDITOR
+#endif // CONFIG_WIZARD_EDITOR

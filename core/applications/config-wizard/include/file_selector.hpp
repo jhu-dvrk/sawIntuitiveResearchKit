@@ -13,15 +13,15 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#ifndef SYSTEM_WIZARD_FILE_SELECTOR
-#define SYSTEM_WIZARD_FILE_SELECTOR
+#ifndef CONFIG_WIZARD_FILE_SELECTOR
+#define CONFIG_WIZARD_FILE_SELECTOR
 
 #include <QtWidgets>
 
 #include <filesystem>
 #include <optional>
 
-namespace system_wizard {
+namespace config_wizard {
 
 class FileSelector : public QWidget {
     Q_OBJECT
@@ -61,4 +61,4 @@ private:
 
 }
 
-#endif // SYSTEM_WIZARD_FILE_SELECTOR
+#endif // CONFIG_WIZARD_FILE_SELECTOR

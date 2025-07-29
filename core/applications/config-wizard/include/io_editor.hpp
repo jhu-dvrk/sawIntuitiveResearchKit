@@ -13,15 +13,15 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#ifndef SYSTEM_WIZARD_IO_EDITOR
-#define SYSTEM_WIZARD_IO_EDITOR
+#ifndef CONFIG_WIZARD_IO_EDITOR
+#define CONFIG_WIZARD_IO_EDITOR
 
 #include <QtWidgets>
 
 #include "models/config_model.hpp"
 #include "models/enum_list_model.hpp"
 
-namespace system_wizard {
+namespace config_wizard {
 
 class IOEditPage : public QWizardPage {
     Q_OBJECT
@@ -79,4 +79,4 @@ private:
 
 }
 
-#endif // SYSTEM_WIZARD_IO_EDITOR
+#endif // CONFIG_WIZARD_IO_EDITOR

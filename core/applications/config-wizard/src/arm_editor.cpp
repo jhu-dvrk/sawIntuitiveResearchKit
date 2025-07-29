@@ -28,7 +28,7 @@ http://www.cisst.org/cisst/license.txt.
 #include "models/config_model.hpp"
 #include "sawIntuitiveResearchKit/sawIntuitiveResearchKitConfig.h"
 
-namespace system_wizard {
+namespace config_wizard {
 
 ArmSourceView::ArmSourceView(ListModelT<ConfigSources::Arm>& model, ListView& list_view, int id, QWidget* parent)
 : ItemView(list_view, id, parent), model(&model) {

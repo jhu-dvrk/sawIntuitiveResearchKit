@@ -22,7 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <qcheckbox.h>
 #include <sstream>
 
-namespace system_wizard {
+namespace config_wizard {
 
 TeleopOptionView::TeleopOptionView(ListModelT<TeleopConfig>& model, ListView& list_view, int index, QWidget* parent)
     : ItemView(list_view, index, parent), model(&model) {

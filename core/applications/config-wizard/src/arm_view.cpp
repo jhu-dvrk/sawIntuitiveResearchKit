@@ -16,7 +16,7 @@ http://www.cisst.org/cisst/license.txt.
 #include "arm_view.hpp"
 #include "models/config_model.hpp"
 
-namespace system_wizard {
+namespace config_wizard {
 
 ArmView::ArmView(SystemConfigModel& model, ListView& list_view, int id, QWidget* parent)
     : ItemView(list_view, id, parent), model(&model) {

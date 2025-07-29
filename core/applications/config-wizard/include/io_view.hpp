@@ -13,13 +13,13 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#ifndef SYSTEM_WIZARD_IO_VIEW
-#define SYSTEM_WIZARD_IO_VIEW
+#ifndef CONFIG_WIZARD_IO_VIEW
+#define CONFIG_WIZARD_IO_VIEW
 
 #include "list_view.hpp"
 #include "models/config_model.hpp"
 
-namespace system_wizard {
+namespace config_wizard {
 
 class IOView : public ItemView {
 public:
@@ -34,4 +34,4 @@ private:
 
 }
 
-#endif // SYSTEM_WIZARD_IO_VIEW
+#endif // CONFIG_WIZARD_IO_VIEW

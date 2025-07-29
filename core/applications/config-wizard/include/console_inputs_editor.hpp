@@ -13,15 +13,15 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#ifndef SYSTEM_WIZARD_CONSOLE_INPUTS_EDITOR
-#define SYSTEM_WIZARD_CONSOLE_INPUTS_EDITOR
+#ifndef CONFIG_WIZARD_CONSOLE_INPUTS_EDITOR
+#define CONFIG_WIZARD_CONSOLE_INPUTS_EDITOR
 
 #include <QtWidgets>
 
 #include "models/config_model.hpp"
 #include "models/enum_list_model.hpp"
 
-namespace system_wizard {
+namespace config_wizard {
 
 class ConsoleInputsEditor : public QWidget {
     Q_OBJECT
@@ -46,4 +46,4 @@ private:
 
 }
 
-#endif // SYSTEM_WIZARD_CONSOLE_INPUTS_EDITOR
+#endif // CONFIG_WIZARD_CONSOLE_INPUTS_EDITOR

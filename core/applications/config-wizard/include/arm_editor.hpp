@@ -36,8 +36,8 @@ http://www.cisst.org/cisst/license.txt.
  * When editing a native arm later, user goes directly to BaseFramePage
  */
 
-#ifndef SYSTEM_WIZARD_ARM_EDITOR
-#define SYSTEM_WIZARD_ARM_EDITOR
+#ifndef CONFIG_WIZARD_ARM_EDITOR
+#define CONFIG_WIZARD_ARM_EDITOR
 
 #include <QtWidgets>
 
@@ -48,7 +48,7 @@ http://www.cisst.org/cisst/license.txt.
 #include "list_view.hpp"
 #include "models/config_model.hpp"
 
-namespace system_wizard {
+namespace config_wizard {
 
 class ArmSourceView : public ItemView {
 public:
@@ -221,4 +221,4 @@ private:
 
 }
 
-#endif // SYSTEM_WIZARD_ARM_EDITOR
+#endif // CONFIG_WIZARD_ARM_EDITOR

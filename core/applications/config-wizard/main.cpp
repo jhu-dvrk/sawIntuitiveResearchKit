@@ -55,9 +55,9 @@ int main(int argc, char** argv)
     application.setWindowIcon(QIcon(":/dVRK.png"));
     cmnQt::QApplicationExitsOnCtrlC();
 
-    system_wizard::SystemLauncher launcher(application);
+    config_wizard::SystemLauncher launcher(application);
 
-    system_wizard::MainWindow window(launcher);
+    config_wizard::MainWindow window(launcher);
     if (options.IsSet("config")) {
         window.openConfigFile(config_file);
     } else {

@@ -13,8 +13,8 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#ifndef SYSTEM_WIZARD_CONSOLE_EDITOR
-#define SYSTEM_WIZARD_CONSOLE_EDITOR
+#ifndef CONFIG_WIZARD_CONSOLE_EDITOR
+#define CONFIG_WIZARD_CONSOLE_EDITOR
 
 #include <QtWidgets>
 
@@ -23,7 +23,7 @@ http://www.cisst.org/cisst/license.txt.
 #include "console_inputs_editor.hpp"
 #include "teleop_editor.hpp"
 
-namespace system_wizard {
+namespace config_wizard {
 
 class ConsoleEditor : public QWidget {
     Q_OBJECT
@@ -61,4 +61,4 @@ private:
 
 }
 
-#endif // SYSTEM_WIZARD_CONSOLE_EDITOR
+#endif // CONFIG_WIZARD_CONSOLE_EDITOR

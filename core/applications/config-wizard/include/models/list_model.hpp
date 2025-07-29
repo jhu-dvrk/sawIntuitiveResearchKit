@@ -13,8 +13,8 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#ifndef SYSTEM_WIZARD_LIST_MODEL
-#define SYSTEM_WIZARD_LIST_MODEL
+#ifndef CONFIG_WIZARD_LIST_MODEL
+#define CONFIG_WIZARD_LIST_MODEL
 
 #include <algorithm>
 #include <functional>
@@ -25,7 +25,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstCommon/cmnPortability.h>
 
-namespace system_wizard {
+namespace config_wizard {
 
 /**
  * As of Qt v6.9, the MOC/meta object system doesn't work
@@ -238,4 +238,4 @@ private:
 
 }
 
-#endif // SYSTEM_WIZARD_LIST_MODEL
+#endif // CONFIG_WIZARD_LIST_MODEL

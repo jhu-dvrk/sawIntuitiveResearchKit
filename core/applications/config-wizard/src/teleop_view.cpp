@@ -18,7 +18,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <ios>
 #include <sstream>
 
-namespace system_wizard {
+namespace config_wizard {
 
 PSMTeleopView::PSMTeleopView(ConsoleConfig& config, ListView& list_view, int idx, QWidget* parent)
     : ItemView(list_view, idx, parent), config(&config) {

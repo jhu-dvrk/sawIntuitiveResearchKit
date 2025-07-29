@@ -13,8 +13,8 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#ifndef SYSTEM_WIZARD_CONFIG_MODEL
-#define SYSTEM_WIZARD_CONFIG_MODEL
+#ifndef CONFIG_WIZARD_CONFIG_MODEL
+#define CONFIG_WIZARD_CONFIG_MODEL
 
 #include <QtCore>
 
@@ -30,7 +30,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include "models/list_model.hpp"
 
-namespace system_wizard {
+namespace config_wizard {
 
 class ComponentConfig {
 public:
@@ -1610,4 +1610,4 @@ public:
 
 }
 
-#endif // SYSTEM_WIZARD_CONFIG_MODEL
+#endif // CONFIG_WIZARD_CONFIG_MODEL

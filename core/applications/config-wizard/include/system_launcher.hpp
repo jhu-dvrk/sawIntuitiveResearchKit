@@ -13,8 +13,8 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#ifndef SYSTEM_WIZARD_SYSTEM_LAUNCHER
-#define SYSTEM_WIZARD_SYSTEM_LAUNCHER
+#ifndef CONFIG_WIZARD_SYSTEM_LAUNCHER
+#define CONFIG_WIZARD_SYSTEM_LAUNCHER
 
 #include <QApplication>
 #include <QtCore>
@@ -22,7 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include "models/config_model.hpp"
 
-namespace system_wizard {
+namespace config_wizard {
 
 class SystemLauncher : public QObject {
     Q_OBJECT
@@ -54,4 +54,4 @@ private:
 
 }
 
-#endif // SYSTEM_WIZARD_SYSTEM_LAUNCHER
+#endif // CONFIG_WIZARD_SYSTEM_LAUNCHER

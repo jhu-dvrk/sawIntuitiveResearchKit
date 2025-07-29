@@ -17,7 +17,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cmath>
 
-namespace system_wizard {
+namespace config_wizard {
 
 IOView::IOView(SystemConfigModel& model, ListView& list_view, int id, QWidget* parent)
     : ItemView(list_view, id, parent), model(&model) {

@@ -19,7 +19,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include "models/config_model.hpp"
 
-namespace system_wizard {
+namespace config_wizard {
 
 SystemLauncher::SystemLauncher(QCoreApplication& app) : QObject(), application(&app), process(this) {
     QObject::connect(&process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, &SystemLauncher::onFinished);

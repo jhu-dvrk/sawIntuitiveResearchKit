@@ -31,8 +31,8 @@ if (cisst_FOUND_AS_REQUIRED)
   include (${CISST_USE_FILE})
 
   # catkin/ROS paths
-  cisst_is_catkin_build (sawIntuitiveResearchKitSystemWizard_IS_CATKIN_BUILT)
-  if (sawIntuitiveResearchKitSystemWizard_IS_CATKIN_BUILT)
+  cisst_is_catkin_build (dVRKConfigWizard_IS_CATKIN_BUILT)
+  if (dVRKConfigWizard_IS_CATKIN_BUILT)
     set (EXECUTABLE_OUTPUT_PATH "${CATKIN_DEVEL_PREFIX}/bin")
   endif ()
 
@@ -83,21 +83,21 @@ if (cisst_FOUND_AS_REQUIRED)
 
     qt5_add_resources (SOURCE_FILES resources/dvrk_logo.qrc)
 
-    add_executable (sawIntuitiveResearchKitSystemWizard main.cpp ${HEADER_FILES} ${SOURCE_FILES})
-    target_compile_features (sawIntuitiveResearchKitSystemWizard PUBLIC cxx_std_17)
+    add_executable (dvrk_config_wizard main.cpp ${HEADER_FILES} ${SOURCE_FILES})
+    target_compile_features (dvrk_config_wizard PUBLIC cxx_std_17)
 
-    target_include_directories (sawIntuitiveResearchKitSystemWizard PRIVATE include)
-    target_include_directories (sawIntuitiveResearchKitSystemWizard PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-    target_include_directories (sawIntuitiveResearchKitSystemWizard PRIVATE ${sawIntuitiveResearchKit_INCLUDE_DIR})
+    target_include_directories (dvrk_config_wizard PRIVATE include)
+    target_include_directories (dvrk_config_wizard PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+    target_include_directories (dvrk_config_wizard PRIVATE ${sawIntuitiveResearchKit_INCLUDE_DIR})
 
     # link against cisst libraries (and dependencies)
-    cisst_target_link_libraries (sawIntuitiveResearchKitSystemWizard ${REQUIRED_CISST_LIBRARIES})
+    cisst_target_link_libraries (dvrk_config_wizard ${REQUIRED_CISST_LIBRARIES})
 
-    set_target_properties (sawIntuitiveResearchKitSystemWizard PROPERTIES
+    set_target_properties (dvrk_config_wizard PROPERTIES
                            COMPONENT sawIntuitiveResearchKit-Applications
                            FOLDER "sawIntuitiveResearchKit")
 
-    install (TARGETS sawIntuitiveResearchKitSystemWizard
+    install (TARGETS dvrk_config_wizard
               COMPONENT sawIntuitiveResearchKit-Applications
               RUNTIME DESTINATION bin
               LIBRARY DESTINATION lib

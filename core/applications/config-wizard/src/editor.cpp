@@ -18,7 +18,7 @@ http://www.cisst.org/cisst/license.txt.
 #include "config_editor.hpp"
 #include "models/config_model.hpp"
 
-namespace system_wizard {
+namespace config_wizard {
 
 Editor::Editor(ConfigSources& config_sources, SystemLauncher& launcher, QWidget* parent)
     : QStackedWidget(parent),

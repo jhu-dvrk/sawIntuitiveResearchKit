@@ -27,7 +27,7 @@ http://www.cisst.org/cisst/license.txt.
 #include "io_view.hpp"
 #include "system_launcher.hpp"
 
-namespace system_wizard {
+namespace config_wizard {
 
 ConfigEditor::ConfigEditor(
     std::unique_ptr<SystemConfigModel> config_model,

@@ -22,7 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstCommon/cmnXMLPath.h>
 #include <QTreeView>
 
-namespace system_wizard {
+namespace config_wizard {
 
 ConfigSources::ConfigSources(QWidget* parent) : QWidget(parent) {
     model = new QFileSystemModel();

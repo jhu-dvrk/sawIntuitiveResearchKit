@@ -13,14 +13,14 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#ifndef SYSTEM_WIZARD_ENUM_LIST_MODEL
-#define SYSTEM_WIZARD_ENUM_LIST_MODEL
+#ifndef CONFIG_WIZARD_ENUM_LIST_MODEL
+#define CONFIG_WIZARD_ENUM_LIST_MODEL
 
 #include <QtWidgets>
 
 #include <cisstCommon/cmnPortability.h>
 
-namespace system_wizard {
+namespace config_wizard {
 
 template <typename T>
 class EnumListModel : public QAbstractItemModel {
@@ -58,4 +58,4 @@ public:
 
 }
 
-#endif // SYSTEM_WIZARD_ENUM_LIST_MODEL
+#endif // CONFIG_WIZARD_ENUM_LIST_MODEL

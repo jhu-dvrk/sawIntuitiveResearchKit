@@ -3,7 +3,7 @@
 #include "console_inputs_editor.hpp"
 #include "teleop_view.hpp"
 
-namespace system_wizard {
+namespace config_wizard {
 
 ConsoleEditor::ConsoleEditor(ConsoleConfig& config, SystemConfigModel& model, QWidget* parent) :
     QWidget(parent),

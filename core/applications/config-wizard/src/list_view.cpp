@@ -15,7 +15,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include "list_view.hpp"
 
-namespace system_wizard {
+namespace config_wizard {
 
 ItemView::ItemView(ListView& list_view, int id, QWidget* parent)
     : QFrame(parent), list_view(list_view), id(id) {
@@ -39,8 +39,8 @@ void ItemView::setSelected(bool selected) {
     QString background = selected ? "palette(highlight)" : "palette(base)";
     QString text = selected ? "palette(highlighted-text)" : "palette(text)";
 
-    QString style = "QLabel { color: " + text + ";  } system_wizard--ItemView { background-color: " + background + "; border-radius: 10px; }";
-    QString hover_style_template = QString("system_wizard--ItemView:hover { background-color: #%1; }");
+    QString style = "QLabel { color: " + text + ";  } config_wizard--ItemView { background-color: " + background + "; border-radius: 10px; }";
+    QString hover_style_template = QString("config_wizard--ItemView:hover { background-color: #%1; }");
     // convert color to base-16 string with 0-width padding
     QString hover_style = hover_style_template.arg(hover_color.rgba(), 0, 16);
 

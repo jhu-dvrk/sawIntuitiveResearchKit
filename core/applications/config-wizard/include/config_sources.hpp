@@ -13,8 +13,8 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#ifndef SYSTEM_WIZARD_CONFIG_SOURCES
-#define SYSTEM_WIZARD_CONFIG_SOURCES
+#ifndef CONFIG_WIZARD_CONFIG_SOURCES
+#define CONFIG_WIZARD_CONFIG_SOURCES
 
 #include <QtWidgets>
 #include <QFileSystemModel>
@@ -26,7 +26,7 @@ http://www.cisst.org/cisst/license.txt.
 #include "models/config_model.hpp"
 #include "models/list_model.hpp"
 
-namespace system_wizard {
+namespace config_wizard {
 
 class ConfigSources : public QWidget {
     Q_OBJECT
@@ -69,4 +69,4 @@ private:
 
 }
 
-#endif // SYSTEM_WIZARD_CONFIG_SOURCES
+#endif // CONFIG_WIZARD_CONFIG_SOURCES

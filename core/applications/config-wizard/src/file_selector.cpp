@@ -17,7 +17,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <filesystem>
 
-namespace system_wizard {
+namespace config_wizard {
 
 FileSelector::FileSelector(QWidget* parent) : QWidget(parent){
     QHBoxLayout* layout = new QHBoxLayout(this);

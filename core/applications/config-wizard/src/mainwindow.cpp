@@ -19,7 +19,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <QFileDialog>
 #include <QLabel>
 
-namespace system_wizard {
+namespace config_wizard {
 
 MainWindow::MainWindow(SystemLauncher& launcher) : directory_chooser(this, "Open config source folder") {
     directory_chooser.setFileMode(QFileDialog::Directory);
@@ -47,7 +47,7 @@ MainWindow::MainWindow(SystemLauncher& launcher) : directory_chooser(this, "Open
     createActions();
     createMenus();
 
-    setWindowTitle("dVRK System Wizard");
+    setWindowTitle("dVRK Config Wizard");
 }
 
 void MainWindow::newConfig() {

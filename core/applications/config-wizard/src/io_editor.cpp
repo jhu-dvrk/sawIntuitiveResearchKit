@@ -16,7 +16,7 @@ http://www.cisst.org/cisst/license.txt.
 #include "io_editor.hpp"
 #include "accordion.hpp"
 
-namespace system_wizard {
+namespace config_wizard {
 
 IOEditPage::IOEditPage(IOConfig& config, const SystemConfigModel& model, QWidget* parent)
     : QWizardPage(parent), config(&config), model(&model) {

@@ -15,14 +15,14 @@ http://www.cisst.org/cisst/license.txt.
 
 #include "accordion.hpp"
 
-namespace system_wizard {
+namespace config_wizard {
 
 Accordion::Accordion(bool start_open, QWidget* parent) : Accordion("", "", start_open, parent) { }
 
 Accordion::Accordion(const QString& title, const QString& background_color, bool start_open, QWidget* parent)
     : QFrame(parent), is_open(start_open), contents(nullptr) {
     this->setFrameStyle(QFrame::StyledPanel);
-    this->setStyleSheet("system_wizard--Accordion { background-color: " + background_color + "; border-radius: 10px; }");
+    this->setStyleSheet("config_wizard--Accordion { background-color: " + background_color + "; border-radius: 10px; }");
     this->setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Maximum);
     button = new QToolButton(this);
     button->setCheckable(true); // turn into a "checkbox" button

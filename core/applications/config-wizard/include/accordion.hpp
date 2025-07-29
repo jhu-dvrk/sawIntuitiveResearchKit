@@ -13,12 +13,12 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#ifndef SYSTEM_WIZARD_ACCORDION
-#define SYSTEM_WIZARD_ACCORDION
+#ifndef CONFIG_WIZARD_ACCORDION
+#define CONFIG_WIZARD_ACCORDION
 
 #include <QtWidgets>
 
-namespace system_wizard {
+namespace config_wizard {
 
 class Accordion : public QFrame {
     Q_OBJECT
@@ -46,4 +46,4 @@ private:
 
 }
 
-#endif // SYSTEM_WIZARD_ACCORDION
+#endif // CONFIG_WIZARD_ACCORDION

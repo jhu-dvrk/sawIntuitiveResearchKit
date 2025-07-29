@@ -18,7 +18,7 @@ http://www.cisst.org/cisst/license.txt.
 #include "models/config_model.hpp"
 #include "models/list_model.hpp"
 
-namespace system_wizard {
+namespace config_wizard {
 
 ConsoleInputsEditor::ConsoleInputsEditor(ConsoleInputConfig& model, ListModelT<ArmConfig>& arms, QWidget* parent)
     : QWidget(parent), model(&model), arms(&arms)
