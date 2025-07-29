@@ -20,6 +20,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <filesystem>
 
 #include "include/mainwindow.hpp"
+#include "system_launcher.hpp"
 
 int main(int argc, char** argv)
 {
@@ -36,7 +37,7 @@ int main(int argc, char** argv)
                               &config_file);
 
     if (!options.Parse(argc, argv, std::cerr)) {
-        return -1;
+        return 1;
     }
 
     if (options.IsSet("dark-mode")) {
@@ -46,7 +47,7 @@ int main(int argc, char** argv)
     if (options.IsSet("config")) {
         if (!std::filesystem::is_regular_file(config_file)) {
             std::cerr << "Cannot find config file \"" << config_file << "\"" << std::endl;
-            return -1;
+            return 1;
         }
     }
 
@@ -54,7 +55,9 @@ int main(int argc, char** argv)
     application.setWindowIcon(QIcon(":/dVRK.png"));
     cmnQt::QApplicationExitsOnCtrlC();
 
-    system_wizard::MainWindow window;
+    system_wizard::SystemLauncher launcher(application);
+
+    system_wizard::MainWindow window(launcher);
     if (options.IsSet("config")) {
         window.openConfigFile(config_file);
     } else {

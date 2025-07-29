@@ -22,6 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include "config_sources.hpp"
 #include "editor.hpp"
+#include "system_launcher.hpp"
 
 namespace system_wizard {
 
@@ -29,7 +30,7 @@ class MainWindow : public QMainWindow {
     Q_OBJECT
 
 public:
-    MainWindow();
+    MainWindow(SystemLauncher& launcher);
 
 public:
     void newConfig();

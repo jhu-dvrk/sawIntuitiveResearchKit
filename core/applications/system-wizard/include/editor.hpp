@@ -20,6 +20,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include "config_editor.hpp"
 #include "config_sources.hpp"
+#include "system_launcher.hpp"
 
 namespace system_wizard {
 
@@ -27,7 +28,7 @@ class Editor : public QStackedWidget {
     Q_OBJECT
 
 public:
-    Editor(ConfigSources& config_sources, QWidget* parent = nullptr);
+    Editor(ConfigSources& config_sources, SystemLauncher& launcher, QWidget* parent = nullptr);
 
 public slots:
     void newConfig();
@@ -44,6 +45,7 @@ private:
 
     QTabWidget* tabs;
     ConfigSources* config_sources;
+    SystemLauncher* launcher;
 
     QShortcut* close_config_shortcut;
 };

@@ -55,8 +55,9 @@ ListModelT<ConfigSources::Arm>& ConfigSources::getModel() {
 }
 
 void ConfigSources::add_source(QDir directory) {
-    source_dir_display->setText(directory.path());
-    auto index = model->setRootPath(directory.path());
+    std::filesystem::path path = std::filesystem::canonical(directory.path().toStdString());
+    source_dir_display->setText(QString::fromStdString(path.string()));
+    auto index = model->setRootPath(QString::fromStdString(path.string()));
     view->setRootIndex(index);
 }
 

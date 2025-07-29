@@ -21,14 +21,19 @@ http://www.cisst.org/cisst/license.txt.
 
 namespace system_wizard {
 
-MainWindow::MainWindow() : directory_chooser(this, "Open config source folder") {
+MainWindow::MainWindow(SystemLauncher& launcher) : directory_chooser(this, "Open config source folder") {
     directory_chooser.setFileMode(QFileDialog::Directory);
     directory_chooser.setViewMode(QFileDialog::List);
     directory_chooser.setOptions(QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
 
     config_sources = new ConfigSources();
 
-    editor = new Editor(*config_sources);
+    editor = new Editor(*config_sources, launcher);
+    QObject::connect(&launcher, &SystemLauncher::error, this, [this](std::string message) {
+        if (!message.empty()) {
+            QMessageBox::critical(this, "dVRK System Error", QString::fromStdString(message));
+        }
+    } );
 
     QSplitter *splitter = new QSplitter();
     splitter->addWidget(config_sources);

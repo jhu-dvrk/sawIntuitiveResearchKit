@@ -15,19 +15,32 @@ http://www.cisst.org/cisst/license.txt.
 
 #include "config_editor.hpp"
 
+#include <QTreeWidget>
+#include <QtCore>
+#include <filesystem>
+#include <memory>
+#include <qerrormessage.h>
+#include <qmessagebox.h>
+
 #include "accordion.hpp"
 #include "arm_view.hpp"
-
-#include <QTreeWidget>
+#include "io_view.hpp"
+#include "system_launcher.hpp"
 
 namespace system_wizard {
 
-ConfigEditor::ConfigEditor(std::unique_ptr<SystemConfigModel> config_model, ConfigSources& config_sources, QWidget* parent)
+ConfigEditor::ConfigEditor(
+    std::unique_ptr<SystemConfigModel> config_model,
+    ConfigSources& config_sources,
+    SystemLauncher& launcher,
+    QWidget* parent
+)
     : QWidget(parent),
       model(std::move(config_model)),
       changes_saved(true),
       io_editor(*model, this),
-      arm_editor(*model, config_sources, this)  {
+      arm_editor(*model, config_sources, this),
+      launcher(&launcher) {
 
     // treat any update to model as resulting in unsaved changes
     QObject::connect(model.get(), &SystemConfigModel::updated, this, [this](){
@@ -45,6 +58,49 @@ ConfigEditor::ConfigEditor(std::unique_ptr<SystemConfigModel> config_model, Conf
     file_path_layout->addWidget(path_display);
     file_path_layout->addStretch();
     header->addLayout(file_path_layout);
+    path_display->setVisible(false);
+
+    QColor base = palette().color(QPalette::Base);
+    QColor primary = QColor("mediumseagreen");
+
+    float blend = 0.15;
+
+    QColor hover_color = QColor::fromRgbF(
+        blend*base.redF()   + (1.0 - blend)*primary.redF(),
+        blend*base.greenF() + (1.0 - blend)*primary.greenF(),
+        blend*base.blueF()  + (1.0 - blend)*primary.blueF()
+    );
+
+    blend = 0.75;
+    QColor disabled_color = QColor::fromRgbF(
+        blend*base.redF()   + (1.0 - blend)*primary.redF(),
+        blend*base.greenF() + (1.0 - blend)*primary.greenF(),
+        blend*base.blueF()  + (1.0 - blend)*primary.blueF()
+    );
+
+    QString style = "QPushButton { background-color: mediumseagreen; border-radius: 6px; padding: 0.25em; font-size: 12pt; text-align: left; border: none; outline: none; }";
+    QString hover_style_template = QString("QPushButton:hover { background-color: #%1; }");
+    // convert color to base-16 string with 0-width padding
+    QString hover_style = hover_style_template.arg(hover_color.rgba(), 0, 16);
+    QString disabled_style_template = QString("QPushButton:disabled { background-color: #%1; }");
+    // convert color to base-16 string with 0-width padding
+    QString disabled_style = disabled_style_template.arg(disabled_color.rgba(), 0, 16);
+
+    QHBoxLayout* launch_layout = new QHBoxLayout();
+    QIcon launch_icon = QIcon::fromTheme("media-playback-start");
+    launch_button = new QPushButton(launch_icon, "Launch system");
+    launch_button->setStyleSheet(style + hover_style + disabled_style);
+    launch_layout->addWidget(launch_button);
+    launch_layout->addStretch();
+    header->addLayout(launch_layout);
+    QObject::connect(launch_button, &QPushButton::pressed, this, [this]() {
+        std::string error_message = this->launcher->launch(*this->model);
+        if (!error_message.empty()) {
+            QMessageBox::critical(this, "dVRK System Error", QString::fromStdString(error_message));
+        }
+    });
+    QObject::connect(&launcher, &SystemLauncher::stateChanged, this, &ConfigEditor::updateLaunchButton);
+    updateLaunchButton(); // make sure we disable if editor is opened while system is already running
 
     QScrollArea* scroller = new QScrollArea();
     QWidget* scroller_contents = new QWidget();
@@ -96,22 +152,33 @@ ConfigEditor::ConfigEditor(std::unique_ptr<SystemConfigModel> config_model, Conf
     scroller_layout->addStretch();
 }
 
-std::unique_ptr<ConfigEditor> ConfigEditor::open(std::filesystem::path config_file, ConfigSources& sources) {
+std::unique_ptr<ConfigEditor> ConfigEditor::open(std::filesystem::path config_file, ConfigSources& sources, SystemLauncher& launcher) {
     auto model = SystemConfigModel::load(config_file);
     if (model == nullptr) {
         return nullptr;
     }
-    auto editor = std::make_unique<ConfigEditor>(std::move(model), sources);
+    auto editor = std::make_unique<ConfigEditor>(std::move(model), sources, launcher);
     editor->changes_saved = true;
     editor->setSavePath(config_file);
     return editor;
 }
 
 void ConfigEditor::setSavePath(std::filesystem::path path) {
+    path = std::filesystem::canonical(path);
     this->save_path = path;
     const QString qpath = QString::fromStdString(path.string());
     path_display->setText(qpath);
+    path_display->setVisible(!path.empty());
     emit savePathChanged(qpath);
+}
+
+void ConfigEditor::updateLaunchButton() {
+    launch_button->setDisabled(launcher->isRunning());
+    if (launcher->isRunning()) {
+        launch_button->setToolTip("dVRK is already running");
+    } else {
+        launch_button->setToolTip("Launch the dVRK with this system configuration");
+    }
 }
 
 bool ConfigEditor::save() {

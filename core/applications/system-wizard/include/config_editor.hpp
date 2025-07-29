@@ -24,15 +24,12 @@ http://www.cisst.org/cisst/license.txt.
 #include <optional>
 
 #include "arm_editor.hpp"
-#include "arm_view.hpp"
 #include "config_sources.hpp"
 #include "console_editor.hpp"
 #include "io_editor.hpp"
-#include "io_view.hpp"
 #include "list_view.hpp"
 #include "models/config_model.hpp"
-#include "teleop_editor.hpp"
-#include "teleop_view.hpp"
+#include "system_launcher.hpp"
 
 namespace system_wizard {
 
@@ -40,8 +37,13 @@ class ConfigEditor : public QWidget {
     Q_OBJECT
 
 public:
-    ConfigEditor(std::unique_ptr<SystemConfigModel> config_model, ConfigSources& config_sources, QWidget* parent = nullptr);
-    static std::unique_ptr<ConfigEditor> open(std::filesystem::path config_file, ConfigSources& sources);
+    ConfigEditor(
+        std::unique_ptr<SystemConfigModel> config_model,
+        ConfigSources& config_sources,
+        SystemLauncher& launcher,
+        QWidget* parent = nullptr
+    );
+    static std::unique_ptr<ConfigEditor> open(std::filesystem::path config_file, ConfigSources& sources, SystemLauncher& launcher);
 
     std::optional<std::filesystem::path> savePath() const { return save_path; }
     bool changesSaved() const { return changes_saved; }
@@ -57,12 +59,14 @@ signals:
 
 private:
     void setSavePath(std::filesystem::path path);
+    void updateLaunchButton();
 
     std::unique_ptr<SystemConfigModel> model;
     bool changes_saved;
     std::optional<std::filesystem::path> save_path;
 
     QLabel* path_display;
+    QPushButton* launch_button;
 
     IOEditor io_editor;
     ArmEditor arm_editor;
@@ -70,6 +74,8 @@ private:
     ListView* io_list;
     ListView* arm_list;
     ConsolesContainer* console;
+
+    SystemLauncher* launcher;
 };
 
 }

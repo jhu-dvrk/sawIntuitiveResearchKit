@@ -52,6 +52,7 @@ if (cisst_FOUND_AS_REQUIRED)
          include/io_view.hpp
          include/list_view.hpp
          include/mainwindow.hpp
+         include/system_launcher.hpp
          include/teleop_editor.hpp
          include/teleop_view.hpp
 
@@ -74,6 +75,7 @@ if (cisst_FOUND_AS_REQUIRED)
          src/io_view.cpp
          src/list_view.cpp
          src/mainwindow.cpp
+         src/system_launcher.cpp
          src/teleop_editor.cpp
          src/teleop_view.cpp
     )

@@ -20,9 +20,10 @@ http://www.cisst.org/cisst/license.txt.
 
 namespace system_wizard {
 
-Editor::Editor(ConfigSources& config_sources, QWidget* parent)
+Editor::Editor(ConfigSources& config_sources, SystemLauncher& launcher, QWidget* parent)
     : QStackedWidget(parent),
-      config_sources(&config_sources) {
+      config_sources(&config_sources),
+      launcher(&launcher) {
     tabs = new QTabWidget();
     tabs->setMovable(true);
     tabs->setTabsClosable(true);
@@ -65,7 +66,7 @@ void Editor::newConfig() {
     default_console->name = "Console";
     model->console_configs->appendItem(std::move(default_console));
 
-    std::unique_ptr<ConfigEditor> editor = std::make_unique<ConfigEditor>(std::move(model), *config_sources);
+    std::unique_ptr<ConfigEditor> editor = std::make_unique<ConfigEditor>(std::move(model), *config_sources, *launcher);
     createTab(std::move(editor));
 }
 
@@ -76,7 +77,7 @@ void Editor::openConfig() {
     }
 
     std::filesystem::path file_path(file_name.toStdString());
-    std::unique_ptr<ConfigEditor> editor = ConfigEditor::open(file_path, *config_sources);
+    std::unique_ptr<ConfigEditor> editor = ConfigEditor::open(file_path, *config_sources, *launcher);
     if (editor == nullptr) {
         // TODO: display validation/error message
         return;
@@ -86,7 +87,7 @@ void Editor::openConfig() {
 }
 
 void Editor::openConfigFile(std::filesystem::path config_file) {
-    std::unique_ptr<ConfigEditor> editor = ConfigEditor::open(config_file, *config_sources);
+    std::unique_ptr<ConfigEditor> editor = ConfigEditor::open(config_file, *config_sources, *launcher);
     if (editor == nullptr) {
         // TODO: display validation/error message
         return;
