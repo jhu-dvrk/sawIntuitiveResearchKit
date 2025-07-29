@@ -50,7 +50,7 @@ void TeleopOptionView::updateData(int index) {
 TeleopEditor::TeleopEditor(ListModelT<TeleopConfig>& teleops, TeleopType type, const ListModelT<ArmConfig>& arms, QWidget* parent)
     : QWizard(parent), teleops(&teleops), type(type), arms(&arms), config("Teleop", type) {
     SuggestedTeleopsPage* suggested_teleops_page = new SuggestedTeleopsPage(arms, teleops, config);
-    TeleopParametersPage* teleop_parameters_page = new TeleopParametersPage(config);
+    TeleopParametersPage* teleop_parameters_page = new TeleopParametersPage(config, arms);
 
     setPage(PAGE_SUGGESTED_TELEOPS, suggested_teleops_page);
     setPage(PAGE_TELEOP_PARAMETERS, teleop_parameters_page);
@@ -204,8 +204,8 @@ bool SuggestedTeleopsPage::isComplete() const {
     return false;
 }
 
-TeleopParametersPage::TeleopParametersPage(TeleopConfig& config, QWidget *parent)
-    : QWizardPage(parent), config(&config) {
+TeleopParametersPage::TeleopParametersPage(TeleopConfig& config, const ListModelT<ArmConfig>& arms, QWidget *parent)
+    : QWizardPage(parent), config(&config), arms(&arms) {
     setTitle("Teleop parameters");
 
     QVBoxLayout* layout = new QVBoxLayout(this);
@@ -262,14 +262,66 @@ TeleopParametersPage::TeleopParametersPage(TeleopConfig& config, QWidget *parent
 
     haptic_mtm_form->setMargin(0);
     layout->addWidget(haptic_mtm_details);
+
+    psm_base_frame_details = new QWidget();
+    QFormLayout* psm_base_frame_form = new QFormLayout(psm_base_frame_details);
+    base_arms = new QComboBox();
+    base_arms->addItem("None", 0);
+
+    psm_base_frame_form->addRow("Which arm do you want to use as the reference frame?", base_arms);
+    QObject::connect(base_arms, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index) {
+        if (block_psm_base_frame_updates) { return; }
+
+        if (index == 0) {
+            this->config->PSM_base_frame = {};
+        } else  {
+            this->config->PSM_base_frame = ComponentInterfaceConfig();
+            this->config->PSM_base_frame->component_name = "ECM";
+            this->config->PSM_base_frame->interface_name = "Arm";
+        }
+    });
+
+    psm_base_frame_form->setMargin(0);
+    layout->addWidget(psm_base_frame_details);
 }
 
-void TeleopParametersPage::initializePage() {
+void TeleopParametersPage::showEvent(QShowEvent *CMN_UNUSED(event)) {
     scale_selector->setValue(std::round(100.0 * config->scale));
 
-    haptic_mtm_details->setVisible(usesHapticMTM());
-    has_gripper->setChecked(config->has_MTM_gripper);
-    has_actuated_wrist->setChecked(config->has_MTM_wrist_actuation);
+    bool haptic_mtm = usesHapticMTM();
+    haptic_mtm_details->setVisible(haptic_mtm);
+    if (haptic_mtm) {
+        has_gripper->setChecked(config->has_MTM_gripper);
+        has_actuated_wrist->setChecked(config->has_MTM_wrist_actuation);
+    } else {
+        config->has_MTM_gripper = true;
+        config->has_MTM_wrist_actuation = true;
+    }
+
+    psm_base_frame_details->setVisible(config->type.isPSM());
+    if (config->type.isPSM()) {
+        // temporarily block handling changes to base frame, otherwise the
+        // the base_arms->addItem(...) calls will overwrite the config
+        block_psm_base_frame_updates = true;
+        base_arms->clear();
+        base_arms->addItem("None", 0);
+
+        int base_arm_idx = 1;
+        for (int idx = 0; idx < arms->count(); idx++) {
+            const auto& arm = arms->get(idx);
+            if (arm.type.isPSM() || arm.type.isECM()) {
+                base_arms->addItem(QString::fromStdString(arm.name), base_arm_idx++);
+            }
+        }
+
+        if (!config->PSM_base_frame.has_value()) {
+            base_arms->setCurrentIndex(0);
+        } else {
+            base_arms->setCurrentText(QString::fromStdString(config->PSM_base_frame->component_name));
+        }
+
+        block_psm_base_frame_updates = false;
+    }
 }
 
 bool TeleopParametersPage::usesHapticMTM() const {

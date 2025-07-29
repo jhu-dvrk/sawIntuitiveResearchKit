@@ -108,21 +108,33 @@ std::optional<ConfigSources::Arm> parseArm(std::filesystem::path file_path) {
         is_DQLA = hardware_version == "DQLA";
     }
 
-    return ConfigSources::Arm(name, arm_type, serial, file_path, is_DQLA);
+    std::string io_gripper_config_name = "sawRobotIO1394-" + base_match[1].str() + "-gripper-" + base_match[4].str() + ".xml";
+    std::filesystem::path io_gripper_config_path = file_path.parent_path() / io_gripper_config_name;
+
+    auto arm = ConfigSources::Arm(name, arm_type, serial, file_path, io_config_path, is_DQLA);
+
+    if (std::filesystem::exists(io_gripper_config_path)) {
+        arm.io_gripper_file = io_gripper_config_path;
+    }
+
+    return arm;
 }
 
-std::optional<ConfigSources::Arm> parse_suj(std::filesystem::path file_path) {
+std::optional<ConfigSources::Arm> parseSUJ(std::filesystem::path file_path) {
     std::string file_name = file_path.stem().string();
 
     // currently there is a hard-coded assumption in dvrk_system that the SUJ component is named "SUJ"
     std::string name = "SUJ";
 
+    std::string io_config_name = "sawRobotIO1394-" + name+ ".xml";
+    std::filesystem::path io_config_path = file_path.parent_path() / io_config_name;
+
     if (file_name == "suj-fixed") {
-        return ConfigSources::Arm(name, ArmType::Value::SUJ_FIXED, "", file_path, false);
+        return ConfigSources::Arm(name, ArmType::Value::SUJ_FIXED, "", file_path, {}, false);
     } else if (file_name == "suj-si") {
-        return ConfigSources::Arm(name, ArmType::Value::SUJ_SI, "", file_path, false);
+        return ConfigSources::Arm(name, ArmType::Value::SUJ_SI, "", file_path, {}, false);
     } else if (file_name.size() >= 3 && file_name.substr(0, 3) == "suj") {
-        return ConfigSources::Arm(name, ArmType::Value::SUJ_CLASSIC, "", file_path, false);
+        return ConfigSources::Arm(name, ArmType::Value::SUJ_CLASSIC, "", file_path, io_config_path, false);
     } else {
         return {};
     }
@@ -144,7 +156,7 @@ void ConfigSources::loaded(const QString &path) {
             continue;
         }
 
-        std::optional<Arm> suj = parse_suj(entry.path());
+        std::optional<Arm> suj = parseSUJ(entry.path());
         if (suj.has_value()) {
             new_arms.push_back(suj.value());
             continue;

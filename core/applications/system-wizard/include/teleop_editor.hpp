@@ -89,22 +89,32 @@ class TeleopParametersPage : public QWizardPage {
     Q_OBJECT
 
 public:
-    TeleopParametersPage(TeleopConfig& config, QWidget *parent = nullptr);
+    TeleopParametersPage(
+        TeleopConfig& config,
+        const ListModelT<ArmConfig>& available_arms,
+        QWidget *parent = nullptr
+    );
 
     int nextId() const override { return -1; }
 
-    void initializePage() override;
+    void showEvent(QShowEvent *event) override;
 
 private:
     bool usesHapticMTM() const;
 
     TeleopConfig* config;
+    const ListModelT<ArmConfig>* arms;
+
+    bool block_psm_base_frame_updates;
 
     QSlider* scale_selector;
 
     QWidget* haptic_mtm_details;
     QCheckBox* has_gripper;
     QCheckBox* has_actuated_wrist;
+
+    QWidget* psm_base_frame_details;
+    QComboBox* base_arms;
 };
 
 }

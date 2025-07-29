@@ -104,6 +104,13 @@ void MainWindow::createMenus() {
 
 void MainWindow::open_folder() {
     directory_chooser.open();
+
+    auto source_dir = config_sources->dir();
+    if (source_dir.has_value()) {
+        directory_chooser.setDirectory(QString::fromStdString(source_dir.value()));
+    } else {
+        directory_chooser.setDirectory(QDir::current());
+    }
 }
 
 void MainWindow::folder_chosen() {

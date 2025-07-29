@@ -764,6 +764,14 @@ public:
             config->arm_file = value["arm_file"].asString();
         }
 
+        if (value.isMember("IO_file")) {
+            config->io_file = value["IO_file"].asString();
+        }
+
+        if (value.isMember("IO_gripper_file")) {
+            config->io_gripper_file = value["IO_gripper_file"].asString();
+        }
+
         return config;
     }
 
@@ -790,6 +798,14 @@ public:
 
         if (arm_file.has_value()) {
             value["arm_file"] = arm_file->string();
+        }
+
+        if (io_file.has_value()) {
+            value["IO_file"] = io_file->string();
+        }
+
+        if (io_gripper_file.has_value()) {
+            value["IO_gripper_file"] = io_gripper_file->string();
         }
 
         if (config_type == ArmConfigType::NATIVE || config_type == ArmConfigType::SIMULATED) {
@@ -829,6 +845,8 @@ public:
     ArmType type;
 
     std::optional<std::filesystem::path> arm_file;
+    std::optional<std::filesystem::path> io_file;
+    std::optional<std::filesystem::path> io_gripper_file;
 
     ArmConfigType config_type;
     std::optional<int> haptic_device;
@@ -864,6 +882,10 @@ public:
             std::string name = arm_names[0] + "-" + arm_names[1] + " Teleop";
             config = std::make_unique<TeleopConfig>(name, TeleopType::Value::PSM_TELEOP);
             config->arm_names = arm_names;
+
+            if (value.isMember("PSM_base_frame")) {
+                config->PSM_base_frame = *ComponentInterfaceConfig::fromJSON(value["PSM_base_frame"]);
+            }
         }
 
         Json::Value parameters = value["configure_parameter"];
@@ -887,6 +909,10 @@ public:
         if (type == TeleopType::Value::PSM_TELEOP) {
             value["MTM"] = arm_names.at(0);
             value["PSM"] = arm_names.at(1);
+
+            if (PSM_base_frame.has_value()) {
+                value["PSM_base_frame"] = PSM_base_frame->toJSON();
+            }
         } else if (type == TeleopType::Value::ECM_TELEOP) {
             value["ECM"] = arm_names.at(0);
             value["MTML"] = arm_names.at(1);
@@ -917,6 +943,7 @@ public:
     double scale = 0.5;
     bool has_MTM_gripper = false;
     bool has_MTM_wrist_actuation = false;
+    std::optional<ComponentInterfaceConfig> PSM_base_frame;
 
     void provideSources(ListModelT<ArmConfig> const& arms) {
         this->arms = &arms;
@@ -1118,10 +1145,11 @@ public:
 
     static std::unique_ptr<HeadSensorConfig> fromJSON(Json::Value value) {
         std::string input_type = value.get("input_type", "").asString();
+
         if (input_type == "PEDALS_GOOVIS_HEAD_SENSOR") {
             return std::make_unique<HeadSensorConfig>(HeadSensorType::Value::GOOVIS);
         } else if (input_type == "PEDALS_ISI_HEAD_SENSOR" || input_type == "PEDALS_DVRK_HEAD_SENSOR") {
-            std::string io_file = value.get("IO_file", "").asString();
+            std::string io_file = value["IO_head_sensor"].get("IO_file", "").asString();
             if (io_file == "") { return nullptr; }
 
             std::string prefix = "sawRobotIO1394-";

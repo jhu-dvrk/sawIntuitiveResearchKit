@@ -88,7 +88,8 @@ ConfigEditor::ConfigEditor(
     QString disabled_style = disabled_style_template.arg(disabled_color.rgba(), 0, 16);
 
     QHBoxLayout* launch_layout = new QHBoxLayout();
-    QIcon launch_icon = QIcon::fromTheme("media-playback-start");
+    QIcon launch_icon = this->style()->standardIcon(QStyle::SP_MediaPlay);
+
     launch_button = new QPushButton(launch_icon, "Launch system");
     launch_button->setStyleSheet(style + hover_style + disabled_style);
     launch_layout->addWidget(launch_button);
@@ -165,7 +166,7 @@ std::unique_ptr<ConfigEditor> ConfigEditor::open(std::filesystem::path config_fi
 }
 
 void ConfigEditor::setSavePath(std::filesystem::path path) {
-    path = std::filesystem::canonical(path);
+    path = std::filesystem::weakly_canonical(path);
     this->save_path = path;
     const QString qpath = QString::fromStdString(path.string());
     path_display->setText(qpath);

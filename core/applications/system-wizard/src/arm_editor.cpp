@@ -44,7 +44,7 @@ void ArmSourceView::updateData(int id) {
     ConfigSources::Arm arm = model->get(id);
     QString description;
     if (arm.type.isSUJ()) {
-        description = QString::fromStdString(arm.name + " (" + arm.type.name() + ")");
+        description = QString::fromStdString(arm.type.name() + " (" + arm.arm_file.filename().string() + ")");
     } else {
         description = QString::fromStdString(arm.name + "-" + arm.serial_number);
     }
@@ -75,7 +75,9 @@ QuickArmPage::QuickArmPage(ArmConfig& config, const SystemConfigModel& model, Co
         ConfigSources::Arm source = available_arms->get(index);
         *this->config = ArmConfig(source.name, source.type, ArmConfigType::NATIVE);
         this->config->is_DQLA = source.is_DQLA;
-        this->config->arm_file = source.config_file.filename().string();
+        this->config->arm_file = source.arm_file;
+        this->config->io_file = source.io_file;
+        this->config->io_gripper_file = source.io_gripper_file;
         if (!source.serial_number.empty()) {
             this->config->serial_number = source.serial_number;
         }
@@ -664,6 +666,9 @@ void BaseFramePage::initializePage() {
 
     block_suj_updates = false;
 
+    ecm_mounting_pitch->setValue(-45);
+    hrsv_pitch->setValue(-45);
+
     if (config->base_frame.has_value()) {
         if (!config->base_frame->use_custom_transform) {
             std::string suj_name = config->base_frame->base_frame_component.component_name;
@@ -684,7 +689,17 @@ void BaseFramePage::initializePage() {
             hrsv_pitch->setValue(std::round(theta * cmn180_PI));
         }
     } else {
+        // first set to zero so non-zero values will emit currentIndexChanged
         base_frame_type->setCurrentIndex(0);
+
+        if ((config->type.isPSM() || config->type.isECM()) && suj_list->count() > 0) {
+            base_frame_type->setCurrentIndex(4);
+            suj_list->setCurrentIndex(0);
+        } else if (config->type.isPSM()) {
+            base_frame_type->setCurrentIndex(2);
+        } else if (config->type.isMTM()) {
+            base_frame_type->setCurrentIndex(3);
+        }
     }
 }
 
