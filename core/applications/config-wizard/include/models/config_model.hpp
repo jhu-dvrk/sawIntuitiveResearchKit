@@ -1525,6 +1525,24 @@ public:
             return nullptr;
         }
 
+        if (!json_config.isMember("$id")) {
+            std::cerr << "No schema id specified, assuming dvrk-system.schema.json" << std::endl;
+        }
+        if (!json_config.isMember("$version")) {
+            std::cerr << "No schema version specified, assuming version 1" << std::endl;
+        }
+
+        std::string schema_id = json_config.get("$id", "dvrk-system.schema.json").asString();
+        if (schema_id != "dvrk-system.schema.json") {
+            std::cerr << "Unexpected schema id \"" << schema_id << "\", aborting. Are you sure file is a dVRK system config?" << std::endl;
+            return nullptr;
+        }
+        int schema_version = json_config.get("$version", 1).asInt();
+        if (schema_version != 1) {
+            std::cerr << "Unsupported schema version " << schema_version << ", aborting" << std::endl;
+            return nullptr;
+        }
+
         json_value = json_config["IOs"];
         if (!json_value.empty() && json_value.isArray()) {
             model->io_configs = ListModelT<IOConfig>::fromJSON(json_value);
@@ -1577,6 +1595,9 @@ public:
 
     bool save(std::filesystem::path config_file) const {
         Json::Value config;
+
+        config["$id"] = "dvrk-system.schema.json";
+        config["$version"] = 1;
 
         config["IOs"] = io_configs->toJSON();
         config["arms"] = arm_configs->toJSON();
