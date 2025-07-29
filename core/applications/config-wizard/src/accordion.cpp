@@ -1,0 +1,94 @@
+/*
+  Author(s):  Brendan Burkhart
+  Created on: 2025-05-24
+
+  (C) Copyright 2025 Johns Hopkins University (JHU), All Rights Reserved.
+
+--- begin cisst license - do not edit ---
+
+This software is provided "as is" under an open source license, with
+no warranty.  The complete license can be found in license.txt and
+http://www.cisst.org/cisst/license.txt.
+
+--- end cisst license ---
+*/
+
+#include "accordion.hpp"
+
+namespace config_wizard {
+
+Accordion::Accordion(bool start_open, QWidget* parent) : Accordion("", "", start_open, parent) { }
+
+Accordion::Accordion(const QString& title, const QString& background_color, bool start_open, QWidget* parent)
+    : QFrame(parent), is_open(start_open), contents(nullptr) {
+    this->setFrameStyle(QFrame::StyledPanel);
+    this->setStyleSheet("config_wizard--Accordion { background-color: " + background_color + "; border-radius: 10px; }");
+    this->setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Maximum);
+    button = new QToolButton(this);
+    button->setCheckable(true); // turn into a "checkbox" button
+    button->setChecked(is_open);
+    button->setStyleSheet("background-color: " + background_color + "; font-size: 5em; text-align: left; border: none; outline: none;");
+    button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    button->setArrowType(is_open ? Qt::ArrowType::DownArrow : Qt::ArrowType::RightArrow);
+    button->setText(title);
+
+    QObject::connect(button, &QToolButton::toggled, this, &Accordion::toggle);
+
+    QVBoxLayout* layout = new QVBoxLayout(this);
+    layout->setAlignment(Qt::AlignmentFlag::AlignTop);
+    layout->setSpacing(0);
+    layout->addWidget(button);
+
+    animation = new QPropertyAnimation(this);
+    animation->setPropertyName("maximumHeight");
+    animation->setStartValue(0);
+    animation->setDuration(200); // miiliseconcds
+    animation->setEasingCurve(QEasingCurve::Type::Linear);
+
+    QObject::connect(animation, &QPropertyAnimation::finished, this, &Accordion::animation_finished);
+
+    setWidget(new QWidget());
+}
+
+void Accordion::setWidget(QWidget* contents) {
+    if (this->contents != nullptr) {
+        layout()->removeWidget(this->contents);
+    }
+
+    this->contents = contents;
+    layout()->addWidget(contents);
+
+    // set maximum height before setting animation target so animation behaves properly,
+    // but then set maximum height to unrestricted (if open) so widget can resize
+    contents->setMaximumHeight(is_open ? contents->sizeHint().height() + 10 : 0);
+    animation->setTargetObject(this->contents);
+    contents->setMaximumHeight(is_open ? QWIDGETSIZE_MAX : 0);
+}
+
+void Accordion::toggle(bool button_checked) {
+    is_open = button_checked;
+    emit toggled(is_open);
+
+    if (button_checked) {
+        button->setArrowType(Qt::ArrowType::DownArrow);
+        animation->setDirection(QAbstractAnimation::Direction::Forward);
+    } else {
+        button->setArrowType(Qt::ArrowType::RightArrow);
+        animation->setDirection(QAbstractAnimation::Direction::Backward);
+    }
+
+    // start accordion animation
+    int content_height = contents->sizeHint().height() + 10;
+    animation->setStartValue(0);
+    animation->setEndValue(content_height);
+    animation->start();
+}
+
+void Accordion::animation_finished() {
+    // ensure open widget isn't constrained in case it changes size
+    if (is_open) {
+        contents->setMaximumHeight(QWIDGETSIZE_MAX);
+    }
+}
+
+}

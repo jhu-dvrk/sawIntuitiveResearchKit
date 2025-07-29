@@ -21,6 +21,7 @@ add_subdirectory (config-generator)
 add_subdirectory (sd-card-updater)
 add_subdirectory (remove-logs)
 add_subdirectory (suj-bluetooth-reset)
+add_subdirectory (config-wizard)
 
 # create a list of required cisst libraries
 set (REQUIRED_CISST_LIBRARIES
