@@ -1,4 +1,6 @@
 {
+    "$id": "constrollers-pid.schema.json",
+    "$version": "1",
     "pid": [
 	{
 	    "index": 0,
@@ -9,7 +11,9 @@
 	    "i_gain": 0.0,
             "use_disturbance_observer": true,
 	    "nominal_mass": 0.01,
-	    "disturbance_cutoff": 50.0
+	    "disturbance_cutoff": 50.0,
+	    "pid_max_output": 10.0,
+	    "p_measured_setpoint_tolerance": 0.5 // ~30 degrees
 	}
 	,
 	{
@@ -21,7 +25,9 @@
 	    "i_gain": 0.0,
             "use_disturbance_observer": true,
 	    "nominal_mass": 0.01,
-	    "disturbance_cutoff": 50.0
+	    "disturbance_cutoff": 50.0,
+	    "pid_max_output": 10.0,
+	    "p_measured_setpoint_tolerance": 0.5 // ~30 degrees
 	}
 	,
 	{
@@ -33,7 +39,9 @@
 	    "i_gain": 0.0,
             "use_disturbance_observer": true,
 	    "nominal_mass": 0.005,
-	    "disturbance_cutoff": 20.0
+	    "disturbance_cutoff": 20.0,
+	    "pid_max_output": 15.0,
+	    "p_measured_setpoint_tolerance": 0.05 // ~5 cm
 	}
 	,
 	{
@@ -45,7 +53,9 @@
 	    "i_gain": 0.0,
             "use_disturbance_observer": true,
 	    "nominal_mass": 0.0005,
-	    "disturbance_cutoff": 10.0
+	    "disturbance_cutoff": 10.0,
+	    "pid_max_output": -1.0,
+	    "p_measured_setpoint_tolerance": 0.6 // ~35 degrees
 	}
 	,
 	{
@@ -57,7 +67,9 @@
 	    "i_gain": 0.0,
             "use_disturbance_observer": true,
 	    "nominal_mass": 0.0005,
-	    "disturbance_cutoff": 10.0
+	    "disturbance_cutoff": 10.0,
+	    "pid_max_output": -1.0,
+	    "p_measured_setpoint_tolerance": 0.6 // ~35 degrees
 	}
 	,
 	{
@@ -69,7 +81,9 @@
 	    "i_gain": 0.0,
             "use_disturbance_observer": true,
 	    "nominal_mass": 0.0005,
-	    "disturbance_cutoff": 10.0
+	    "disturbance_cutoff": 0.0,
+	    "pid_max_output": -1.0,
+	    "p_measured_setpoint_tolerance": 0.6 // ~35 degrees
 	}
 	,
 	{
@@ -81,7 +95,9 @@
 	    "i_gain": 0.0,
             "use_disturbance_observer": true,
 	    "nominal_mass": 0.0005,
-	    "disturbance_cutoff": 10.0
+	    "disturbance_cutoff": 10.0,
+	    "pid_max_output": -1.0,
+	    "p_measured_setpoint_tolerance": 0.6 // ~35 degrees
 	}
     ]
 }

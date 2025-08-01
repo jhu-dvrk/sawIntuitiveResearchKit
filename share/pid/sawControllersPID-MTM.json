@@ -1,4 +1,6 @@
 {
+    "$id": "constrollers-pid.schema.json",
+    "$version": "1",
     "pid": [
 	{
 	    "index": 0,
@@ -11,7 +13,9 @@
 	    "i_limit": 0.0,
 	    "use_disturbance_observer": true,
 	    "nominal_mass": 0.001,
-	    "disturbance_cutoff": 10.0
+	    "disturbance_cutoff": 10.0,
+	    "pid_max_output": -1.0, // disabled, motors are not that powerful
+	    "p_measured_setpoint_tolerance": 0.2 // ~11 degrees
 	}
 	,
 	{
@@ -25,7 +29,9 @@
 	    "i_limit": 0.0,
 	    "use_disturbance_observer": true,
 	    "nominal_mass": 0.001,
-	    "disturbance_cutoff": 10.0
+	    "disturbance_cutoff": 10.0,
+	    "pid_max_output": -1.0, // disabled, motors are not that powerful
+	    "p_measured_setpoint_tolerance": 0.2 // ~11 degrees
 	}
 	,
 	{
@@ -39,7 +45,9 @@
 	    "i_limit": 0.0,
 	    "use_disturbance_observer": true,
 	    "nominal_mass": 0.001,
-	    "disturbance_cutoff": 10.0
+	    "disturbance_cutoff": 10.0,
+	    "pid_max_output": -1.0, // disabled, motors are not that powerful
+	    "p_measured_setpoint_tolerance": 0.2 // ~11 degrees
 	}
 	,
 	{
@@ -53,7 +61,9 @@
 	    "i_limit": 0.0,
 	    "use_disturbance_observer": true,
 	    "nominal_mass": 0.001,
-	    "disturbance_cutoff": 15.0
+	    "disturbance_cutoff": 15.0,
+	    "pid_max_output": -1.0, // disabled, motors are not that powerful
+	    "p_measured_setpoint_tolerance": 0.2 // ~11 degrees
 	}
 	,
 	{
@@ -65,7 +75,9 @@
 	    "i_gain": 0.0,
 	    "i_forget_rate": 0.99,
 	    "i_limit": 0.0,
-	    "p_deadband": 0.008
+	    "p_deadband": 0.008,
+	    "pid_max_output": -1.0, // disabled, motors are not that powerful
+	    "p_measured_setpoint_tolerance": 0.5 // ~30 degrees
 	}
 	,
 	{
@@ -77,7 +89,9 @@
 	    "i_gain": 0.0,
 	    "i_forget_rate": 0.99,
 	    "i_limit": 0.0,
-	    "p_deadband": 0.015
+	    "p_deadband": 0.015,
+	    "pid_max_output": -1.0, // disabled, motors are not that powerful
+	    "p_measured_setpoint_tolerance": 0.5 // ~30 degrees
 	}
 	,
 	{
@@ -89,7 +103,9 @@
 	    "i_gain": 0.0,
 	    "i_forget_rate": 0.99,
 	    "i_limit": 0.0,
-	    "p_deadband": 0.02
+	    "p_deadband": 0.02,
+	    "pid_max_output": -1.0, // disabled, motors are not that powerful
+	    "p_measured_setpoint_tolerance": 0.5 // ~30 degrees
 	}
     ]
 }

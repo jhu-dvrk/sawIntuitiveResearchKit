@@ -298,11 +298,6 @@ void mtsIntuitiveResearchKitECM::Init(void)
                                 90.0 * cmnPI_180);
     m_trajectory_j.goal_tolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
 
-    // default PID tracking errors
-    PID.measured_setpoint_tolerance.SetSize(number_of_joints());
-    PID.measured_setpoint_tolerance.SetAll(7.0 * cmnPI_180); // 7 degrees on angles
-    PID.measured_setpoint_tolerance.Element(2) = 10.0 * cmn_mm; // 10 mm
-
     mtsInterfaceRequired * interfaceRequired;
 
     // Main interface should have been created by base class init
@@ -350,7 +345,6 @@ void mtsIntuitiveResearchKitECM::SetGoalHomingArm(void)
     }
 
     // make sure tracking error is set
-    PID.set_measured_setpoint_tolerance(PID.measured_setpoint_tolerance);
     PID.enable_measured_setpoint_check(true);
 
     // compute joint goal position

@@ -720,16 +720,6 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     m_trajectory_j.a_max.Ref(4, 3).SetAll(2.0 * 360.0 * cmnPI_180);
     m_trajectory_j.goal_tolerance.SetAll(3.0 * cmnPI_180); // hard coded to 3 degrees
 
-    // default PID tracking errors
-    PID.measured_setpoint_tolerance.SetSize(number_of_joints());
-    // first two rotations
-    PID.measured_setpoint_tolerance.Ref(2, 0).SetAll(20.0 * cmnPI_180); // 2 elements starting at 0 -> 0 1
-    // translation
-    PID.measured_setpoint_tolerance.Element(2) = 20.0 * cmn_mm; // 20 mm -> 2
-    // shaft rotation and tool orientation
-    PID.measured_setpoint_tolerance.Ref(3, 3).SetAll(35.0 * cmnPI_180); // 3 elements starting at 3 -> 3, 4, 5
-    // jaws, allow more since we use PID large errors to apply large torques
-    PID.measured_setpoint_tolerance.Element(6) = 90.0 * cmnPI_180;
     mtsInterfaceRequired * interfaceRequired;
 
     // Main interface should have been created by base class init
@@ -1020,13 +1010,6 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
     if (EngagingStage == 1) {
         // configure PID to fail in case of tracking error
         PID.enforce_position_limits(false);
-        vctDoubleVec tolerances(number_of_joints());
-        // first two rotations and translation, in case someone is pushing/holding arm
-        tolerances.Ref(2, 0).SetAll(10.0 * cmnPI_180); // 10 degrees
-        tolerances.Element(2) = 10.0 * cmn_mm; // 10 mm
-        // tool/adapter gears should have little resistance?
-        tolerances.Ref(4, 3).SetAll(45.0 * cmnPI_180);
-        PID.set_measured_setpoint_tolerance(tolerances);
         servo_jp_internal(m_pid_setpoint_js.Position(), vctDoubleVec());
         // turn on PID
         PID.enable_joints(vctBoolVec(number_of_joints(), true));
@@ -1132,13 +1115,6 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
     if (EngagingStage == 1) {
         // configure PID to fail in case of tracking error
         PID.enforce_position_limits(false);
-        vctDoubleVec tolerances(number_of_joints());
-        // first two rotations and translation, in case someone is pushing/holding arm
-        tolerances.Ref(2, 0).SetAll(10.0 * cmnPI_180); // 10 degrees
-        tolerances.Element(2) = 10.0 * cmn_mm; // 10 mm
-        // tool/adapter gears should have little resistance?
-        tolerances.Ref(4, 3).SetAll(45.0 * cmnPI_180);
-        PID.set_measured_setpoint_tolerance(tolerances);
         servo_jp_internal(m_pid_setpoint_js.Position(), vctDoubleVec());
         // turn on PID
         PID.enable_joints(vctBoolVec(number_of_joints(), true));
@@ -1242,8 +1218,6 @@ void mtsIntuitiveResearchKitPSM::EnterToolEngaged(void)
                     mtsIntuitiveResearchKit::Green200,
                     false, false);
 
-    // restore default PID tracking error
-    PID.set_measured_setpoint_tolerance(PID.measured_setpoint_tolerance);
     // resize kinematics vectors
     cmnDataCopy(m_kin_measured_js.Name(), m_configuration_js.Name());
     m_kin_measured_js.Position().SetSize(number_of_joints_kinematics());

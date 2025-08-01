@@ -118,12 +118,6 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     m_trajectory_j.goal_tolerance.SetAll(3.0 * cmnPI_180); // hard coded to 3 degrees
     m_trajectory_j.goal_tolerance.at(JNT_WRIST_ROLL) = 6.0 * cmnPI_180; // roll has low encoder resolution
 
-    // default PID tracking errors, defaults are used for homing
-    PID.measured_setpoint_tolerance.SetSize(number_of_joints());
-    PID.measured_setpoint_tolerance.SetAll(10.0 * cmnPI_180);
-    // last 3 joints tend to be weaker
-    PID.measured_setpoint_tolerance.Ref(3, 4) = 30.0 * cmnPI_180;
-
     this->StateTable.AddData(m_gripper_measured_js, "gripper/measured_js");
 
     // Gripper IO

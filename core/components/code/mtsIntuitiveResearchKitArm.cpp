@@ -328,7 +328,6 @@ void mtsIntuitiveResearchKitArm::Init(void)
         PIDInterface->AddFunction("EnableTorqueMode", PID.EnableTorqueMode);
         PIDInterface->AddFunction("servo_jf", PID.servo_jf);
         PIDInterface->AddFunction("enable_measured_setpoint_check", PID.enable_measured_setpoint_check);
-        PIDInterface->AddFunction("set_measured_setpoint_tolerance", PID.set_measured_setpoint_tolerance);
         PIDInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::PositionLimitEventHandler, this, "PositionLimit");
         PIDInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::ErrorEventHandler, this, "error");
     }
@@ -1361,7 +1360,7 @@ void mtsIntuitiveResearchKitArm::EnterHoming(void)
     // disable joint limits, arm might start outside them
     PID.enforce_position_limits(false);
     // enable tracking errors
-    PID.set_measured_setpoint_tolerance(PID.measured_setpoint_tolerance);
+    PID.enable_measured_setpoint_check(true);
 
     // release brakes if any
     if ((has_brakes()) && !m_simulated) {

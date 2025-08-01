@@ -286,8 +286,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         mtsFunctionWrite EnableTorqueMode;
         mtsFunctionWrite servo_jf;
         mtsFunctionWrite enable_measured_setpoint_check;
-        mtsFunctionWrite set_measured_setpoint_tolerance;
-        vctDoubleVec measured_setpoint_tolerance;
     } PID;
 
     // Interface to IO component
