@@ -35,12 +35,12 @@ def suj_bluetooth_reset(args: Namespace)->None:
     data = load_json_dvrk(suj_file_path)
 
     address_list = []
-    address_list.append(data['base-arduino-mac'])
+    address_list.append(data['base_arduino_mac'])
 
     num_arms = len(data['arms'])
 
     for i_arm in range(num_arms):
-        address_list.append(data['arms'][i_arm]['arduino-mac'])
+        address_list.append(data['arms'][i_arm]['arduino_mac'])
 
     for addr in address_list:
         print(f"Disconnecting and reconnecting {addr}, timeout is 30 seconds")
