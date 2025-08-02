@@ -2,54 +2,51 @@
     "$id": "constrollers-pid.schema.json",
     "$version": "1",
     "pid": [
-	{
-	    "index": 0,
-	    "name": "yaw",
-	    "type": "REVOLUTE",
-	    "p_gain": 600.0,
-	    "d_gain": 30.0,
-	    "i_gain": 0.0,
-	    "use_disturbance_observer": true,
-	    "nominal_mass": 0.01,
-	    "disturbance_cutoff": 50.0,
-	    "pid_max_output": 15.0,
-	    "p_measured_setpoint_tolerance": 0.6 // ~35 degrees
-	}
-	,
-	{
-	    "index": 1,
-	    "name": "pitch",
-	    "type": "REVOLUTE",
-	    "p_gain": 600.0,
-	    "d_gain": 30.0,
-	    "i_gain": 0.0,
-	    "use_disturbance_observer": true,
-	    "nominal_mass": 0.01,
-	    "disturbance_cutoff": 50.0,
-	    "pid_max_output": 15.0,
-	    "p_measured_setpoint_tolerance": 0.6 // ~35 degrees
-	}
-	,
-	{
-	    "index": 2,
-	    "name": "insertion",
-	    "type": "PRISMATIC",
-	    "p_gain": 15000.0,
-	    "d_gain": 500.0,
-	    "i_gain": 0.0,
-	    "pid_max_output": -1.0, // disabled, not supposed to be back drivable
-	    "p_measured_setpoint_tolerance": 0.02 // 2 cm
-	}
-	,
-	{
-	    "index": 3,
-	    "name": "roll",
-	    "type": "REVOLUTE",
-	    "p_gain": 100.0,
-	    "d_gain": 3.0,
-	    "i_gain": 0.0,
-	    "pid_max_output": 12.0,
-	    "p_measured_setpoint_tolerance": 0.25 // ~20 degrees
-	}
+        {
+            "index": 0,
+            "name": "yaw",
+            "type": "REVOLUTE",
+            "p_gain": 600.0,
+            "d_gain": 30.0,
+            "i_gain": 0.0,
+            "use_disturbance_observer": true,
+            "nominal_mass": 0.01,
+            "disturbance_cutoff": 50.0,
+            "pid_max_output": 15.0,
+            "p_measured_setpoint_tolerance": 0.6 // ~35 degrees
+        },
+        {
+            "index": 1,
+            "name": "pitch",
+            "type": "REVOLUTE",
+            "p_gain": 600.0,
+            "d_gain": 30.0,
+            "i_gain": 0.0,
+            "use_disturbance_observer": true,
+            "nominal_mass": 0.01,
+            "disturbance_cutoff": 50.0,
+            "pid_max_output": 15.0,
+            "p_measured_setpoint_tolerance": 0.6 // ~35 degrees
+        },
+        {
+            "index": 2,
+            "name": "insertion",
+            "type": "PRISMATIC",
+            "p_gain": 15000.0,
+            "d_gain": 500.0,
+            "i_gain": 0.0,
+            "pid_max_output": -1.0, // disabled, not supposed to be back drivable
+            "p_measured_setpoint_tolerance": 0.02 // 2 cm
+        },
+        {
+            "index": 3,
+            "name": "roll",
+            "type": "REVOLUTE",
+            "p_gain": 100.0,
+            "d_gain": 3.0,
+            "i_gain": 0.0,
+            "pid_max_output": 12.0,
+            "p_measured_setpoint_tolerance": 0.25 // ~20 degrees
+        }
     ]
 }
