@@ -77,6 +77,7 @@ namespace dvrk {
         void slot_arm_current_state_event_handler(PairStringType _arm_state);
         void slot_set_volume(void);
         void slot_volume_event_handler(double _volume);
+        void slot_python_shell(void);
         void slot_component_viewer(void);
 
     protected:
@@ -90,6 +91,7 @@ namespace dvrk {
             mtsFunctionVoid home;
             mtsFunctionWrite set_volume;
             mtsFunctionRead calibration_mode;
+            mtsFunctionVoid launch_python_shell;
         } system;
 
         void arm_current_state_event_handler(const prmKeyValue & _arm_state);
@@ -106,6 +108,7 @@ namespace dvrk {
         QVBoxLayout * QVBConsole;
         std::map<QString, dvrk::console_Qt_widget *> m_console_widgets;
 
+        QPushButton * QPBPythonShell;
         QPushButton * QPBComponentViewer;
         QTabWidget * QTComponents;
         QTabWidget * QTConsoles;

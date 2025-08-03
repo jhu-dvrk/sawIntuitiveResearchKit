@@ -79,6 +79,8 @@ dvrk::system::system(const std::string & componentName):
         // misc.
         m_interface->AddCommandRead(&system::calibration_mode, this,
                                     "calibration_mode", false);
+        m_interface->AddCommandVoid(&system::launch_python_shell, this,
+                                    "launch_python_shell");
         // Following is Read instead of VoidReturn because it is called before the component
         // is created (i.e., thread not yet running)
         m_interface->AddCommandRead(&system::ConnectInternal, this,
@@ -111,6 +113,11 @@ const bool & dvrk::system::calibration_mode(void) const
 void dvrk::system::calibration_mode(bool & result) const
 {
     result = m_calibration_mode;
+}
+
+void dvrk::system::launch_python_shell(void)
+{
+    std::cerr << CMN_LOG_DETAILS << " -- needs to be implemented" << std::endl;       
 }
 
 void dvrk::system::Configure(const std::string & filename)

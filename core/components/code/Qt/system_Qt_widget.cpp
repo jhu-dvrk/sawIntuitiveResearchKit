@@ -64,6 +64,7 @@ dvrk::system_Qt_widget::system_Qt_widget(const std::string & _component_name):
         interface_required->AddEventHandlerWrite(&dvrk::system_Qt_widget::volume_event_handler,
                                                  this, "volume");
         interface_required->AddFunction("calibration_mode", system.calibration_mode);
+        interface_required->AddFunction("launch_python_shell", system.launch_python_shell);
     }
     setupUi();
 }
@@ -248,7 +249,11 @@ void dvrk::system_Qt_widget::setupUi(void)
     buttonsWidget->setFixedWidth(buttonsWidget->sizeHint().width());
     mainLayout->addWidget(buttonsWidget);
 
-    QPBComponentViewer = new QPushButton("Component\nViewer");
+    QPBPythonShell = new QPushButton("Embedded Python");
+    QPBPythonShell->setToolTip("Starts an embedded Python interpreter");
+    boxLayout->addWidget(QPBPythonShell);
+    
+    QPBComponentViewer = new QPushButton("Component viewer");
     QPBComponentViewer->setToolTip("Starts uDrawGraph (must be in system path)");
     boxLayout->addWidget(QPBComponentViewer);
 
@@ -289,6 +294,8 @@ void dvrk::system_Qt_widget::setupUi(void)
             this, SLOT(slot_set_volume()));
     connect(this, SIGNAL(signal_volume(double)),
             this, SLOT(slot_volume_event_handler(double)));
+    connect(QPBPythonShell, SIGNAL(clicked()),
+            this, SLOT(slot_python_shell()));
     connect(QPBComponentViewer, SIGNAL(clicked()),
             this, SLOT(slot_component_viewer()));
 
@@ -314,6 +321,12 @@ void dvrk::system_Qt_widget::slot_volume_event_handler(double _volume)
 void dvrk::system_Qt_widget::volume_event_handler(const double & _volume)
 {
     emit signal_volume(_volume);
+}
+
+
+void dvrk::system_Qt_widget::slot_python_shell(void)
+{
+    system.launch_python_shell();
 }
 
 
