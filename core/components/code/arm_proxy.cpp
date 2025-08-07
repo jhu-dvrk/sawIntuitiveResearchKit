@@ -341,7 +341,7 @@ void dvrk::arm_proxy::configure_IO(void)
         config_file = m_config->IO_file;
     } else {
         if (m_config->serial != "") {
-            config_file = "sawRobotIO1394-" + m_config->name_on_IO + "-" + m_config->serial + ".xml";
+            config_file = "sawRobotIO1394-" + m_config->name_on_IO + "-" + m_config->serial + ".json";
         } else {
             CMN_LOG_INIT_ERROR << "arm_proxy::configure_IO: can't find \"serial\" nor \"IO_file\" setting for arm \""
                                << m_name << std::endl;
@@ -371,7 +371,7 @@ void dvrk::arm_proxy::configure_IO(void)
             config_file = m_config->IO_gripper_file;
         } else {
             if (m_config->serial != "") {
-                config_file = "sawRobotIO1394-" + m_config->name_on_IO + "-gripper-" + m_config->serial + ".xml";
+                config_file = "sawRobotIO1394-" + m_config->name_on_IO + "-gripper-" + m_config->serial + ".json";
             } else {
                 CMN_LOG_INIT_ERROR << "arm_proxy::configure_IO: can't find \"serial\" nor \"IO_gripper_file\" setting for arm \""
                                    << m_name << std::endl;

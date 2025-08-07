@@ -17,11 +17,11 @@ project (sawIntuitiveResearchKitApplications)
 # applications in separate directories
 add_subdirectory (gripper-calibration)
 add_subdirectory (si-potentiometers-calibration)
-add_subdirectory (config-generator)
+add_subdirectory (io-config-generator)
 add_subdirectory (sd-card-updater)
 add_subdirectory (remove-logs)
 add_subdirectory (suj-bluetooth-reset)
-add_subdirectory (config-wizard)
+add_subdirectory (system-config-wizard)
 
 # create a list of required cisst libraries
 set (REQUIRED_CISST_LIBRARIES

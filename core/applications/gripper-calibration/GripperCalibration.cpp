@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-12-20
 
-  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -114,7 +114,7 @@ int main(int argc, char * argv[])
         }
         port->Read();
         // read values in radians to test existing coeffcients
-        double value = robot->PotPosition().at(0);
+        double value = robot->PotentiometerPosition().at(0);
         bool newValue = false;
         if (value > maxRad) {
             counter++;

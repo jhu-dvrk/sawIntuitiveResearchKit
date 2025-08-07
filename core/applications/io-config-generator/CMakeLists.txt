@@ -25,7 +25,7 @@ if (cisst_FOUND_AS_REQUIRED)
 
   set (sawIntuitiveResearchKitConfigGenerator_FILES
     ${sawIntuitiveResearchKitConfigGenerator_SOURCE_DIR}/calParser.py
-    ${sawIntuitiveResearchKitConfigGenerator_SOURCE_DIR}/dvrk-config-generator.py)
+    ${sawIntuitiveResearchKitConfigGenerator_SOURCE_DIR}/dvrk-io-config-generator.py)
 
   add_custom_target (sawIntuitiveResearchKitConfigGenerator ALL)
   foreach (_file ${sawIntuitiveResearchKitConfigGenerator_FILES})

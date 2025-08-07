@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2022-06-20
 
-  (C) Copyright 2022-2024 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2022-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -118,7 +118,7 @@ int main(int argc, char * argv[])
     vctDynamicVector<size_t> dataCounter;
 
     potToEncoder.SetSize(nbAxis, potRange);
-    potToEncoder.SetAll(mtsRobot1394::GetMissingPotValue());
+    potToEncoder.SetAll(mtsRobot1394::GetMissingPotentiometerValue());
 
     // human readable, works for PSM and ECM
     std::vector<double> toh = {cmn180_PI, cmn180_PI, 1000.0, cmn180_PI, cmn180_PI, cmn180_PI, cmn180_PI};
@@ -211,7 +211,7 @@ int main(int argc, char * argv[])
         robot->SetEncoderPosition(vctDoubleVec(nbAxis, 0.0));
 
         // turn off pots used to check encoders
-        robot->UsePotsForSafetyCheck(false);
+        robot->UsePotentiometersForSafetyCheck(false);
 
         // enable power and brakes
         vctDoubleVec brakeCurrent(3, 0.0);
@@ -282,12 +282,12 @@ int main(int argc, char * argv[])
             port->Write();
 
             // read values
-            vctIntVec potBits = robot->PotBits();
+            vctIntVec potBits = robot->PotentiometerBits();
             vctDoubleVec actuatorPos = robot->ActuatorJointState().Position();
             for (size_t axis = 0;
                  axis < nbAxis;
                  ++axis) {
-                if (mtsRobot1394::IsMissingPotValue(potToEncoder.at(axis, potBits.at(axis)))) {
+                if (mtsRobot1394::IsMissingPotentiometerValue(potToEncoder.at(axis, potBits.at(axis)))) {
                     potToEncoder.at(axis, potBits[axis]) = directionEncoder.at(axis) * actuatorPos.at(axis);
                     dataCounter.at(axis)++;
                 }
@@ -348,7 +348,7 @@ int main(int argc, char * argv[])
          ++axis) {
         // start from first element
         std::list<std::pair<size_t, size_t> > encoderAreas;
-        bool previousHasEncoder = !mtsRobot1394::IsMissingPotValue(potToEncoder.at(axis, 0));
+        bool previousHasEncoder = !mtsRobot1394::IsMissingPotentiometerValue(potToEncoder.at(axis, 0));
         bool encoderStarted = previousHasEncoder;
         size_t encoderStart;
         if (encoderStarted) {
@@ -359,7 +359,7 @@ int main(int argc, char * argv[])
         for (size_t index = 1;
              index < potRange;
              ++index) {
-            const bool hasEncoder = !mtsRobot1394::IsMissingPotValue(potToEncoder.at(axis, index));
+            const bool hasEncoder = !mtsRobot1394::IsMissingPotentiometerValue(potToEncoder.at(axis, index));
             // transitions
             if ((hasEncoder != previousHasEncoder)
                 || (index == (potRange - 1))) {
@@ -406,7 +406,7 @@ int main(int argc, char * argv[])
                     for (size_t index = previous->second + 1;
                          index < iter->first;
                          ++index, ++counter) {
-                        if (!mtsRobot1394::IsMissingPotValue(potToEncoder.at(axis, index))) {
+                        if (!mtsRobot1394::IsMissingPotentiometerValue(potToEncoder.at(axis, index))) {
                             std::cerr << "!!!! this shouldn't be happening" << std::endl;
                         }
                         potToEncoder.at(axis, index) = start + counter * delta;
@@ -496,7 +496,7 @@ int main(int argc, char * argv[])
         for (size_t index = 0;
              index < potRange;
              ++index) {
-            const bool hasEncoder = !mtsRobot1394::IsMissingPotValue(potToEncoder.at(axis, index));
+            const bool hasEncoder = !mtsRobot1394::IsMissingPotentiometerValue(potToEncoder.at(axis, index));
             if (hasEncoder) {
                 // add offset
                 potToEncoder.at(axis, index) += offsetEncoder.at(axis);
@@ -513,13 +513,13 @@ int main(int argc, char * argv[])
                   << " - zero encoder value: " << zeroEncoder * toh.at(axis) << std::endl;
 
         // padding
-        bool previousValueIsMissing = mtsRobot1394::IsMissingPotValue(potToEncoder(axis, 0));
+        bool previousValueIsMissing = mtsRobot1394::IsMissingPotentiometerValue(potToEncoder(axis, 0));
         const size_t paddingWidth = 50;
         for (size_t index = 1;
              index < potRange;
              ++index) {
             // two cases, from missing to set
-            bool currentValueIsMissing = mtsRobot1394::IsMissingPotValue(potToEncoder(axis, index));
+            bool currentValueIsMissing = mtsRobot1394::IsMissingPotentiometerValue(potToEncoder(axis, index));
             if (previousValueIsMissing && !currentValueIsMissing) {
                 const size_t startPadding = std::max(static_cast<size_t>(0), index - paddingWidth);
                 for (size_t indexPadding = startPadding;
