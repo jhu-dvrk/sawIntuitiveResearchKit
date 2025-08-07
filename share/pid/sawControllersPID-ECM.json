@@ -1,39 +1,46 @@
 {
+    "$id": "constrollers-pid.schema.json",
+    "$version": "1",
     "pid": [
-	{
-	    "index": 0,
-	    "name": "yaw",
-	    "type": "REVOLUTE",
-	    "p_gain": 400.0,
-	    "d_gain": 30.0,
-	    "i_gain": 0.0
-	}
-	,
-	{
-	    "index": 1,
-	    "name": "pitch",
-	    "type": "REVOLUTE",
-	    "p_gain": 1000.0,
-	    "d_gain": 80.0,
-	    "i_gain": 0.0
-	}
-	,
-	{
-	    "index": 2,
-	    "name": "insertion",
-	    "type": "PRISMATIC",
-	    "p_gain": 10000.0,
-	    "d_gain": 1200.0,
-	    "i_gain": 0.0
-	}
-	,
-	{
-	    "index": 3,
-	    "name": "roll",
-	    "type": "REVOLUTE",
-	    "p_gain": 20.0,
-	    "d_gain": 0.5,
-	    "i_gain": 0.0
-	}
+        {
+            "index": 0,
+            "name": "yaw",
+            "type": "REVOLUTE",
+            "p_gain": 400.0,
+            "d_gain": 30.0,
+            "i_gain": 0.0,
+            "pid_max_output": 15.0,
+            "p_measured_setpoint_tolerance": 0.6 // ~35 degrees
+        },
+        {
+            "index": 1,
+            "name": "pitch",
+            "type": "REVOLUTE",
+            "p_gain": 1000.0,
+            "d_gain": 80.0,
+            "i_gain": 0.0,
+            "pid_max_output": 15.0,
+            "p_measured_setpoint_tolerance": 0.6 // ~35 degrees
+        },
+        {
+            "index": 2,
+            "name": "insertion",
+            "type": "PRISMATIC",
+            "p_gain": 10000.0,
+            "d_gain": 1200.0,
+            "i_gain": 0.0,
+            "pid_max_output": -1.0, // disabled
+            "p_measured_setpoint_tolerance": 0.03 // 3cm
+        },
+        {
+            "index": 3,
+            "name": "roll",
+            "type": "REVOLUTE",
+            "p_gain": 20.0,
+            "d_gain": 0.5,
+            "i_gain": 0.0,
+            "pid_max_output": 12.0,
+            "p_measured_setpoint_tolerance": 0.25 // ~20 degrees
+        }
     ]
 }
