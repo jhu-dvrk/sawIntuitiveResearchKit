@@ -165,7 +165,7 @@ class Config(Serializable):
             dict["dallas_chips"] = self.dallasChip,
 
         if len(self.digitalInputs) > 0:
-            dict["digitial_inputs"] = self.digitalInputs
+            dict["digital_inputs"] = self.digitalInputs
 
         if len(self.digitalOutputs) > 0:
             dict["digital_outputs"] = self.digitalOutputs
@@ -293,7 +293,7 @@ class ClassicPSM(Robot):
         self.driveDirection = lambda index: [-1, -1, 1, -1, -1, 1, 1][index]
         self.encoderCPT = lambda index: [14400, 14400, 14400, 4000, 4000, 4000, 4000][index]
         self.gearRatio = lambda index: [56.50, 56.50, 336.6, 11.71, 11.71, 11.71, 11.71][index]
-        self.pitch = lambda index: [1, 1, 17.4533, 1, 1, 1, 1][index]
+        self.pitch = lambda index: 1
         self.velocitySource = lambda index: 'FIRMWARE'
         self.positionLimitsSoftLower = lambda index: [-91.0 * deg, -53.0 * deg,   0.0 * mm, -174.0 * deg, -174.0 * deg, -174.0 * deg, -174.0 * deg][index]
         self.positionLimitsSoftUpper = lambda index: [ 91.0 * deg,  53.0 * deg, 240.0 * mm,  174.0 * deg,  174.0 * deg,  174.0 * deg,  174.0 * deg][index]
@@ -306,7 +306,7 @@ class ClassicPSM(Robot):
         super().__init__(robotTypeName, hardwareVersion, serialNumber, calData, 7)
 
         potentiometerTolerances = list(self.generatePotentiometerTolerances())
-        self.potentiometers = Potentiometers(potentiometerTolerances)
+        self.potentiometers = Potentiometers('ANALOG', potentiometerTolerances)
 
     def generatePotentiometerTolerances(self):
         for index in range(self.numberOfActuators):
@@ -351,7 +351,7 @@ class SiPSM(Robot):
         self.encoderDirection = lambda index: -self.driveDirection(index)
         self.encoderCPT = lambda index: [81920, 81920, 50000, 4000, 4000, 4000, 4000][index]
         self.gearRatio = lambda index: [83.3333, 85.000, 965.91, 13.813, 13.813, 13.813, 13.813][index]
-        self.pitch = lambda index: [1, 1, 17.4533, 1, 1, 1, 1][index]
+        self.pitch = lambda index: 1
         self.velocitySource = lambda index: 'SOFTWARE' if index < 3 else 'FIRMWARE'
         self.positionLimitsSoftLower = lambda index: [-170.0 * deg, -73.0 * deg,   0.0 * mm, -172.0 * deg, -172.0 * deg, -172.0 * deg, -172.0 * deg][index]
         self.positionLimitsSoftUpper = lambda index: [ 170.0 * deg,  75.0 * deg, 290.0 * mm,  172.0 * deg,  172.0 * deg,  172.0 * deg,  172.0 * deg][index]
@@ -376,7 +376,7 @@ class SiPSM(Robot):
 
         potentiometerTolerances = list(self.generatePotentiometerTolerances())
         lookupTable = "sawRobotIO1394-{}-{}-PotentiometerLookupTable.json".format(robotTypeName, serialNumber)
-        self.potentiometers = Potentiometers(potentiometerTolerances, lookupTable=lookupTable)
+        self.potentiometers = Potentiometers('DIGITAL', potentiometerTolerances, lookupTable=lookupTable)
 
     def generatePotentiometerTolerances(self):
         for index in range(self.numberOfActuators):
@@ -459,7 +459,7 @@ class ClassicECM(Robot):
         self.driveDirection = lambda index: [1, 1, -1, 1][index]
         self.encoderCPT = lambda index: [4000, 4000, 640, 64][index]
         self.gearRatio = lambda index: [240, 240, 2748.55, 300.15][index]
-        self.pitch = lambda index: [1, 1, 17.4533, 1][index]
+        self.pitch = lambda index: 1
         self.velocitySource = lambda index: 'FIRMWARE'
         self.positionLimitsSoftLower = lambda index: [-90.0 * deg, -45.0 * deg,   0.0 * mm, -89.0 * deg][index]
         self.positionLimitsSoftUpper = lambda index: [ 90.0 * deg,  64.0 * deg, 255.0 * mm,  89.0 * deg][index]
@@ -478,7 +478,7 @@ class ClassicECM(Robot):
         super().__init__(robotTypeName, hardwareVersion, serialNumber, calData, 4)
 
         potentiometerTolerances = list(self.generatePotentiometerTolerances())
-        self.potentiometers = Potentiometers(potentiometerTolerances)
+        self.potentiometers = Potentiometers('ANALOG', potentiometerTolerances)
 
     def generatePotentiometerTolerances(self):
         for index in range(self.numberOfActuators):
@@ -529,7 +529,7 @@ class SiECM(Robot):
         self.encoderDirection = lambda index: [1, -1, -1, -1][index]
         self.encoderCPT = lambda index: [81920, 81920, 640, 64][index]
         self.gearRatio = lambda index: [83.3333, 168.3333, 2748.6, 300.2][index]
-        self.pitch = lambda index: [1, 1, -17.4533, 1][index]
+        self.pitch = lambda index: [1, 1, -1, 1][index]
         self.velocitySource = lambda index: 'SOFTWARE'
         self.positionLimitsSoftLower = lambda index: [-170.0 * deg, -64.0 * deg,   0.0 * mm, -89.0 * deg][index]
         self.positionLimitsSoftUpper = lambda index: [ 170.0 * deg,  60.0 * deg, 260.0 * mm,  89.0 * deg][index]
@@ -554,7 +554,7 @@ class SiECM(Robot):
 
         potentiometerTolerances = list(self.generatePotentiometerTolerances())
         lookupTable = "sawRobotIO1394-{}-{}-PotentiometerLookupTable.json".format(robotTypeName, serialNumber)
-        self.potentiometers = Potentiometers(potentiometerTolerances, lookupTable=lookupTable)
+        self.potentiometers = Potentiometers('DIGITAL', potentiometerTolerances, lookupTable=lookupTable)
 
     def generatePotentiometerTolerances(self):
         for index in range(self.numberOfActuators):
@@ -660,7 +660,7 @@ class MTM(Robot):
         super().__init__(robotTypeName, hardwareVersion, serialNumber, calData, 7)
 
         potentiometerTolerances = list(self.generatePotentiometerTolerances())
-        self.potentiometers = Potentiometers(potentiometerTolerances, couplingMatrix=MTMCoupling())
+        self.potentiometers = Potentiometers('ANALOG', potentiometerTolerances, couplingMatrix=MTMCoupling())
 
     def generatePotentiometerTolerances(self):
         for index in range(self.numberOfActuators):
@@ -818,7 +818,7 @@ class Encoder(Serializable):
             self, direction, CPT, gearRatio, pitch, velocitySource,
             positionLimitsSoftLower, positionLimitsSoftUpper
     ):
-        encoderPos = direction * (360 / CPT) * (pitch / gearRatio)
+        encoderPos = direction * (2.0 * math.pi / CPT) * (pitch / gearRatio)
         encoderPos = "{:10.15f}".format(encoderPos)
         self.bitsToPos = Conversion(encoderPos, None)
         self.velocitySource = velocitySource
@@ -859,10 +859,10 @@ class Potentiometer(Serializable):
         potOffset = calData["motor"]["pot_input_offset"][actuatorIndex]
 
         if voltsToPosScale is None:
-            voltsToPosScale = potGain * (2 ** 12 / 4.5) * (180.0 / math.pi) * pitch
+            voltsToPosScale = potGain * (2 ** 12 / 4.5) * pitch
 
         if voltsToPosOffset is None:
-            voltsToPosOffset = potOffset * (180.0 / math.pi) * pitch
+            voltsToPosOffset = potOffset * pitch
 
         voltsToPosScale = "{:10.8f}".format(voltsToPosScale)
         voltsToPosOffset = "{:10.8f}".format(voltsToPosOffset)
@@ -879,13 +879,15 @@ class Potentiometer(Serializable):
 
 
 class Potentiometers(Serializable):
-    def __init__(self, tolerances, lookupTable=None, couplingMatrix=None):
+    def __init__(self, pot_type, tolerances, lookupTable=None, couplingMatrix=None):
+        self.pot_type = pot_type
         self.tolerances = tolerances
         self.lookupTable = lookupTable
         self.coupling = couplingMatrix
 
     def toDict(self):
         dict = {
+            "potentiometers_type": self.pot_type,
             "tolerances": self.tolerances,
         }
 
@@ -974,7 +976,7 @@ class Actuator(Serializable):
     type: "PRISMATIC" or "REVOLUTE"
     CPT: Encoder counts per turn (quadrature encoder), NOTE: no encoder for last axis
     gearRatio: NOTE: gear ratio for axis 8 is set to 1
-    pitch: degrees for revolute, mm for prismatic
+    pitch: ?
     motorMaxCurrent: Sustained max current, units are amps
     motorMaxTorque: units are Nm/A
     """
@@ -1193,14 +1195,16 @@ def generateArmConfig(robotTypeName, hardwareVersion, serialNumber, generation):
         raise ValueError('Unrecognized robot type: {}'.format(robotTypeName))
     if generation == 'Si':
         kinematic += '_Si'
-    kinematic += '.json"\n'
+    kinematic += '.json",\n'
 
     mounting_pitch = 0.0
     with open(fileName, "w") as f:
         f.write('{\n')
         f.write('    // see https://dvrk.readthedocs.io\n')
+        f.write('    "$id": "",\n')
+        f.write('    "$version": "1",\n')
         f.write(kinematic)
-        f.write('    , "generation": "' + generation + '"\n')
+        f.write('    "generation": "' + generation + '"\n')
         if robotTypeName.startswith("PSM"):
             f.write('    // , "tool_detection": "MANUAL"\n')
             f.write('    // , "tool_detection": "FIXED"\n')
@@ -1248,6 +1252,8 @@ def generateSystemConfig(robotTypeName, hardwareVersion, serialNumber, generatio
     with open(fileName, "w") as f:
         f.write('{\n')
         f.write('    // see https://dvrk.readthedocs.io\n')
+        f.write('    "$id": "dvrk-system.schema.json",\n')
+        f.write('    "$version": "1",\n')
         f.write('    "IOs":\n')
         f.write('    [\n')
         f.write('        {\n')
