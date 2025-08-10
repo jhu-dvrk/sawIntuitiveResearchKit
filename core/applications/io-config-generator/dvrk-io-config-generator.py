@@ -87,18 +87,6 @@ class Limits(Serializable):
         return dict
 
 
-# Dimensioned value
-class UnitValue(Serializable):
-    def __init__(self, value):
-        self.value = value
-
-    def toDict(self):
-        dict = {}
-        if self.value != None:
-            dict["value"] = self.value
-        return dict
-
-
 # dVRK board Id conventions
 def getBoardIds(robotTypeName):
     # Need to allow for MTML_gripper/MTMR_gripper
@@ -157,7 +145,8 @@ class Config(Serializable):
 
     def toDict(self):
         dict = {
-            "version": self.versionId,
+            "$id:" : "saw-robot-io.schema.json",
+            "$version": self.versionId,
             "robots": [ self.robot ],
         }
 
@@ -331,7 +320,7 @@ class ClassicPSM(Robot):
             ]
 
         for boardId, bitId, inputType, debounceTime in digitalInputBitIds:
-            yield DigitalInput(self.name, inputType, bitId, boardId, 1, debounceTime)
+            yield DigitalInput(self.name, inputType, bitId, boardId, True, debounceTime)
 
     def generateDallasChip(self):
         if self.hardwareVersion == "QLA1":
@@ -435,7 +424,7 @@ class SiPSM(Robot):
         ]
 
         for boardId, bitId, inputType, debounceTime in digitalInputBitIds:
-            yield DigitalInput(self.name, inputType, bitId, boardId, 0, debounceTime)
+            yield DigitalInput(self.name, inputType, bitId, boardId, False, debounceTime)
 
     def generateDigitalOutputs(self):
         digitalOutputBitIds = [
@@ -515,7 +504,7 @@ class ClassicECM(Robot):
         ]
 
         for boardId, bitId, inputType, debounceTime in digitalInputBitIds:
-            yield DigitalInput(self.name, inputType, bitId, boardId, 1, debounceTime)
+            yield DigitalInput(self.name, inputType, bitId, boardId, True, debounceTime)
 
     def toDict(self):
         dict = super().toDict()
@@ -611,7 +600,7 @@ class SiECM(Robot):
         ]
 
         for boardId, bitId, inputType, debounceTime in digitalInputBitIds:
-            yield DigitalInput(self.name, inputType, bitId, boardId, 0, debounceTime)
+            yield DigitalInput(self.name, inputType, bitId, boardId, False, debounceTime)
 
     def generateDigitalOutputs(self):
         digitalOutputBitIds = [
@@ -760,14 +749,14 @@ class Drive(Serializable):
         self.nmToAmps = Conversion(
             "{:7.10f}".format(1.0 / (gearRatio * motorTorque)), None
         )
-        self.maxCurrent = UnitValue("{:5.3f}".format(motorMaxCurrent))
+        self.maxCurrent = motorMaxCurrent
 
     def toDict(self):
         return {
             "current_to_bits": self.ampsToBits,
             "bits_to_current": self.bitsToFeedbackAmps,
             "effort_to_current": self.nmToAmps,
-            "max_current": self.maxCurrent,
+            "maximum_current": self.maxCurrent,
         }
 
 
@@ -793,11 +782,11 @@ class AnalogBrake(Serializable):
         self.ampsToBits = Conversion(ampsToBitsScale, direction * 2 ** (DACresolution-1))
         self.bitsToFeedbackAmps = Conversion(bitsToAmpsScale, -linearAmpCurrent)
 
-        self.maxCurrent = UnitValue(maxCurrent)
-        self.releaseCurrent = UnitValue(releaseCurrent)
-        self.releaseTime = UnitValue(releaseTime)
-        self.releasedCurrent = UnitValue(releasedCurrent)
-        self.engagedCurrent = UnitValue(engagedCurrent)
+        self.maxCurrent = maxCurrent
+        self.releaseCurrent = releaseCurrent
+        self.releaseTime = releaseTime
+        self.releasedCurrent = releasedCurrent
+        self.engagedCurrent = engagedCurrent
 
     def toDict(self):
         return {
@@ -931,17 +920,19 @@ class DigitalInput(Serializable):
         self.boardId = boardId
         self.name = "{}_{}".format(robotTypeName, type)
         self.pressed = pressed
-        self.trigger = "all"
+        self.trigger_when_pressed = True
+        self.trigger_when_released = True
         self.debounceTime = debounceTime
 
     def toDict(self):
         return {
             "bit_id": self.bitId,
             "board_id": self.boardId,
-            "debounce": self.debounceTime,
+            "debounce_time": self.debounceTime,
             "name": self.name,
             "pressed": self.pressed,
-            "trigger": self.trigger,
+            "trigger_when_pressed": self.trigger_when_pressed,
+            "trigger_when_released": self.trigger_when_released,
         }
 
 
@@ -1159,7 +1150,7 @@ def generateConfig(calFileName, robotTypeName, hardwareVersion, serialNumber, ge
             robotTypeName[0:3] == calData["FileType"][0:3]
         ), "Robot hardware type doesn't match type from cal file"
 
-    version = 5
+    version = 6
     serialNumber = str(serialNumber or calData["serial_number"])
     config = Config(calData, version, robotTypeName, hardwareVersion, serialNumber, generation)
 
