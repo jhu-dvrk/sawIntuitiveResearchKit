@@ -19,7 +19,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <optional>
 #include <regex>
 
-#include <cisstCommon/cmnXMLPath.h>
+#include <json/json.h>
 #include <QTreeView>
 
 namespace config_wizard {
@@ -98,14 +98,21 @@ std::optional<ConfigSources::Arm> parseArm(std::filesystem::path file_path) {
 
     ControllerType controller_type = ControllerType::QLA;
 
-    std::string io_config_name = "sawRobotIO1394-" + base_match[0].str() + ".xml";
+    std::string io_config_name = "sawRobotIO1394-" + base_match[0].str() + ".json";
     std::filesystem::path io_config_path = file_path.parent_path() / io_config_name;
     if (std::filesystem::exists(io_config_path)) {
-        cmnXMLPath io_config;
-        io_config.SetInputSource(io_config_path.string());
-        std::string hardware_version;
-        io_config.GetXMLValue("", "/Config/Robot/@HardwareVersion", hardware_version, "");
+        std::ifstream json_stream;
+        Json::Value json_config;
+        Json::Reader json_reader;
 
+        json_stream.open(io_config_path.c_str());
+        if (!json_reader.parse(json_stream, json_config)) {
+            std::cerr << "failed to parse configuration file \"" << io_config_path << "\"\n"
+                      << json_reader.getFormattedErrorMessages();
+        }
+        json_stream.close();
+        std::string hardware_version;
+        hardware_version = json_config["robots"][0]["hardware_version"].asString();
         if (hardware_version == "DQLA") {
             controller_type = ControllerType::DQLA;
         } else if (hardware_version == "dRA1") {
@@ -118,7 +125,7 @@ std::optional<ConfigSources::Arm> parseArm(std::filesystem::path file_path) {
         }
     }
 
-    std::string io_gripper_config_name = "sawRobotIO1394-" + base_match[1].str() + "-gripper-" + base_match[4].str() + ".xml";
+    std::string io_gripper_config_name = "sawRobotIO1394-" + base_match[1].str() + "-gripper-" + base_match[4].str() + ".json";
     std::filesystem::path io_gripper_config_path = file_path.parent_path() / io_gripper_config_name;
 
     auto arm = ConfigSources::Arm(name, arm_type, serial, file_path, io_config_path, controller_type);
@@ -136,7 +143,7 @@ std::optional<ConfigSources::Arm> parseSUJ(std::filesystem::path file_path) {
     // currently there is a hard-coded assumption in dvrk_system that the SUJ component is named "SUJ"
     std::string name = "SUJ";
 
-    std::string io_config_name = "sawRobotIO1394-" + name+ ".xml";
+    std::string io_config_name = "sawRobotIO1394-" + name+ ".json";
     std::filesystem::path io_config_path = file_path.parent_path() / io_config_name;
 
     if (file_name == "suj-fixed") {
