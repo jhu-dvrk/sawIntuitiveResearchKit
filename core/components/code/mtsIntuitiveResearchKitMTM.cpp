@@ -115,7 +115,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     m_trajectory_j.v_max.at(JNT_WRIST_ROLL) = 360.0 * cmnPI_180; // roll can go fast
     m_trajectory_j.a_max.SetAll(45.0 * cmnPI_180);
     m_trajectory_j.a_max.at(JNT_WRIST_ROLL) = 360.0 * cmnPI_180;
-    m_trajectory_j.goal_tolerance.SetAll(3.0 * cmnPI_180); // hard coded to 3 degrees
+    m_trajectory_j.goal_tolerance.SetAll(4.0 * cmnPI_180); // hard coded to 3 degrees
     m_trajectory_j.goal_tolerance.at(JNT_WRIST_ROLL) = 6.0 * cmnPI_180; // roll has low encoder resolution
 
     this->StateTable.AddData(m_gripper_measured_js, "gripper/measured_js");

@@ -17,7 +17,6 @@ import os
 import datetime
 import json
 import math
-import xml.etree.ElementTree as ET
 from enum import Enum
 
 import numpy as np
@@ -45,11 +44,6 @@ class RobotType(Enum):
             return RobotType.ECM
         else:
             return None
-
-
-class OutputFormat(Enum):
-    JSON = 0
-    XML = 1
 
 
 # Empty base class for all class we want to serialize to JSON/XML
@@ -649,7 +643,7 @@ class MTM(Robot):
         super().__init__(robotTypeName, hardwareVersion, serialNumber, calData, 7)
 
         potentiometerTolerances = list(self.generatePotentiometerTolerances())
-        self.potentiometers = Potentiometers('ANALOG', potentiometerTolerances, couplingMatrix=MTMCoupling())
+        self.potentiometers = Potentiometers('ANALOG', potentiometerTolerances, coupling = MTMCoupling())
 
     def generatePotentiometerTolerances(self):
         for index in range(self.numberOfActuators):
@@ -868,11 +862,11 @@ class Potentiometer(Serializable):
 
 
 class Potentiometers(Serializable):
-    def __init__(self, pot_type, tolerances, lookupTable=None, couplingMatrix=None):
+    def __init__(self, pot_type, tolerances, lookupTable = None, coupling = None):
         self.pot_type = pot_type
         self.tolerances = tolerances
         self.lookupTable = lookupTable
-        self.coupling = couplingMatrix
+        self.coupling = coupling
 
     def toDict(self):
         dict = {
@@ -881,7 +875,7 @@ class Potentiometers(Serializable):
         }
 
         if self.coupling is not None:
-            dict["JointToActuatorPosition"] = self.coupling.jointToActuatorPosition
+            dict["coupling"] = self.coupling
 
         if self.lookupTable is not None:
             dict["lookup_table_file"] = self.lookupTable
@@ -902,6 +896,7 @@ class PotentiometerTolerance(Serializable):
             "latency": self.latency,
         }
 
+
 class MTMCoupling(Serializable):
     def __init__(self):
         self.jointToActuatorPosition = [
@@ -913,6 +908,12 @@ class MTMCoupling(Serializable):
             [0.00, 0.00, 0.00, 0.00, 0.00, 1.00, 0.00],
             [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 1.00],
         ]
+
+    def toDict(self):
+        return {
+            "JointToActuatorPosition": self.jointToActuatorPosition,
+        }
+
 
 class DigitalInput(Serializable):
     def __init__(self, robotTypeName: str, type: str, bitId: int, boardId: int, pressed: int, debounceTime: float):
@@ -1019,74 +1020,6 @@ def canSerialize(obj):
     return isinstance(obj, Serializable) or array_like(obj)
 
 
-# Serialize 1D or 2D Numpy arrays/Python lists
-def arrayToXML(name, object, parent):
-    # Serialize 1D array into repeated child nodes
-    if len(np.shape(object)) == 1:
-        # remove plural 's' if present
-        name = name if name[-1] != "s" else name[0:-1]
-        for element in object:
-            toXML(name, element, parent)
-    # Serialize 2D array into multiple <Row Val="x y z ..."/> nodes
-    else:
-        matrixNode = ET.SubElement(parent, name)
-        for row in object:
-            row = row.tolist() if isinstance(row, np.ndarray) else row
-            serializedRow = " ".join(map(lambda x: "{:6.4f}".format(x), row))
-            ET.SubElement(matrixNode, "Row", Val=serializedRow)
-        return matrixNode
-
-
-# Convert instance of 'Serializable' to XML
-def serializableToXML(name, object, parent):
-    data = object.toDict()
-
-    attributes = {
-        key: str(value) for (key, value) in data.items() if not canSerialize(value)
-    }
-
-    node = (
-        ET.SubElement(parent, name, attributes)
-        if parent != None
-        else ET.Element(name, attributes)
-    )
-
-    for key, value in data.items():
-        if canSerialize(value):
-            toXML(key, value, node)
-
-    return node
-
-
-# Recursively converts an object to XML
-def toXML(name, object, parent=None):
-    # Serialize NumPy arrays and Python lists
-    if array_like(object):
-        arrayToXML(name, object, parent)
-    elif isinstance(object, Serializable):
-        return serializableToXML(name, object, parent)
-    else:
-        raise ValueError(
-            "Can only serialize instances of Serializable and array-like types"
-        )
-
-
-# Adds nice indentation to existing ElementTree XML object
-def pretty_print_xml(node, parent=None, index=-1, depth=0):
-    indent = "  "
-    for i, subNode in enumerate(node):
-        pretty_print_xml(subNode, node, i, depth + 1)
-
-    if parent is not None:
-        if index == 0:
-            parent.text = "\n" + (indent * depth)
-        else:
-            parent[index - 1].tail = "\n" + (indent * depth)
-
-        if index == len(parent) - 1:
-            node.tail = "\n" + (indent * (depth - 1))
-
-
 # Allows use of our Serializable objects with Python's builtin json library
 def configSerializeJSON(obj):
     if isinstance(obj, Serializable):
@@ -1095,28 +1028,21 @@ def configSerializeJSON(obj):
     raise TypeError
 
 
-def saveConfigFile(fileName, config, format):
-    fileName += ".json" if format == OutputFormat.JSON else ".xml"
+def saveConfigFile(fileName, config):
+    fileName += ".json"
 
     if os.path.exists(fileName):
         backup =  fileName + datetime.datetime.now().strftime("-backup-%Y-%m-%d_%H:%M:%S")
         os.rename(fileName, backup)
         print("Existing IO config file has been renamed {}".format(backup))
 
-    if format == OutputFormat.JSON:
-        with open(fileName, "w") as f:
-            json.dump(config, f, indent=4, default=configSerializeJSON)
-    elif format == OutputFormat.XML:
-        root = toXML("Config", config)
-        pretty_print_xml(root)
-
-        tree = ET.ElementTree(root)
-        tree.write(fileName, xml_declaration=True)
+    with open(fileName, "w") as f:
+        json.dump(config, f, indent=4, default=configSerializeJSON)
 
     print("Generated IO config file {}".format(fileName))
 
 
-def generateConfig(calFileName, robotTypeName, hardwareVersion, serialNumber, generation, outputFormat):
+def generateConfig(calFileName, robotTypeName, hardwareVersion, serialNumber, generation):
     # Array index/dimension constants that .cal file parser needs to know
     constants = {
         "UPPER_LIMIT": 1,
@@ -1155,14 +1081,14 @@ def generateConfig(calFileName, robotTypeName, hardwareVersion, serialNumber, ge
     config = Config(calData, version, robotTypeName, hardwareVersion, serialNumber, generation)
 
     outputFileName = "sawRobotIO1394-" + robotTypeName + "-" + serialNumber
-    saveConfigFile(outputFileName, config, outputFormat)
+    saveConfigFile(outputFileName, config)
 
     if robotTypeName[0:3] == "MTM":
         gripperConfigFileName = (
             "sawRobotIO1394-" + robotTypeName + "-gripper-" + serialNumber
         )
         gripperConfig = Config(calData, version, robotTypeName + "_gripper", hardwareVersion, serialNumber, generation)
-        saveConfigFile(gripperConfigFileName, gripperConfig, outputFormat)
+        saveConfigFile(gripperConfigFileName, gripperConfig)
 
     return serialNumber
 
@@ -1309,14 +1235,6 @@ def main():
         help = "serial number (for Si arms)",
         default = None
     )
-    parser.add_argument(
-        "-f",
-        "--format",
-        type = str,
-        default = "JSON",
-        choices = ["XML", "JSON"],
-        help = "format used for the calibration file (future use)",
-    )
 
     args = parser.parse_args()
     if args.generation == "Classic" and args.cal is None:
@@ -1339,9 +1257,8 @@ def main():
         print("ERROR: Si MTMs are not supported (yet)")
         return
 
-    outputFormat = OutputFormat.XML if args.format == "XML" else OutputFormat.JSON
     # sawRobotIO config file
-    actualSerial = generateConfig(args.cal, args.arm, args.hardware_version, args.serial, args.generation, outputFormat)
+    actualSerial = generateConfig(args.cal, args.arm, args.hardware_version, args.serial, args.generation)
     # sawIntuitiveResearchKit arm and system config files
     generateArmConfig(args.arm, args.hardware_version, actualSerial, args.generation)
     generateSystemConfig(args.arm, args.hardware_version, actualSerial, args.generation)
