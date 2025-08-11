@@ -931,7 +931,7 @@ class DigitalInput(Serializable):
             "board_id": self.boardId,
             "debounce_time": self.debounceTime,
             "name": self.name,
-            "pressed": self.pressed,
+            "pressed_value": self.pressed,
             "trigger_when_pressed": self.trigger_when_pressed,
             "trigger_when_released": self.trigger_when_released,
         }

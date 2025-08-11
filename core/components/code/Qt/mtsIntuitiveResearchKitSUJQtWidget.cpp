@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Youri Tan
   Created on: 2013-08-24
 
-  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -41,8 +41,8 @@ mtsIntuitiveResearchKitSUJQtWidget::mtsIntuitiveResearchKitSUJQtWidget(const std
 {
     CMN_ASSERT(InterfaceRequired);
     InterfaceRequired->AddFunction("GetBrakeCurrent", GetBrakeCurrent, MTS_OPTIONAL); // optional for Si
-    InterfaceRequired->AddFunction("Clutch", Clutch, MTS_OPTIONAL); // optional for fixed
-    InterfaceRequired->AddFunction("SetLiftVelocity", SetLiftVelocity, MTS_OPTIONAL); // only used for Classic PSM3 
+    InterfaceRequired->AddFunction("clutch", Clutch, MTS_OPTIONAL); // optional for fixed
+    InterfaceRequired->AddFunction("set_lift_velocity", SetLiftVelocity, MTS_OPTIONAL); // only used for Classic PSM3 
     InterfaceRequired->AddFunction("GetVoltagesPrimary", GetPrimaryVoltages, MTS_OPTIONAL); // optional for fixed
     InterfaceRequired->AddFunction("GetVoltagesSecondary", GetSecondaryVoltages, MTS_OPTIONAL); // optional for fixed
     InterfaceRequired->AddFunction("GetVoltagesExtra", GetExtraVoltages, MTS_OPTIONAL); // optional for Si

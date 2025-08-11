@@ -451,29 +451,29 @@ void mtsIntuitiveResearchKitSUJ::init(void)
         interfaceRequired->AddFunction("GetAnalogInputVolts", RobotIO.GetAnalogInputVolts);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJ::error_event_handler, this, "error");
     }
-    interfaceRequired = AddInterfaceRequired("NoMuxReset");
+    interfaceRequired = AddInterfaceRequired("no_mux_reset");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("GetValue", no_mux_reset.GetValue);
         interfaceRequired->AddFunction("SetValue", no_mux_reset.SetValue);
     }
-    interfaceRequired = AddInterfaceRequired("MuxIncrement");
+    interfaceRequired = AddInterfaceRequired("mux_increment");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("GetValue", mux_increment.GetValue);
         interfaceRequired->AddFunction("SetValue", mux_increment.SetValue);
     }
-    interfaceRequired = AddInterfaceRequired("ControlPWM");
+    interfaceRequired = AddInterfaceRequired("control_PWM");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("SetPWMDutyCycle", PWM.SetPWMDutyCycle);
     }
-    interfaceRequired = AddInterfaceRequired("DisablePWM");
+    interfaceRequired = AddInterfaceRequired("disable_PWM");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("SetValue", PWM.DisablePWM);
     }
-    interfaceRequired = AddInterfaceRequired("MotorUp");
+    interfaceRequired = AddInterfaceRequired("motor_up");
     if (interfaceRequired) {
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJ::motor_up_event_handler, this, "Button");
     }
-    interfaceRequired = AddInterfaceRequired("MotorDown");
+    interfaceRequired = AddInterfaceRequired("motor_down");
     if (interfaceRequired) {
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJ::motor_down_event_handler, this, "Button");
     }
@@ -865,12 +865,12 @@ void mtsIntuitiveResearchKitSUJ::set_simulated(void)
     }
     // in simulation mode, we don't need IOs
     RemoveInterfaceRequired("RobotIO");
-    RemoveInterfaceRequired("NoMuxReset");
-    RemoveInterfaceRequired("MuxIncrement");
-    RemoveInterfaceRequired("ControlPWM");
-    RemoveInterfaceRequired("DisablePWM");
-    RemoveInterfaceRequired("MotorUp");
-    RemoveInterfaceRequired("MotorDown");
+    RemoveInterfaceRequired("no_mux_reset");
+    RemoveInterfaceRequired("mux_increment");
+    RemoveInterfaceRequired("control_PWM");
+    RemoveInterfaceRequired("disable_PWM");
+    RemoveInterfaceRequired("motor_up");
+    RemoveInterfaceRequired("motor_down");
 }
 
 

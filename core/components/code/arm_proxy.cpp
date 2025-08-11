@@ -165,18 +165,18 @@ void dvrk::arm_proxy::create_arm(void)
             if (m_config->simulation == dvrk::simulation::SIMULATION_KINEMATIC) {
                 suj->set_simulated();
             } else if (m_config->simulation == dvrk::simulation::SIMULATION_NONE) {
-                m_system->m_connections.Add(m_name, "NoMuxReset",
-                                            m_IO_component_name, "NoMuxReset");
-                m_system->m_connections.Add(m_name, "MuxIncrement",
-                                            m_IO_component_name, "MuxIncrement");
-                m_system->m_connections.Add(m_name, "ControlPWM",
-                                            m_IO_component_name, "ControlPWM");
-                m_system->m_connections.Add(m_name, "DisablePWM",
-                                            m_IO_component_name, "DisablePWM");
-                m_system->m_connections.Add(m_name, "MotorUp",
-                                            m_IO_component_name, "MotorUp");
-                m_system->m_connections.Add(m_name, "MotorDown",
-                                            m_IO_component_name, "MotorDown");
+                m_system->m_connections.Add(m_name, "no_mux_reset",
+                                            m_IO_component_name, "no_mux_reset");
+                m_system->m_connections.Add(m_name, "mux_increment",
+                                            m_IO_component_name, "mux_increment");
+                m_system->m_connections.Add(m_name, "control_PWM",
+                                            m_IO_component_name, "control_PWM");
+                m_system->m_connections.Add(m_name, "disable_PWM",
+                                            m_IO_component_name, "disable_PWM");
+                m_system->m_connections.Add(m_name, "motor_up",
+                                            m_IO_component_name, "motor_up");
+                m_system->m_connections.Add(m_name, "motor_down",
+                                            m_IO_component_name, "motor_down");
                 m_system->m_connections.Add(m_name, "SUJ_clutch_1",
                                             m_IO_component_name, "SUJ_clutch_1");
                 m_system->m_connections.Add(m_name, "SUJ_clutch_2",
