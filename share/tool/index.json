@@ -301,10 +301,20 @@
         ,
         {
             "model": "420093",
+            "version_max": 13,
             "names": ["PROGRASP_FORCEPS"],
             "description": "Prograsp Forceps",
             "generation": "S",
             "file": "PROGRASP_FORCEPS_420093.json"
+        }
+        ,
+        {
+            "model": "420093",
+            "version_min": 14,
+            "names": ["PROGRASP_FORCEPS"],
+            "description": "Prograsp Forceps",
+            "generation": "S",
+            "file": "PROGRASP_FORCEPS_420093_GEARED.json"
         }
         ,
         {
