@@ -771,9 +771,11 @@ class Brake(Serializable):
         return {
             "axis_id": self.axisId,
             "board_id": self.boardId,
-            "current_to_bits": self.ampsToBits,
-            "bits_to_current": self.bitsToFeedbackAmps,
-            "max_current": self.maxCurrent,
+            "drive" : {
+                "current_to_bits": self.ampsToBits,
+                "bits_to_current": self.bitsToFeedbackAmps,
+                "maximum_current": self.maxCurrent,
+            },
             "release_current": self.releaseCurrent,
             "release_time": self.releaseTime,
             "released_current": self.releasedCurrent,
