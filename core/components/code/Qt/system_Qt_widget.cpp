@@ -245,7 +245,6 @@ void dvrk::system_Qt_widget::setupUi(void)
     QSVolume->setValue(50);
     audioLayout->addWidget(QSVolume);
 
-    buttonsWidget->setFixedWidth(buttonsWidget->sizeHint().width());
     mainLayout->addWidget(buttonsWidget);
 
     QPBComponentViewer = new QPushButton("Component\nViewer");
@@ -273,7 +272,6 @@ void dvrk::system_Qt_widget::setupUi(void)
     title.append(" / ");
     title.append(CISST_FULL_REVISION);
     setWindowTitle(title.c_str());
-    resize(sizeHint());
 
     // buttons
     connect(QPBPowerOff, SIGNAL(clicked()),
