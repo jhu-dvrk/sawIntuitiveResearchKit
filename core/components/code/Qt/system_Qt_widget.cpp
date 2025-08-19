@@ -245,7 +245,7 @@ void dvrk::system_Qt_widget::setupUi(void)
     QSVolume->setValue(50);
     audioLayout->addWidget(QSVolume);
 
-    mainLayout->addWidget(buttonsWidget);
+    mainLayout->addWidget(buttonsWidget, 0, Qt::AlignLeft);
 
     QPBComponentViewer = new QPushButton("Component\nViewer");
     QPBComponentViewer->setToolTip("Starts uDrawGraph (must be in system path)");
@@ -256,6 +256,10 @@ void dvrk::system_Qt_widget::setupUi(void)
     boxLayout->addWidget(labelLogo);
 
     QSplitter * tabWidgetAndMessages = new QSplitter();
+    QSizePolicy sizePolicy;
+    sizePolicy.setHorizontalPolicy(QSizePolicy::Expanding);
+    sizePolicy.setVerticalPolicy(QSizePolicy::Expanding);
+    tabWidgetAndMessages->setSizePolicy(sizePolicy);
     tabWidgetAndMessages->setOrientation(Qt::Vertical);
 
     QTComponents = new QTabWidget();
