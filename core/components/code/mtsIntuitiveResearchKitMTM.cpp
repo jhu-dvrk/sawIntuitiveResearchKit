@@ -527,37 +527,22 @@ void mtsIntuitiveResearchKitMTM::get_robot_data(void)
     m_gripper_measured_js.Timestamp() = m_pid_measured_js.Timestamp();
     m_gripper_measured_js.Valid() = m_pid_measured_js.Valid();
 
-    // events associated to gripper
-    if (gripper_events.is_closed) {
-        if (m_gripper_measured_js.Position().at(0) >= gripper_events.zero_angle) {
-            // transition
-            gripper_events.is_closed = false;
-            gripper_events.debounce_ended = false;
-            gripper_events.debounce_start =  m_gripper_measured_js.Timestamp();
-        } else {
-            // check debounce
-            if (!gripper_events.debounce_ended
-                && (( m_gripper_measured_js.Timestamp() - gripper_events.debounce_start)
-                    >= gripper_events.debounce_threshold
-                    )) {
-                gripper_events.debounce_ended = true;
-                gripper_events.closed(false);
-            }
-        }
-    } else {
-        if (m_gripper_measured_js.Position().at(0) < gripper_events.zero_angle) {
-            // transition
-            gripper_events.is_closed = true;
-            gripper_events.debounce_ended = false;
-            gripper_events.debounce_start =  m_gripper_measured_js.Timestamp();
-        } else {
-            // check debounce
-            if (!gripper_events.debounce_ended
-                && (( m_gripper_measured_js.Timestamp() - gripper_events.debounce_start)
-                    >= gripper_events.debounce_threshold
-                    )) {
-                gripper_events.debounce_ended = true;
-                gripper_events.closed(true);
+    const bool gripper_closed = m_gripper_measured_js.Position().at(0) <= gripper_events.zero_angle;
+    // begin debounce wait before transition
+    if (gripper_closed != gripper_events.is_closed) {
+        gripper_events.is_closed = gripper_closed;
+        gripper_events.debounce_start = m_gripper_measured_js.Timestamp();
+        gripper_events.debounce_ended = false;
+    }
+
+    // emit gripper events once when debounce is over
+    if (!gripper_events.debounce_ended) {
+        double debounce_elapsed = m_gripper_measured_js.Timestamp() - gripper_events.debounce_start;
+        if (debounce_elapsed > gripper_events.debounce_threshold) {
+            gripper_events.debounce_ended = true;
+            gripper_events.closed(gripper_events.is_closed);
+
+            if (gripper_events.is_closed) {
                 gripper_events.pinch();
             }
         }
