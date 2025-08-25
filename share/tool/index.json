@@ -375,10 +375,20 @@
         ,
         {
             "model": "420194",
+            "version_max": 11,
             "names": ["MEGA_NEEDLE_DRIVER"],
             "description": "Mega Needle Driver",
             "generation": "S",
             "file": "MEGA_NEEDLE_DRIVER_420194.json"
+        }
+        ,
+        {
+            "model": "420194",
+            "version_min": 12,
+            "names": ["MEGA_NEEDLE_DRIVER"],
+            "description": "Mega Needle Driver (Geared)",
+            "generation": "S",
+            "file": "MEGA_NEEDLE_DRIVER_420194_GEARED.json"
         }
         ,
         {
@@ -407,10 +417,20 @@
         ,
         {
             "model": "420309",
+            "version_max": 6,
             "names": ["MEGA_SUTURECUT_NEEDLE_DRIVER"],
             "description": "Mega Suturecut Needle Driver",
             "generation": "S",
             "file": "MEGA_SUTURECUT_NEEDLE_DRIVER_420309.json"
+        }
+        ,
+        {
+            "model": "420309",
+            "version_min": 7,
+            "names": ["MEGA_SUTURECUT_NEEDLE_DRIVER"],
+            "description": "Mega Suturecut Needle Driver (Geared)",
+            "generation": "S",
+            "file": "MEGA_SUTURECUT_NEEDLE_DRIVER_420309_GEARED.json"
         }
         ,
         {
