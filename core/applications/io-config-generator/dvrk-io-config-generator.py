@@ -417,7 +417,7 @@ class SiPSM(Robot):
 
     def generateDigitalOutputs(self):
         digitalOutputBitIds = [
-            (self.boardIds[0], 0, "SUJBrake"),
+            (self.boardIds[0], 0, "SUJ_brake"),
         ]
 
         for boardId, bitId, outputType in digitalOutputBitIds:
@@ -584,7 +584,7 @@ class SiECM(Robot):
 
     def generateDigitalOutputs(self):
         digitalOutputBitIds = [
-            (self.boardIds[0], 0, "SUJBrake"),
+            (self.boardIds[0], 0, "SUJ_brake"),
         ]
 
         for boardId, bitId, outputType in digitalOutputBitIds:
@@ -1132,7 +1132,7 @@ def generateArmConfig(robotTypeName, hardwareVersion, serialNumber, generation):
     print('Generated arm config file {}'.format(fileName))
 
 
-def generateSystemConfig(robotTypeName, hardwareVersion, serialNumber, generation):
+def generateSystemConfig(robotTypeName, hardwareVersion, serialNumber, generation, port):
     fileName = "system-{}.json".format(robotTypeName)
     if os.path.exists(fileName):
         backup =  fileName + datetime.datetime.now().strftime("-backup-%Y-%m-%d_%H:%M:%S")
@@ -1157,7 +1157,7 @@ def generateSystemConfig(robotTypeName, hardwareVersion, serialNumber, generatio
         f.write('    [\n')
         f.write('        {\n')
         f.write('            "name": "IO1",\n')
-        f.write('            "port": "fw" // or udpfw or udp\n')
+        f.write('            "port": "' + port + '" // fw, udpfw or udp\n')
         f.write('        }\n')
         f.write('    ]\n')
         f.write('    ,\n')
@@ -1217,6 +1217,13 @@ def main():
         help = "serial number (for Si arms)",
         default = None
     )
+    parser.add_argument(
+        "-p",
+        "--port",
+        type = str,
+        help = "communication port for the dVRK system (fw, udpfw, udp)",
+        default = "fw"
+    )
 
     args = parser.parse_args()
     if args.generation == "Classic" and args.cal is None:
@@ -1243,7 +1250,7 @@ def main():
     actualSerial = generateConfig(args.cal, args.arm, args.hardware_version, args.serial, args.generation)
     # sawIntuitiveResearchKit arm and system config files
     generateArmConfig(args.arm, args.hardware_version, actualSerial, args.generation)
-    generateSystemConfig(args.arm, args.hardware_version, actualSerial, args.generation)
+    generateSystemConfig(args.arm, args.hardware_version, actualSerial, args.generation, args.port)
 
 if __name__ == "__main__":
     main()
