@@ -61,10 +61,13 @@ namespace dvrk {
 
         void configure(const std::string & _file);
 
+        void set_calibration_mode(const bool mode);
+
      protected:
         std::shared_ptr<mtsRobotIO1394> m_IO = nullptr;
         mtsFunctionVoid close_all_relays;
         mtsInterfaceRequired * m_interface_required;
+        bool m_calibration_mode = false;
     };
 }
 

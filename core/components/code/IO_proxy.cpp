@@ -75,6 +75,7 @@ void dvrk::IO_proxy::create_IO(void)
     m_IO = std::make_unique<mtsRobotIO1394>(m_name, m_config->period, m_config->port);
     m_IO->SetProtocol(m_config->protocol);
     m_IO->SetWatchdogPeriod(m_config->watchdog_timeout);
+    m_IO->set_calibration_mode(m_calibration_mode);
     for (const auto & config_file : m_config->configuration_files) {
         std::string file = m_system->find_file(config_file);
         if (file == "") {
@@ -95,4 +96,13 @@ void dvrk::IO_proxy::configure(const std::string & _file)
         exit(EXIT_FAILURE);
     }
     m_IO->Configure(_file);
+}
+
+
+void dvrk::IO_proxy::set_calibration_mode(const bool mode)
+{
+    m_calibration_mode = mode;
+    if (m_IO) {
+        m_IO->set_calibration_mode(mode);
+    }
 }

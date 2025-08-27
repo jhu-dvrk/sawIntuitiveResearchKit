@@ -156,7 +156,7 @@ int main(int argc, char * argv[])
         std::cout << "Loading config file ..." << std::endl;
         mtsRobotIO1394 * port = new mtsRobotIO1394("io", 1.0 * cmn_ms, portName);
         // to support cases when user doesn't have an existing lookup table
-        port->SetCalibrationMode(true);
+        port->set_calibration_mode(true);
         std::cout << "Configuring ..." << std::endl
                   << "If this application just quit, check the error messages in cisstLog.txt" << std::endl;
         port->Configure(configFile);

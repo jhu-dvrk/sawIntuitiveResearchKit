@@ -626,7 +626,7 @@ class MTM(Robot):
         self.potentiometerLatency = lambda index: 0.01 if index <= 5 else 0.0 # in seconds
         self.potentiometerDistance = lambda index: (5.0 * deg) if index <= 5 else 0.0
 
-        super().__init__(robotTypeName, hardwareVersion, serialNumber, calData, 7, 3)
+        super().__init__(robotTypeName, hardwareVersion, serialNumber, calData, 7, 0)
 
         potentiometerTolerances = list(self.generatePotentiometerTolerances())
         self.potentiometers = Potentiometers('ANALOG', potentiometerTolerances, coupling = MTMCoupling())
