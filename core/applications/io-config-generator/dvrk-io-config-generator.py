@@ -658,6 +658,7 @@ class MTMGripper(Robot):
         self.actuatorType = lambda index: "REVOLUTE"
         self.potentiometerLatency = lambda index: None
         self.potentiometerDistance = lambda index: None
+        self.potentiometers = Potentiometers('ANALOG', None)
 
         # Want driveDirection * (360 / CPT) * (pitch / gearRatio) = 360
         desiredEncoderScale = 360.0
@@ -667,8 +668,8 @@ class MTMGripper(Robot):
             * (self.pitch(0) / self.gearRatio(0))
         )
 
-        self.voltsToPosScale = -100.0
-        self.voltsToPosOffset = 300.0
+        self.voltsToPosScale = -2.0
+        self.voltsToPosOffset = 30.0
         super().__init__(robotTypeName, hardwareVersion, serialNumber, calData, 1, 0)
 
     def generatePotentiometers(self):
@@ -700,7 +701,7 @@ class MTMGripper(Robot):
     def toDict(self):
         dict = super().toDict()
         dict["type"] = self.ioType
-
+        dict["potentiometers"] = self.potentiometers
         return dict
 
 
