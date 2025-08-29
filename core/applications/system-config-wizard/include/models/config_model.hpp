@@ -1102,7 +1102,7 @@ public:
 
         std::string arm_name = io_file.substr(start_idx, end_idx - start_idx);
 
-        std::string dqla_suffix = "-DQLA.xml";
+        std::string dqla_suffix = "-DQLA.json";
         size_t n = dqla_suffix.size();
         bool is_dqla = io_file.size() >= n && io_file.substr(io_file.size() - n, n) == dqla_suffix;
 
@@ -1120,7 +1120,7 @@ public:
 
         Json::Value value;
         value["IO"] = io_name;
-        value["IO_file"] = "io/sawRobotIO1394-" + source_arm_name + "-foot-pedals" + (is_dqla ? "-DQLA" : "") + ".xml";
+        value["IO_file"] = "io/sawRobotIO1394-" + source_arm_name + "-foot-pedals" + (is_dqla ? "-DQLA" : "-QLA1") + ".json";
 
         return value;
     }
@@ -1195,7 +1195,7 @@ public:
             Json::Value value;
             Json::Value io;
             io["IO"] = source->io_name.value_or("");
-            io["IO_file"] = "io/sawRobotIO1394-" + source->name + "-dv-head-sensor.xml";
+            io["IO_file"] = "io/sawRobotIO1394-" + source->name + "-dv-head-sensor.json";
             value["IO_head_sensor"] = io;
             return value;
         } else {

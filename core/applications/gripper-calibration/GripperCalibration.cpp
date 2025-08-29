@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-12-20
 
-  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -19,13 +19,13 @@ http://www.cisst.org/cisst/license.txt.
 // system
 #include <iostream>
 #include <limits>
+#include <json/json.h>
 
 // cisst/saw
 #include <cisstCommon/cmnPath.h>
 #include <cisstCommon/cmnUnits.h>
 #include <cisstCommon/cmnKbHit.h>
 #include <cisstCommon/cmnGetChar.h>
-#include <cisstCommon/cmnXMLPath.h>
 #include <cisstCommon/cmnCommandLineOptions.h>
 #include <cisstOSAbstraction/osaSleep.h>
 #include <cisstOSAbstraction/osaGetTime.h>
@@ -40,7 +40,7 @@ int main(int argc, char * argv[])
     std::string portName = mtsRobotIO1394::DefaultPort();
     std::string configFile;
     options.AddOptionOneValue("c", "config",
-                              "MTM gripper sawRobotIO1394 XML configuration file",
+                              "MTM gripper sawRobotIO1394 JSON configuration file",
                               cmnCommandLineOptions::REQUIRED_OPTION, &configFile);
     options.AddOptionOneValue("p", "port",
                               "firewire port number(s)",
@@ -114,7 +114,7 @@ int main(int argc, char * argv[])
         }
         port->Read();
         // read values in radians to test existing coeffcients
-        double value = robot->PotPosition().at(0);
+        double value = robot->PotentiometerPosition().at(0);
         bool newValue = false;
         if (value > maxRad) {
             counter++;
@@ -139,7 +139,7 @@ int main(int argc, char * argv[])
     cmnGetChar(); // to read the pressed key
 
     std::cout << std::endl
-              << "Status: found range [" << minRad * 180.0 / cmnPI << ", " << maxRad * 180.0 / cmnPI
+              << "Status: found range [" << minRad * cmn180_PI << ", " << maxRad * cmn180_PI
               << "] degrees using " << counter << " samples." << std::endl
               << std::endl
               << "Do you want to update the config file with these values? [Y/y]" << std::endl;
@@ -147,14 +147,25 @@ int main(int argc, char * argv[])
     // save if needed
     char key = cmnGetChar();
     if ((key == 'y') || (key == 'Y')) {
-        cmnXMLPath xmlConfig;
-        xmlConfig.SetInputSource(configFile);
+
+        // load json file
+        std::ifstream jsonStream;
+        Json::Value jsonConfig;
+        Json::Reader jsonReader;
+
+        jsonStream.open(configFile.c_str());
+        if (!jsonReader.parse(jsonStream, jsonConfig)) {
+            std::cerr << "Failed to parse configuration file \""
+                      << configFile << "\"\n"
+                      << jsonReader.getFormattedErrorMessages();
+            exit(EXIT_FAILURE);
+        }
+        jsonStream.close();
+
         // query previous current offset and scales
-        double previousOffset;
-        double previousScale;
-        const char * context = "Config";
-        xmlConfig.GetXMLValue(context, "Robot[1]/Actuator[1]/AnalogIn/VoltsToPosSI/@Offset", previousOffset);
-        xmlConfig.GetXMLValue(context, "Robot[1]/Actuator[1]/AnalogIn/VoltsToPosSI/@Scale", previousScale);
+        Json::Value & conversionJson = jsonConfig["robots"][0]["actuators"][0]["potentiometer"]["voltage_to_position"];
+        double previousOffset = conversionJson["offset"].asDouble();
+        double previousScale = conversionJson["scale"].asDouble();
 
         // compute new offsets assuming a range [0, user-max]
         double userMaxDeg;
@@ -162,30 +173,39 @@ int main(int argc, char * argv[])
         std::cin >> userMaxDeg;
         cmnGetChar(); // to get the CR
         double userMaxRad = userMaxDeg * cmnPI / 180.0;
-        // find corresponding pot values using previous scale and offset - carefull, offsets are in degrees in the file
-        double minVolt = (minRad - previousOffset * cmnPI / 180.0) / previousScale;
-        double maxVolt = (maxRad - previousOffset * cmnPI / 180.0) / previousScale;
+        // find corresponding pot values using previous scale and offset
+        double minVolt = (minRad - previousOffset) / previousScale;
+        double maxVolt = (maxRad - previousOffset) / previousScale;
         // compute new scale and offset to match pot -> [0, user-max]
         double newScale = (userMaxRad - 0.0) / (maxVolt - minVolt);
-        double newOffset = - newScale * minVolt * 180.0 / cmnPI; // also convert back to degrees
+        double newOffset = - newScale * minVolt;
 
         // ask one last confirmation from user
-        std::cout << "Status: offset and scale in XML configuration file: " << previousOffset << " " << previousScale << std::endl
+        std::cout << "Status: offset and scale in JSON configuration file: " << previousOffset << " " << previousScale << std::endl
                   << "Status: new offset and scale:                       " << newOffset << " " << newScale << std::endl
                   << std::endl
                   << "Do you want to save these values? [S/s]" << std::endl;
         key = cmnGetChar();
         if ((key == 's') || (key == 'S')) {
-            const char * context = "Config";
-            xmlConfig.SetXMLValue(context, "Robot[1]/Actuator[1]/AnalogIn/VoltsToPosSI/@Offset", newOffset);
-            xmlConfig.SetXMLValue(context, "Robot[1]/Actuator[1]/AnalogIn/VoltsToPosSI/@Scale", newScale);
+
             // rename old file and save in place
-            std::string currentDateTime;
-            osaGetDateTimeString(currentDateTime);
-            std::string newName = configFile + "-backup-" + currentDateTime;
+            const double abs_time = osaGetTime();
+            std::string date, time;
+            osaGetDateString(date, abs_time, '-');
+            osaGetTimeString(time, abs_time, ':');
+            const std::string newName = configFile + "-backup-" + date + "_" + time;
             cmnPath::RenameFile(configFile, newName);
             std::cout << "Existing IO config file has been renamed " << newName << std::endl;
-            xmlConfig.SaveAs(configFile);
+
+            // save new data
+            Json::StreamWriterBuilder builder;
+            builder["indentation"] = "    ";
+            std::ofstream outputFile(configFile);
+            std::unique_ptr<Json::StreamWriter> writer(builder.newStreamWriter());
+            jsonConfig["robots"][0]["actuators"][0]["potentiometer"]["voltage_to_position"]["offset"] = newOffset;
+            jsonConfig["robots"][0]["actuators"][0]["potentiometer"]["voltage_to_position"]["scale"] = newScale;
+            writer->write(jsonConfig, &outputFile);
+            outputFile.close();
             std::cout << "Results saved in IO config file " << configFile << std::endl;
         } else {
             std::cout << "Status: user didn't want to save new offsets." << std::endl;

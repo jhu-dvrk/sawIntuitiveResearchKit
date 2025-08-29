@@ -79,12 +79,15 @@ dvrk::system::system(const std::string & componentName):
         // misc.
         m_interface->AddCommandRead(&system::calibration_mode, this,
                                     "calibration_mode", false);
+        m_interface->AddCommandVoid(&system::launch_python_shell, this,
+                                    "launch_python_shell");
         // Following is Read instead of VoidReturn because it is called before the component
         // is created (i.e., thread not yet running)
         m_interface->AddCommandRead(&system::ConnectInternal, this,
                                     "connect", false);
     }
 }
+
 
 void dvrk::system::set_calibration_mode(const bool mode)
 {
@@ -101,7 +104,11 @@ void dvrk::system::set_calibration_mode(const bool mode)
         std::cerr << "system::" << message.str() << std::endl;
         CMN_LOG_CLASS_INIT_WARNING << message.str() << std::endl;
     }
+    for (auto IO_proxy : m_IO_proxies) {
+        IO_proxy.second->set_calibration_mode(mode);
+    }
 }
+
 
 const bool & dvrk::system::calibration_mode(void) const
 {
@@ -111,6 +118,11 @@ const bool & dvrk::system::calibration_mode(void) const
 void dvrk::system::calibration_mode(bool & result) const
 {
     result = m_calibration_mode;
+}
+
+void dvrk::system::launch_python_shell(void)
+{
+    std::cerr << CMN_LOG_DETAILS << " -- needs to be implemented" << std::endl;       
 }
 
 void dvrk::system::Configure(const std::string & filename)
@@ -183,6 +195,7 @@ void dvrk::system::Configure(const std::string & filename)
             auto IO_proxy = std::make_shared<dvrk::IO_proxy>(IO_config.name, this, &IO_config);
             m_IO_proxies[IO_config.name] = IO_proxy;
             IO_proxy->post_configure();
+            IO_proxy->set_calibration_mode(m_calibration_mode);
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to configure IO "
                                      << IO_config.name << ", IO already exists" << std::endl;
@@ -237,6 +250,7 @@ void dvrk::system::Configure(const std::string & filename)
     for (auto & iter : m_IO_proxies) {
         auto & IO_proxy = iter.second;
         IO_proxy->create_IO();
+        IO_proxy->set_calibration_mode(m_calibration_mode);
         add_IO_interfaces(IO_proxy);
     }
 
@@ -372,6 +386,7 @@ void dvrk::system::Startup(void)
         prompts.push_back("When did you last commit your changes?");
         prompts.push_back("Some documentation would be nice");
         prompts.push_back("ROS 2!");
+        prompts.push_back("It's free, what did you expect?");
         int index;
         cmnRandomSequence & randomSequence = cmnRandomSequence::GetInstance();
         cmnRandomSequence::SeedType seed

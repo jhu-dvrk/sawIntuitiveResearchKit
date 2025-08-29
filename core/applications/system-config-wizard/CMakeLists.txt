@@ -15,7 +15,6 @@ cmake_minimum_required (VERSION 3.16)
 set (REQUIRED_CISST_LIBRARIES
      cisstCommon
      cisstCommonQt
-     cisstCommonXML
      cisstVector
      cisstParameterTypes
      cisstQt
@@ -83,21 +82,21 @@ if (cisst_FOUND_AS_REQUIRED)
 
     qt5_add_resources (SOURCE_FILES resources/dvrk_logo.qrc)
 
-    add_executable (dvrk_config_wizard main.cpp ${HEADER_FILES} ${SOURCE_FILES})
-    target_compile_features (dvrk_config_wizard PUBLIC cxx_std_17)
+    add_executable (dvrk-system-config-wizard main.cpp ${HEADER_FILES} ${SOURCE_FILES})
+    target_compile_features (dvrk-system-config-wizard PUBLIC cxx_std_17)
 
-    target_include_directories (dvrk_config_wizard PRIVATE include)
-    target_include_directories (dvrk_config_wizard PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-    target_include_directories (dvrk_config_wizard PRIVATE ${sawIntuitiveResearchKit_INCLUDE_DIR})
+    target_include_directories (dvrk-system-config-wizard PRIVATE include)
+    target_include_directories (dvrk-system-config-wizard PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+    target_include_directories (dvrk-system-config-wizard PRIVATE ${sawIntuitiveResearchKit_INCLUDE_DIR})
 
     # link against cisst libraries (and dependencies)
-    cisst_target_link_libraries (dvrk_config_wizard ${REQUIRED_CISST_LIBRARIES})
+    cisst_target_link_libraries (dvrk-system-config-wizard ${REQUIRED_CISST_LIBRARIES})
 
-    set_target_properties (dvrk_config_wizard PROPERTIES
+    set_target_properties (dvrk-system-config-wizard PROPERTIES
                            COMPONENT sawIntuitiveResearchKit-Applications
                            FOLDER "sawIntuitiveResearchKit")
 
-    install (TARGETS dvrk_config_wizard
+    install (TARGETS dvrk-system-config-wizard
               COMPONENT sawIntuitiveResearchKit-Applications
               RUNTIME DESTINATION bin
               LIBRARY DESTINATION lib
