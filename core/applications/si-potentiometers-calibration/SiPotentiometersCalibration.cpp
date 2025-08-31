@@ -20,13 +20,13 @@ http://www.cisst.org/cisst/license.txt.
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <json/json.h>
 
 // cisst/saw
 #include <cisstCommon/cmnPath.h>
 #include <cisstCommon/cmnUnits.h>
 #include <cisstCommon/cmnKbHit.h>
 #include <cisstCommon/cmnGetChar.h>
-#include <cisstCommon/cmnXMLPath.h>
 #include <cisstCommon/cmnCommandLineOptions.h>
 #include <cisstOSAbstraction/osaSleep.h>
 #include <cisstOSAbstraction/osaGetTime.h>
@@ -51,7 +51,7 @@ int main(int argc, char * argv[])
     std::string configFile;
     std::string savedData;
     options.AddOptionOneValue("c", "config",
-                              "arm sawRobotIO1394 XML configuration file",
+                              "arm sawRobotIO1394 JSON configuration file",
                               cmnCommandLineOptions::REQUIRED_OPTION, &configFile);
     options.AddOptionOneValue("p", "port",
                               "firewire port number(s)",
@@ -78,16 +78,23 @@ int main(int argc, char * argv[])
         return -1;
     }
 
-    // setup XML parsing
-    cmnXMLPath xmlConfig;
-    xmlConfig.SetInputSource(configFile);
-    const char * context = "Config";
-    std::string armName;
-    xmlConfig.GetXMLValue(context, "Robot[1]/@Name", armName);
-    int nbActuators;
-    xmlConfig.GetXMLValue(context, "Robot[1]/@NumOfActuator", nbActuators);
-    std::string serialNumber;
-    xmlConfig.GetXMLValue(context, "Robot[1]/@SN", serialNumber);
+    // load json file
+    std::ifstream jsonStream;
+    Json::Value jsonConfig;
+    Json::Reader jsonReader;
+    
+    jsonStream.open(configFile.c_str());
+    if (!jsonReader.parse(jsonStream, jsonConfig)) {
+        std::cerr << "Failed to parse configuration file \""
+                  << configFile << "\"\n"
+                  << jsonReader.getFormattedErrorMessages();
+        exit(EXIT_FAILURE);
+    }
+    jsonStream.close();
+
+    std::string armName = jsonConfig["robots"][0]["name"].asString();
+    int nbActuators = jsonConfig["robots"][0]["number_of_actuators"].asInt();
+    std::string serialNumber = jsonConfig["robots"][0]["serial_number"].asString();
 
     std::cout << "Configuration file: " << configFile
               << " for arm " << armName << " [" << serialNumber << "] ("
@@ -173,12 +180,13 @@ int main(int argc, char * argv[])
             return -1;
         }
         mtsRobot1394 * robot = port->Robot(0);
+        robot->set_calibration_mode(true);
 
         // locate the manip clutch so we can release the brakes
         size_t numberOfDigitalInput;
         port->GetNumberOfDigitalInputs(numberOfDigitalInput);
         mtsDigitalInput1394 * clutchInput = nullptr;
-        const std::string clutchName = armName + "-ManipClutch";
+        const std::string clutchName = armName + "_arm_clutch";
         for (size_t index = 0;
              index < numberOfDigitalInput;
              ++index) {

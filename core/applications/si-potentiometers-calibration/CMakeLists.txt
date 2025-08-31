@@ -15,7 +15,6 @@ project (sawIntuitiveResearchKitSiPotentiometersCalibration VERSION 2.3.0)
 # create a list of required cisst libraries
 set (REQUIRED_CISST_LIBRARIES
   cisstCommon
-  cisstCommonXML
   cisstVector
   cisstOSAbstraction
   cisstMultiTask
