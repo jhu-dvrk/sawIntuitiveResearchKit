@@ -1,0 +1,19 @@
+{
+    "$id:" : "saw-robot-io.schema.json",
+    "$version" : 6,
+    "digital_outputs" :
+    [
+        {
+            "bit_id" : 0,
+            "board_id" : 0,
+            "is_PWM" : false,
+            "name" : "endoscope_focus_in"
+        },
+        {
+            "bit_id" : 1,
+            "board_id" : 0,
+            "is_PWM" : false,
+            "name" : "endoscope_focus_out"
+        }
+    ]
+}

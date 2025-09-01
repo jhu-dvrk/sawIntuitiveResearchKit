@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2017-12-18
 
-  (C) Copyright 2017-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2017-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -42,26 +42,26 @@ void mtsDaVinciHeadSensor::Init(void)
     mOperatorPresent = false;
 
     // Robot IO
-    mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("HeadSensorTurnOff");
+    mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("head_sensor_turn_off");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("SetValue", RobotIO.TurnOff);
     }
-    interfaceRequired = AddInterfaceRequired("HeadSensor1");
+    interfaceRequired = AddInterfaceRequired("dv_head_sensor_1");
     if (interfaceRequired) {
         interfaceRequired->AddEventHandlerWrite(&mtsDaVinciHeadSensor::HeadSensor1EventHandler,
                                                 this, "Button");
     }
-    interfaceRequired = AddInterfaceRequired("HeadSensor2");
+    interfaceRequired = AddInterfaceRequired("dv_head_sensor_2");
     if (interfaceRequired) {
         interfaceRequired->AddEventHandlerWrite(&mtsDaVinciHeadSensor::HeadSensor2EventHandler,
                                                 this, "Button");
     }
-    interfaceRequired = AddInterfaceRequired("HeadSensor3");
+    interfaceRequired = AddInterfaceRequired("dv_head_sensor_3");
     if (interfaceRequired) {
         interfaceRequired->AddEventHandlerWrite(&mtsDaVinciHeadSensor::HeadSensor3EventHandler,
                                                 this, "Button");
     }
-    interfaceRequired = AddInterfaceRequired("HeadSensor4");
+    interfaceRequired = AddInterfaceRequired("dv_head_sensor_4");
     if (interfaceRequired) {
         interfaceRequired->AddEventHandlerWrite(&mtsDaVinciHeadSensor::HeadSensor4EventHandler,
                                                 this, "Button");

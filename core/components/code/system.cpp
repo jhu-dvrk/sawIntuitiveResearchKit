@@ -259,10 +259,10 @@ void dvrk::system::Configure(const std::string & filename)
         configure_IO(m_config.ISI_focus_controller);
         const std::string controller = m_config.ISI_focus_controller.name;
         const std::string IO = m_config.ISI_focus_controller.IO;
-        m_connections.Add(controller, "EndoscopeFocusIn",
-                          IO, "EndoscopeFocusIn");
-        m_connections.Add(controller, "EndoscopeFocusOut",
-                          IO, "EndoscopeFocusOut");
+        m_connections.Add(controller, "endoscope_focus_in",
+                          IO, "endoscope_focus_in");
+        m_connections.Add(controller, "endoscope_focus_out",
+                          IO, "endoscope_focus_out");
         std::cerr << CMN_LOG_DETAILS << " --------------- the following two connections should likely happen in the console class.  To test with two consoles!" << std::endl;
         m_connections.Add(controller, "focus_in",
                           IO, "focus_plus");

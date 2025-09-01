@@ -181,16 +181,16 @@ void dvrk::console::create_components(void)
         manager->AddComponent(m_head_sensor);
         // schedule connections between IO and head sensor component
         const std::string IO =  m_config->IO_head_sensor.IO;
-        m_system->m_connections.Add(m_config->operator_present.component, "HeadSensorTurnOff",
-                                    IO, "HeadSensorTurnOff");
-        m_system->m_connections.Add(m_config->operator_present.component, "HeadSensor1",
-                                    IO, "HeadSensor1");
-        m_system->m_connections.Add(m_config->operator_present.component, "HeadSensor2",
-                                    IO, "HeadSensor2");
-        m_system->m_connections.Add(m_config->operator_present.component, "HeadSensor3",
-                                    IO, "HeadSensor3");
-        m_system->m_connections.Add(m_config->operator_present.component, "HeadSensor4",
-                                    IO, "HeadSensor4");
+        m_system->m_connections.Add(m_config->operator_present.component, "head_sensor_turn_off",
+                                    IO, "head_sensor_turn_off");
+        m_system->m_connections.Add(m_config->operator_present.component, "dv_head_sensor_1",
+                                    IO, "dv_head_sensor_1");
+        m_system->m_connections.Add(m_config->operator_present.component, "dv_head_sensor_2",
+                                    IO, "dv_head_sensor_2");
+        m_system->m_connections.Add(m_config->operator_present.component, "dv_head_sensor_3",
+                                    IO, "dv_head_sensor_3");
+        m_system->m_connections.Add(m_config->operator_present.component, "dv_head_sensor_4",
+                                    IO, "dv_head_sensor_4");
     }
 
     if (m_config->input_type == console_input_type::PEDALS_DVRK_HEAD_SENSOR) {

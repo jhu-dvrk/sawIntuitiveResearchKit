@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2017-12-18
 
-  (C) Copyright 2017-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2017-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -59,11 +59,11 @@ void mtsDaVinciEndoscopeFocus::Init(void)
         interfaceRequired->AddEventHandlerWrite(&mtsDaVinciEndoscopeFocus::FocusOutEventHandler,
                                                 this, "Button");
     }
-    interfaceRequired = AddInterfaceRequired("EndoscopeFocusIn");
+    interfaceRequired = AddInterfaceRequired("endoscope_focus_in");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("SetValue", RobotIO.focus_in);
     }
-    interfaceRequired = AddInterfaceRequired("EndoscopeFocusOut");
+    interfaceRequired = AddInterfaceRequired("endoscope_focus_out");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("SetValue", RobotIO.focus_out);
     }
