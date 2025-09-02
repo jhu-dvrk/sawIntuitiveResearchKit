@@ -1,4 +1,6 @@
 {
+    "$id": "dvrk-system.schema.json",
+    "$version": "1",
     "component_manager": {
         "components":
         [

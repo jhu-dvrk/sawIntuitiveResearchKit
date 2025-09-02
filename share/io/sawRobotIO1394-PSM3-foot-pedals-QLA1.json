@@ -1,6 +1,6 @@
 {
-    "$id:" : "saw-robot-io.schema.json",
-    "$version" : 6,
+    "$id" : "saw-robot-io.schema.json",
+    "$version" : "6",
     "digital_inputs" :
     [
         {

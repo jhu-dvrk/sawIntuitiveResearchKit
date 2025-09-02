@@ -1,5 +1,7 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
+    "$id": "dvrk-system.schema.json",
+    "$version": "1",
     "arms":
     [
         {

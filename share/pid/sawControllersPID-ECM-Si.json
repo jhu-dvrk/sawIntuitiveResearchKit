@@ -1,5 +1,5 @@
 {
-    "$id": "constrollers-pid.schema.json",
+    "$id": "saw-controllers-pid.schema.json",
     "$version": "1",
     "pid": [
         {

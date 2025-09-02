@@ -1,6 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "$id": "dvrk-console.schema.json",
+    "$version": "1",
     "title": "dVRK console",
     "type": "object",
     "description": "Configuration file format for a dVRK console.\n\n - This format is used by the dVRK system configuration file.\n - For details of implementation, see code under `sawIntuitiveResearchKit/core/components/code/console_configuration.cdg`\n - [Schema file](dvrk-console.schema.json)",

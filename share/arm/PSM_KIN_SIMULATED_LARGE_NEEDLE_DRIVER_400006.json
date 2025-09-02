@@ -1,5 +1,7 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
+    "$id": "dvrk-psm.schema.json",
+    "$version": "1"
     "kinematic": "kinematic/PSM.json",
     "generation": "Classic",
     "tool_detection": "FIXED",
