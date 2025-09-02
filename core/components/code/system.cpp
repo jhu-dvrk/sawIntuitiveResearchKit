@@ -122,7 +122,7 @@ void dvrk::system::calibration_mode(bool & result) const
 
 void dvrk::system::launch_python_shell(void)
 {
-    std::cerr << CMN_LOG_DETAILS << " -- needs to be implemented" << std::endl;       
+    std::cerr << CMN_LOG_DETAILS << " -- needs to be implemented" << std::endl;
 }
 
 void dvrk::system::Configure(const std::string & filename)
@@ -138,7 +138,6 @@ void dvrk::system::Configure(const std::string & filename)
         CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to parse configuration" << std::endl
                                  << "File: " << filename << std::endl << "Error(s):" << std::endl
                                  << json_reader.getFormattedErrorMessages();
-        this->m_configured = false;
         exit(EXIT_FAILURE);
     }
 
@@ -147,6 +146,23 @@ void dvrk::system::Configure(const std::string & filename)
                                << "----> content of configuration file: " << std::endl
                                << json_config << std::endl
                                << "<----" << std::endl;
+
+    // id & version check
+    const std::string id = json_config["$id"].asString();
+    const std::string id_expected = "dvrk-system.schema.json";
+    if (id != id_expected) {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure: file " << filename
+                                 << " has incorrect or missing $id, found \"" << id
+                                 << "\", expected \"" << id_expected << "\"" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    const std::string version = json_config["$version"].asString();
+    if (version != "1") {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure: file " << filename
+                                 << " has incorrect or missing $version, found \"" << version
+                                 << "\", expected \"1\"" << std::endl;
+        exit(EXIT_FAILURE);
+    }
 
     // base component configuration
     mtsComponent::ConfigureJSON(json_config);

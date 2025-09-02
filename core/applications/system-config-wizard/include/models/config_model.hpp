@@ -1537,8 +1537,8 @@ public:
             std::cerr << "Unexpected schema id \"" << schema_id << "\", aborting. Are you sure file is a dVRK system config?" << std::endl;
             return nullptr;
         }
-        int schema_version = json_config.get("$version", 1).asInt();
-        if (schema_version != 1) {
+	std::string schema_version = json_config.get("$version", std::string("1")).asString();
+        if (schema_version != "1") {
             std::cerr << "Unsupported schema version " << schema_version << ", aborting" << std::endl;
             return nullptr;
         }
@@ -1597,7 +1597,7 @@ public:
         Json::Value config;
 
         config["$id"] = "dvrk-system.schema.json";
-        config["$version"] = 1;
+        config["$version"] = "1";
 
         config["IOs"] = io_configs->toJSON();
         config["arms"] = arm_configs->toJSON();

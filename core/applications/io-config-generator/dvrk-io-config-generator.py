@@ -139,7 +139,7 @@ class Config(Serializable):
 
     def toDict(self):
         dict = {
-            "$id:" : "saw-robot-io.schema.json",
+            "$id" : "saw-robot-io.schema.json",
             "$version": self.versionId,
             "robots": [ self.robot ],
         }
@@ -1059,7 +1059,7 @@ def generateConfig(calFileName, robotTypeName, hardwareVersion, serialNumber, ge
             robotTypeName[0:3] == calData["FileType"][0:3]
         ), "Robot hardware type doesn't match type from cal file"
 
-    version = 6
+    version = "6"
     serialNumber = str(serialNumber or calData["serial_number"])
     config = Config(calData, version, robotTypeName, hardwareVersion, serialNumber, generation)
 
@@ -1101,7 +1101,7 @@ def generateArmConfig(robotTypeName, hardwareVersion, serialNumber, generation):
     with open(fileName, "w") as f:
         f.write('{\n')
         f.write('    // see https://dvrk.readthedocs.io\n')
-        f.write('    "$id": "",\n')
+        f.write('    "$id": "dvrk-arm.schema.json",\n')
         f.write('    "$version": "1",\n')
         f.write(kinematic)
         f.write('    "generation": "' + generation + '"\n')
