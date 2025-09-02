@@ -5,7 +5,7 @@
     [
         {
             "bit_id" : 0,
-            "board_id" : 3,
+            "board_id" : 7,
             "debounce_time" : 0.2,
             "name" : "clutch",
             "pressed_value" : true,
@@ -14,7 +14,7 @@
         },
         {
             "bit_id" : 1,
-            "board_id" : 3,
+            "board_id" : 7,
             "debounce_time" : 0.05,
             "name" : "focus_minus",
             "pressed_value" : true,
@@ -23,7 +23,7 @@
         },
         {
             "bit_id" : 2,
-            "board_id" : 3,
+            "board_id" : 7,
             "debounce_time" : 0.05,
             "name" : "focus_plus",
             "pressed_value" : true,
@@ -32,7 +32,7 @@
         },
         {
             "bit_id" : 3,
-            "board_id" : 3,
+            "board_id" : 7,
             "debounce_time" : 0.2,
             "name" : "coag",
             "pressed_value" : true,
@@ -41,7 +41,7 @@
         },
         {
             "bit_id" : 4,
-            "board_id" : 3,
+            "board_id" : 7,
             "debounce_time" : 0.2,
             "name" : "camera",
             "pressed_value" : true,
@@ -50,7 +50,7 @@
         },
         {
             "bit_id" : 5,
-            "board_id" : 3,
+            "board_id" : 7,
             "debounce_time" : 0.2,
             "name" : "bicoag",
             "pressed_value" : true,

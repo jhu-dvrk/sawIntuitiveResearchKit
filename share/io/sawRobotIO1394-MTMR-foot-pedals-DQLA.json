@@ -4,8 +4,8 @@
     "digital_inputs" :
     [
         {
-            "bit_id" : 0,
-            "board_id" : 3,
+            "bit_id" : 16,
+            "board_id" : 2,
             "debounce_time" : 0.2,
             "name" : "clutch",
             "pressed_value" : true,
@@ -13,8 +13,8 @@
             "trigger_when_released" : true
         },
         {
-            "bit_id" : 1,
-            "board_id" : 3,
+            "bit_id" : 17,
+            "board_id" : 2,
             "debounce_time" : 0.05,
             "name" : "focus_minus",
             "pressed_value" : true,
@@ -22,8 +22,8 @@
             "trigger_when_released" : true
         },
         {
-            "bit_id" : 2,
-            "board_id" : 3,
+            "bit_id" : 18,
+            "board_id" : 2,
             "debounce_time" : 0.05,
             "name" : "focus_plus",
             "pressed_value" : true,
@@ -31,8 +31,8 @@
             "trigger_when_released" : true
         },
         {
-            "bit_id" : 3,
-            "board_id" : 3,
+            "bit_id" : 19,
+            "board_id" : 2,
             "debounce_time" : 0.2,
             "name" : "coag",
             "pressed_value" : true,
@@ -40,8 +40,8 @@
             "trigger_when_released" : true
         },
         {
-            "bit_id" : 4,
-            "board_id" : 3,
+            "bit_id" : 20,
+            "board_id" : 2,
             "debounce_time" : 0.2,
             "name" : "camera",
             "pressed_value" : true,
@@ -49,8 +49,8 @@
             "trigger_when_released" : true
         },
         {
-            "bit_id" : 5,
-            "board_id" : 3,
+            "bit_id" : 21,
+            "board_id" : 2,
             "debounce_time" : 0.2,
             "name" : "bicoag",
             "pressed_value" : true,

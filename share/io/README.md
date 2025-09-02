@@ -1,10 +1,10 @@
 Files for both QLA1 and DQLA:
-* `-dv-head-sensor.xml`
-* `-dv-endoscope-focus.xml`
+* `-dv-head-sensor.json`
+* `-dv-endoscope-focus.json`
 
 Files for QLA1 only:
-* `-all-inputs.xml`
-* `-foot-pedals.xml`
+* `-all-inputs.json`
+* `-foot-pedals-QLA1.json`
 
 Files for DQLA only:
-* `-foot-pedals-DQLA.xml`
+* `-foot-pedals-DQLA.json`

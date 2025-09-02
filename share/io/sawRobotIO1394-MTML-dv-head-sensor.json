@@ -1,0 +1,54 @@
+{
+    "$id:" : "saw-robot-io.schema.json",
+    "$version" : 6,
+    "digital_inputs" :
+    [
+        {
+            "bit_id" : 0,
+            "board_id" : 0,
+            "debounce_time" : 0.05,
+            "name" : "dv_head_sensor_1",
+            "pressed_value" : true,
+            "trigger_when_pressed" : true,
+            "trigger_when_released" : true
+        },
+        {
+            "bit_id" : 4,
+            "board_id" : 0,
+            "debounce_time" : 0.05,
+            "name" : "dv_head_sensor_2",
+            "pressed_value" : true,
+            "trigger_when_pressed" : true,
+            "trigger_when_released" : true
+        },
+        {
+            "bit_id" : 8,
+            "board_id" : 0,
+            "debounce_time" : 0.05,
+            "name" : "dv_head_sensor_3",
+            "pressed_value" : true,
+            "trigger_when_pressed" : true,
+            "trigger_when_released" : true
+        },
+        {
+            "bit_id" : 16,
+            "board_id" : 0,
+            "debounce_time" : 0.05,
+            "name" : "dv_head_sensor_4",
+            "pressed_value" : true,
+            "trigger_when_pressed" : true,
+            "trigger_when_released" : true
+        }
+    ]
+    ,
+    "digital_outputs" :
+
+    [
+        {
+            "bit_id" : 0,
+            "board_id" : 0,
+            "is_PWM" : false,
+            "name" : "head_sensor_turn_off"
+        }
+    ]
+}

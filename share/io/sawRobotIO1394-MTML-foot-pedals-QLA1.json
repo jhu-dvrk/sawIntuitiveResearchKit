@@ -4,20 +4,11 @@
     "digital_inputs" :
     [
         {
-            "bit_id" : 3,
-            "board_id" : 0,
-            "debounce_time" : 0.05,
-            "name" : "dvrk_head_sensor",
-            "pressed" : true,
-            "trigger_when_pressed" : true,
-            "trigger_when_released" : true
-        },
-        {
             "bit_id" : 0,
             "board_id" : 1,
             "debounce_time" : 0.2,
             "name" : "clutch",
-            "pressed" : true,
+            "pressed_value" : true,
             "trigger_when_pressed" : true,
             "trigger_when_released" : true
         },
@@ -26,7 +17,7 @@
             "board_id" : 1,
             "debounce_time" : 0.05,
             "name" : "focus_minus",
-            "pressed" : true,
+            "pressed_value" : true,
             "trigger_when_pressed" : true,
             "trigger_when_released" : true
         },
@@ -35,7 +26,7 @@
             "board_id" : 1,
             "debounce_time" : 0.05,
             "name" : "focus_plus",
-            "pressed" : true,
+            "pressed_value" : true,
             "trigger_when_pressed" : true,
             "trigger_when_released" : true
         },
@@ -44,7 +35,7 @@
             "board_id" : 1,
             "debounce_time" : 0.2,
             "name" : "coag",
-            "pressed" : true,
+            "pressed_value" : true,
             "trigger_when_pressed" : true,
             "trigger_when_released" : true
         },
@@ -53,7 +44,7 @@
             "board_id" : 1,
             "debounce_time" : 0.2,
             "name" : "camera",
-            "pressed" : true,
+            "pressed_value" : true,
             "trigger_when_pressed" : true,
             "trigger_when_released" : true
         },
@@ -62,7 +53,7 @@
             "board_id" : 1,
             "debounce_time" : 0.2,
             "name" : "bicoag",
-            "pressed" : true,
+            "pressed_value" : true,
             "trigger_when_pressed" : true,
             "trigger_when_released" : true
         }
