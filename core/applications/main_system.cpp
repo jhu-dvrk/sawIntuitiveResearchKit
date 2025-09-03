@@ -68,6 +68,7 @@ int main(int argc, char ** argv)
     cmnCommandLineOptions options;
     std::string jsonMainConfigFile;
     std::string jsonCollectionConfigFile;
+    std::string _IRE_shell = "";
     std::list<std::string> managerConfig;
     std::string qtStyle;
     std::string dotFile;
@@ -76,15 +77,16 @@ int main(int argc, char ** argv)
                               "json configuration file",
                               cmnCommandLineOptions::REQUIRED_OPTION, &jsonMainConfigFile);
 
-    options.AddOptionNoValue("t", "text-only",
-                             "text only interface, do not create Qt widgets");
-
     options.AddOptionOneValue("c", "collection-config",
                               "json configuration file for data collection using cisstMultiTask state table collector",
                               cmnCommandLineOptions::OPTIONAL_OPTION, &jsonCollectionConfigFile);
 
     options.AddOptionNoValue("C", "calibration-mode",
                              "run in calibration mode, doesn't use potentiometers to monitor encoder values and always force re-homing.  This mode should only be used when calibrating your potentiometers.");
+
+    options.AddOptionOneValue("e", "embedded-python",
+                              "start an embedded Python shell to access all dVRK software components",
+                              cmnCommandLineOptions::OPTIONAL_OPTION, &_IRE_shell);
 
     options.AddOptionMultipleValues("m", "component-manager",
                                     "JSON files to configure component manager",
@@ -96,6 +98,9 @@ int main(int argc, char ** argv)
 
     options.AddOptionNoValue("D", "dark-mode",
                              "replaces the default Qt palette with darker colors");
+
+    options.AddOptionNoValue("t", "text-only",
+                             "text only interface, do not create Qt widgets");
 
     options.AddOptionOneValue("d", "dot-file",
                               "graphviz compatible dot file",
@@ -117,6 +122,7 @@ int main(int argc, char ** argv)
     // system
     auto * system = new dvrk::system("system");
     system->set_calibration_mode(options.IsSet("calibration-mode"));
+    system->set_embedded_python(_IRE_shell);
     file_exists("dVRK system JSON configuration file", jsonMainConfigFile, system);
     system->Configure(jsonMainConfigFile);
     componentManager->AddComponent(system);

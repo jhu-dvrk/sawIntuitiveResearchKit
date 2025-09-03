@@ -37,6 +37,7 @@ class mtsRobotIO1394;
 class mtsTextToSpeech;
 class mtsDaVinciEndoscopeFocus;
 class mtsIntuitiveResearchKitArm;
+class ireTask;
 
 namespace dvrk {
     class IO_proxy;
@@ -72,8 +73,8 @@ namespace dvrk {
         void calibration_mode(bool & result) const;
 
         /*! Set a flag to request the Python embedded interpreter (IRE). */
-        void set_embedded_python(const bool required);
-            
+        void set_embedded_python(const std::string & m_IRE_shell);
+
         /*! Configure console using JSON file. To test is the configuration
           succeeded, used method Configured().
         */
@@ -134,7 +135,7 @@ namespace dvrk {
         void beep(const vctDoubleVec & values); // duration, frequency, volume
         void string_to_speech(const std::string & text);
 
-        std::shared_ptr<dvrk::arm_proxy> m_SUJ = nullptr;
+        std::shared_ptr<dvrk::arm_proxy> m_SUJ;
 
         // force console to emit initial events for Startup
         void emit_events_console(void);
@@ -142,7 +143,8 @@ namespace dvrk {
         void ConnectInternal(bool &ret) const;
 
         bool m_calibration_mode = false;
-        bool m_embedded_python = false;
+        std::string m_IRE_shell = "";
+        std::shared_ptr<ireTask> m_IRE_component;
 
         struct {
             mtsFunctionWrite beep;

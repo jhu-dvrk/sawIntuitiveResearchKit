@@ -110,9 +110,9 @@ void dvrk::system::set_calibration_mode(const bool mode)
 }
 
 
-void dvrk::system::set_embedded_python(const bool required)
+void dvrk::system::set_embedded_python(const std::string & _IRE_shell)
 {
-    m_embedded_python = required;
+    m_IRE_shell = _IRE_shell;
 }
 
 
@@ -338,28 +338,35 @@ void dvrk::system::Configure(const std::string & filename)
     }
 
     // create embedded Python interpreter
-    if (m_embedded_python) {
+    if (m_IRE_shell != "") {
         std::string _ire_cmd;
         // more cisst libraries
         for (const auto lib : {"Vector", "ParameterTypes"}) {
             _ire_cmd.append(std::string("import cisst") + lib + "Python as cisst" + lib + ";");
         }
-        // create a main proxy to access components
-        _ire_cmd.append("component_manager = cisstMultiTask.mtsManagerLocal.GetInstance();");
-        _ire_cmd.append("dVRK = cisstMultiTask.mtsComponentWithManagement('dVRK_embedded_python_proxy');");
-        _ire_cmd.append("component_manager.AddComponent(dVRK);");
-        _ire_cmd.append("dVRK.CreateAndWait(5.0);");
-
+        // create interface for system
+        _ire_cmd.append(this->GetName() + " = cisstMultiTask.mtsCreateClientInterface(clientName = 'system_Python', serverName = '" + this->GetName() + "', interfaceName = 'Main');");
+        
         // create interfaces for all arms
         for (auto & iter : m_arm_proxies) {
             const std::string name = iter.first;
-            _ire_cmd.append(name + " = dVRK.AddInterfaceRequiredAndConnect(('"
-                            + name + "', 'Arm'));");
+            _ire_cmd.append(name + " = cisstMultiTask.mtsCreateClientInterface(clientName = 'system_Python', serverName = '" + name + "', interfaceName = 'Arm');");
         }
-
-        ireTask * _ire = new ireTask("IRE", IRE_IPYTHON, _ire_cmd);
+        // create interfaces for all consoles
+        for (auto & iter : m_consoles) {
+            const std::string name = iter.first;
+            _ire_cmd.append(name + " = cisstMultiTask.mtsCreateClientInterface(clientName = 'system_Python', serverName = '" + this->GetName() + "', interfaceName = '" + name + "');");
+            for (auto & t_iter : iter.second->m_teleop_proxies) {
+                const std::string t_name = t_iter.first;
+                _ire_cmd.append(name + "_" + t_name + " = cisstMultiTask.mtsCreateClientInterface(clientName = 'system_Python', serverName = '" + t_name + "', interfaceName = 'Setting');");
+            }
+        }
+        // log and start
+        CMN_LOG_CLASS_INIT_VERBOSE << "Configure, create embedded Python (IRE task) with: "
+                                   << _ire_cmd << std::endl;
+        m_IRE_component = std::make_unique<ireTask>("IRE", IRE_ShellFromString(m_IRE_shell), _ire_cmd);
         cmnObjectRegister::Register("component_manager", manager);
-        manager->AddComponent(_ire);
+        manager->AddComponent(m_IRE_component.get());
     }
 
     m_configured = true;
