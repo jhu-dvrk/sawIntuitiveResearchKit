@@ -81,6 +81,7 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
         mtsFunctionWrite rotation_locked;
         mtsFunctionWrite translation_locked;
         mtsFunctionWrite align_MTM;
+        mtsFunctionWrite MTM_is_haptic;
     } ConfigurationEvents;
 
     void SetDesiredState(const std::string & state);

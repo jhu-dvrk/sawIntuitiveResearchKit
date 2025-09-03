@@ -117,20 +117,21 @@ void mtsTeleOperationPSM::Init(void)
     mConfigurationStateTable->AddData(m_config.rotation_locked, "rotation_locked");
     mConfigurationStateTable->AddData(m_config.translation_locked, "translation_locked");
     mConfigurationStateTable->AddData(m_config.align_MTM, "align_MTM");
+    mConfigurationStateTable->AddData(m_config.MTM_is_haptic, "MTM_is_haptic");
 
     // setup cisst interfaces
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("MTM");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("measured_cp", mMTM.measured_cp);
         interfaceRequired->AddFunction("measured_cv", mMTM.measured_cv, MTS_OPTIONAL);
-        interfaceRequired->AddFunction("setpoint_cp", mMTM.setpoint_cp);
-        interfaceRequired->AddFunction("hold", mMTM.hold);
-        interfaceRequired->AddFunction("move_cp", mMTM.move_cp);
+        interfaceRequired->AddFunction("setpoint_cp", mMTM.setpoint_cp, MTS_OPTIONAL);
+        interfaceRequired->AddFunction("hold", mMTM.hold, MTS_OPTIONAL);
+        interfaceRequired->AddFunction("move_cp", mMTM.move_cp, MTS_OPTIONAL);
         interfaceRequired->AddFunction("gripper/measured_js", mMTM.gripper_measured_js, MTS_OPTIONAL);
         interfaceRequired->AddFunction("lock_orientation", mMTM.lock_orientation, MTS_OPTIONAL);
         interfaceRequired->AddFunction("unlock_orientation", mMTM.unlock_orientation, MTS_OPTIONAL);
-        interfaceRequired->AddFunction("body/servo_cf", mMTM.body_servo_cf);
-        interfaceRequired->AddFunction("use_gravity_compensation", mMTM.use_gravity_compensation);
+        interfaceRequired->AddFunction("body/servo_cf", mMTM.body_servo_cf, MTS_OPTIONAL);
+        interfaceRequired->AddFunction("use_gravity_compensation", mMTM.use_gravity_compensation, MTS_OPTIONAL);
         interfaceRequired->AddFunction("operating_state", mMTM.operating_state);
         interfaceRequired->AddFunction("state_command", mMTM.state_command);
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSM::arm_error_event_handler,
@@ -218,6 +219,8 @@ void mtsTeleOperationPSM::Init(void)
                                   "translation_locked", m_config.translation_locked);
         mInterface->AddEventWrite(ConfigurationEvents.align_MTM,
                                   "align_MTM", m_config.align_MTM);
+        mInterface->AddEventWrite(ConfigurationEvents.MTM_is_haptic,
+                                  "MTM_is_haptic", m_config.MTM_is_haptic);
     }
 
     // so sent commands can be used with ros-bridge
@@ -306,6 +309,11 @@ void mtsTeleOperationPSM::Configure(const Json::Value & _json_config)
     if (m_config.start_roll_threshold < 0.0) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
                                      << ": \"start_roll_threshold\" must be a positive number" << std::endl;
+            exit(EXIT_FAILURE);
+    }
+    if (m_config.align_MTM && !m_config.MTM_is_haptic) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                     << ": \"align_MTM\" cannot be true when \"MTM_is_haptic\" is false" << std::endl;
             exit(EXIT_FAILURE);
     }
     if (m_config.scale <= 0.0) {
@@ -398,22 +406,28 @@ void mtsTeleOperationPSM::Clutch(const bool & clutch)
         // keep track of last follow mode
         m_operator.was_active_before_clutch = m_operator.is_active;
         set_following(false);
-        mMTM.m_move_cp.Goal().Rotation().FromNormalized(mPSM.m_setpoint_cp.Position().Rotation());
+
+        mMTM.m_move_cp.Goal().Rotation().FromNormalized(mPSM.m_setpoint_cp.Position().Rotation()); 
         mMTM.m_move_cp.Goal().Translation().Assign(mMTM.m_measured_cp.Position().Translation());
         mInterface->SendStatus(this->GetName() + ": console clutch pressed");
-
-        // no force applied but gravity and locked orientation
-        prmForceCartesianSet wrench;
-        mMTM.body_servo_cf(wrench);
-        mMTM.use_gravity_compensation(true);
-        if ((m_config.align_MTM || m_config.rotation_locked)
-            && mMTM.lock_orientation.IsValid()) {
-            // lock in current position
-            mMTM.lock_orientation(mMTM.m_measured_cp.Position().Rotation());
-        } else {
-            // make sure it is freed
-            if (mMTM.unlock_orientation.IsValid()) {
-                mMTM.unlock_orientation();
+        // only for haptic MTMs that can move/lock/effort
+        if (m_config.MTM_is_haptic) {
+            // no force applied but gravity and locked orientation
+            if (mMTM.body_servo_cf.IsValid()) {
+                prmForceCartesianSet wrench;
+                mMTM.body_servo_cf(wrench);
+            }
+            if (mMTM.use_gravity_compensation.IsValid())
+                mMTM.use_gravity_compensation(true);
+            if ((m_config.align_MTM || m_config.rotation_locked)
+                && mMTM.lock_orientation.IsValid()) {
+                // lock in current position
+                mMTM.lock_orientation(mMTM.m_measured_cp.Position().Rotation());
+            } else {
+                // make sure it is freed
+                if (mMTM.unlock_orientation.IsValid()) {
+                    mMTM.unlock_orientation();
+                }
             }
         }
 
@@ -588,10 +602,14 @@ void mtsTeleOperationPSM::RunAllStates(void)
         }
     }
 
-    executionResult = mMTM.setpoint_cp(mMTM.m_setpoint_cp);
-    if (!executionResult.IsOK()) {
-        CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTM.setpoint_cp failed \""
-                                << executionResult << "\"" << std::endl;
+    if (m_config.MTM_is_haptic && mMTM.setpoint_cp.IsValid()) {
+        executionResult = mMTM.setpoint_cp(mMTM.m_setpoint_cp);
+        if (!executionResult.IsOK()) {
+            CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTM.setpoint_cp failed \""
+                                    << executionResult << "\"" << std::endl;
+        }
+    } else {
+        // TODO: What if setpoint_cp is not valid? Now that we have made it optional
     }
 
     // get PSM Cartesian position
@@ -643,7 +661,9 @@ void mtsTeleOperationPSM::RunAllStates(void)
 
 void mtsTeleOperationPSM::EnterDisabled(void)
 {
-    mMTM.hold();
+    if (m_config.MTM_is_haptic && mMTM.hold.IsValid()) {
+        mMTM.hold();
+    }
 }
 
 void mtsTeleOperationPSM::TransitionDisabled(void)
@@ -710,11 +730,10 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
     mTimeSinceLastAlign = 0.0;
 
     // if we don't align MTM, just stay in same position
-    if (!m_config.align_MTM) {
-        // convert to prm type
+    if (!m_config.align_MTM && m_config.MTM_is_haptic && mMTM.move_cp.IsValid()) {
         mMTM.m_move_cp.Goal().Assign(mMTM.m_setpoint_cp.Position());
         mMTM.move_cp(mMTM.m_move_cp);
-    }
+    } 
 
     if (m_back_from_clutch) {
         m_operator.is_active = m_operator.was_active_before_clutch;
@@ -736,7 +755,7 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
 void mtsTeleOperationPSM::RunAligningMTM(void)
 {
     // if clutched or align not needed, do nothing
-    if (m_clutched || !m_config.align_MTM) {
+    if (m_clutched || !m_config.align_MTM || !m_config.MTM_is_haptic || !mMTM.move_cp.IsValid()) {
         return;
     }
 
@@ -847,22 +866,30 @@ void mtsTeleOperationPSM::EnterEnabled(void)
         m_gripper_ghost = JawToGripper(currentJaw);
     }
 
-    // set MTM/PSM to Teleop (Cartesian Position Mode)
-    mMTM.use_gravity_compensation(true);
-    // set forces to zero and lock/unlock orientation as needed
-    prmForceCartesianSet wrench;
-    mMTM.body_servo_cf(wrench);
-    // reset user wrench
-    m_following_mtm_body_servo_cf = wrench;
-
-    // orientation locked or not
-    if (m_config.rotation_locked
-        && mMTM.lock_orientation.IsValid()) {
-        mMTM.lock_orientation(mMTM.m_measured_cp.Position().Rotation());
-    } else {
-        if (mMTM.unlock_orientation.IsValid()) {
-            mMTM.unlock_orientation();
+    if (m_config.MTM_is_haptic) {
+        // set MTM/PSM to Teleop (Cartesian Position Mode)
+        if (mMTM.use_gravity_compensation.IsValid()) {
+            mMTM.use_gravity_compensation(true);
         }
+        // set forces to zero and lock/unlock orientation as needed
+        if (mMTM.body_servo_cf.IsValid()) {
+            prmForceCartesianSet wrench;
+            mMTM.body_servo_cf(wrench);
+            m_following_mtm_body_servo_cf = wrench; // reset user wrench
+        } else {
+            // TODO - Can there be cases where body_servo_cf is not valid?
+        }
+        // orientation locked or not
+        if (m_config.rotation_locked
+            && mMTM.lock_orientation.IsValid()) {
+            mMTM.lock_orientation(mMTM.m_measured_cp.Position().Rotation());
+        } else {
+            if (mMTM.unlock_orientation.IsValid()) {
+                mMTM.unlock_orientation();
+            }
+        }
+    } else {
+        // TODO - Are there any specific actions needed for non-haptic mode?
     }
     // check if by any chance the clutch pedal is pressed
     if (m_clutched) {
@@ -894,7 +921,7 @@ void mtsTeleOperationPSM::TransitionEnabled(void)
 
 void mtsTeleOperationPSM::RunCartesianTeleop() {
     // on MTM, just apply user provided effort
-    if (m_following_mtm_body_servo_cf.Valid()) {
+    if (m_config.MTM_is_haptic && m_following_mtm_body_servo_cf.Valid() && mMTM.body_servo_cf.IsValid()) {
         mMTM.body_servo_cf(m_following_mtm_body_servo_cf);
     }
 
