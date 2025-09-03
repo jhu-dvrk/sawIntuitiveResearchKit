@@ -71,9 +71,6 @@ namespace dvrk {
         const bool & calibration_mode(void) const;
         void calibration_mode(bool & result) const;
 
-        /*! Launch an embedded Python shell. */
-        void launch_python_shell(void);
-
         /*! Configure console using JSON file. To test is the configuration
           succeeded, used method Configured().
         */
