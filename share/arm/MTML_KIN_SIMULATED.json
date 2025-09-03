@@ -1,7 +1,7 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
     "$id": "dvrk-mtm.schema.json",
-    "$version": "1"
+    "$version": "1",
     "kinematic": "kinematic/MTML.json",
     "generation": "Classic"
 }
