@@ -99,6 +99,9 @@ int main(int argc, char ** argv)
     options.AddOptionNoValue("I", "pid-topics-read-only",
                              "add some extra publishers to monitor PID state");
 
+    options.AddOptionNoValue("e", "embedded-python",
+                              "start an embedded Python shell to access all dVRK software components");
+
     options.AddOptionNoValue("J", "pid-topics-read-write",
                              "add all PID topics (use with caution!)");
 
@@ -145,6 +148,7 @@ int main(int argc, char ** argv)
     // system
     auto * system = new dvrk::system("system");
     system->set_calibration_mode(options.IsSet("calibration-mode"));
+    system->set_embedded_python(options.IsSet("embedded-python"));
     file_exists("dVRK system JSON configuration file", jsonMainConfigFile, system);
     system->Configure(jsonMainConfigFile);
     componentManager->AddComponent(system);

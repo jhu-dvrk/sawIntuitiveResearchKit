@@ -71,6 +71,9 @@ namespace dvrk {
         const bool & calibration_mode(void) const;
         void calibration_mode(bool & result) const;
 
+        /*! Set a flag to request the Python embedded interpreter (IRE). */
+        void set_embedded_python(const bool required);
+            
         /*! Configure console using JSON file. To test is the configuration
           succeeded, used method Configured().
         */
@@ -139,6 +142,7 @@ namespace dvrk {
         void ConnectInternal(bool &ret) const;
 
         bool m_calibration_mode = false;
+        bool m_embedded_python = false;
 
         struct {
             mtsFunctionWrite beep;

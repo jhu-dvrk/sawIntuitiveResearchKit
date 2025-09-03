@@ -19,10 +19,12 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/system.h>
 
 #include <cisstCommon/cmnRandomSequence.h>
+#include <cisstCommon/cmnObjectRegister.h>
 #include <cisstOSAbstraction/osaSleep.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstMultiTask/mtsManagerLocal.h>
+#include <cisstInteractive/ireTask.h>
 #include <cisstParameterTypes/prmKeyValue.h>
 
 #include <sawTextToSpeech/mtsTextToSpeech.h>
@@ -105,6 +107,12 @@ void dvrk::system::set_calibration_mode(const bool mode)
     for (auto IO_proxy : m_IO_proxies) {
         IO_proxy.second->set_calibration_mode(mode);
     }
+}
+
+
+void dvrk::system::set_embedded_python(const bool required)
+{
+    m_embedded_python = required;
 }
 
 
@@ -327,6 +335,31 @@ void dvrk::system::Configure(const std::string & filename)
                 arm_proxy->SUJInterfaceRequiredToSUJ->AddFunction("clutch", arm_proxy->SUJ_clutch);
             }
         }
+    }
+
+    // create embedded Python interpreter
+    if (m_embedded_python) {
+        std::string _ire_cmd;
+        // more cisst libraries
+        for (const auto lib : {"Vector", "ParameterTypes"}) {
+            _ire_cmd.append(std::string("import cisst") + lib + "Python as cisst" + lib + ";");
+        }
+        // create a main proxy to access components
+        _ire_cmd.append("component_manager = cisstMultiTask.mtsManagerLocal.GetInstance();");
+        _ire_cmd.append("dVRK = cisstMultiTask.mtsComponentWithManagement('dVRK_embedded_python_proxy');");
+        _ire_cmd.append("component_manager.AddComponent(dVRK);");
+        _ire_cmd.append("dVRK.CreateAndWait(5.0);");
+
+        // create interfaces for all arms
+        for (auto & iter : m_arm_proxies) {
+            const std::string name = iter.first;
+            _ire_cmd.append(name + " = dVRK.AddInterfaceRequiredAndConnect(('"
+                            + name + "', 'Arm'));");
+        }
+
+        ireTask * _ire = new ireTask("IRE", IRE_IPYTHON, _ire_cmd);
+        cmnObjectRegister::Register("component_manager", manager);
+        manager->AddComponent(_ire);
     }
 
     m_configured = true;

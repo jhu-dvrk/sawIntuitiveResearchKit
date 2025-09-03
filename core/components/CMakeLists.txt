@@ -18,6 +18,7 @@ set (REQUIRED_CISST_LIBRARIES
   cisstVector
   cisstOSAbstraction
   cisstMultiTask
+  cisstInteractive
   cisstParameterTypes
   cisstRobot
   cisstNumerical)
