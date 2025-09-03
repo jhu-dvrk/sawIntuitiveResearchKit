@@ -71,7 +71,9 @@
                     "MTM": "MTMR",
                     "PSM": "PSM1",
                     "configure_parameter": {
-                        "start_gripper_threshold": 0.0 // to start automatically when operator is present
+                        "start_gripper_threshold": 0.0, // to start automatically when operator is present
+                        "align_MTM": false,
+                        "MTM_is_haptic": false
                     }
                 }
             ]
