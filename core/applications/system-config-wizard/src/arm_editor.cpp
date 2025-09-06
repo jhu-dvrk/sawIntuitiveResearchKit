@@ -521,8 +521,8 @@ SimulatedArmPage::SimulatedArmPage(ArmConfig& config, QWidget *parent) : QWizard
     std::filesystem::path share = sawIntuitiveResearchKit_SOURCE_CONFIG_DIR;
     config_selector->setStartingDirectory(share / "arm");
     config_selector->setReferenceDirectory(share);
-    QObject::connect(config_selector, &FileSelector::selected, this, [this](std::filesystem::path file) {
-        this->config->arm_file = file;
+    QObject::connect(config_selector, &FileSelector::selected, this, [this]() {
+        this->config->arm_file = config_selector->currentRelativeFile();
         emit completeChanged();
     });
     form->addRow("Kinematic config:", config_selector);
