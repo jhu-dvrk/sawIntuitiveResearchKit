@@ -635,7 +635,7 @@ public:
     IOConfig(std::string name)
         : name(name),
           port(IOPort::Value::FIREWIRE),
-          protocol(IOProtocol::Value::SEQUENTIAL_READ_SEQUENTIAL_WRITE)
+          protocol(IOProtocol::Value::BROADCAST_READ_BROADCAST_WRITE)
         { }
 
     static std::unique_ptr<IOConfig> fromJSON(Json::Value value) {
