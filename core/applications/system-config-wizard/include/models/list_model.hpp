@@ -17,6 +17,7 @@ http://www.cisst.org/cisst/license.txt.
 #define CONFIG_WIZARD_LIST_MODEL
 
 #include <algorithm>
+#include <filesystem>
 #include <functional>
 #include <optional>
 
@@ -122,10 +123,10 @@ public:
         return static_cast<int>(items.size());
     }
 
-    Json::Value toJSON() const {
+    Json::Value toJSON(std::filesystem::path destination) const {
         Json::Value list(Json::arrayValue);
         for (int i = 0; i < this->count(); i++) {
-            list.append(items.at(i).toJSON());
+            list.append(items.at(i).toJSON(destination));
         }
 
         return list;
@@ -185,10 +186,10 @@ public:
         return static_cast<int>(items.size());
     }
 
-    Json::Value toJSON() const {
+    Json::Value toJSON(std::filesystem::path destination) const {
         Json::Value list(Json::arrayValue);
         for (int i = 0; i < this->count(); i++) {
-            list.append(items.at(i)->toJSON());
+            list.append(items.at(i)->toJSON(destination));
         }
 
         return list;

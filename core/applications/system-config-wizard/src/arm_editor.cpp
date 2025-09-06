@@ -676,7 +676,7 @@ void BaseFramePage::initializePage() {
             suj_list->setCurrentText(QString::fromStdString(suj_name));
         } else if (config->base_frame->reference_frame_name == "user") {
             base_frame_type->setCurrentIndex(1);
-        } else if (config->base_frame->reference_frame_name == "ECM") {
+        } else if (config->base_frame->reference_frame_name == "fixed ECM") {
             // rotation of Y-Axis around X-axis
             double theta = std::atan2(config->base_frame->transform.at(2, 1), config->base_frame->transform.at(1, 1));
             double pitch = theta + cmnPI_2;
@@ -725,7 +725,7 @@ void BaseFramePage::updateBaseFrame() {
 void BaseFramePage::setFrameToFixedECM() {
     this->config->base_frame = BaseFrameConfig();
     this->config->base_frame->use_custom_transform = true;
-    this->config->base_frame->reference_frame_name = "ECM";
+    this->config->base_frame->reference_frame_name = "fixed ECM";
     double mounting_pitch = cmnPI_180 * ecm_mounting_pitch->value(); // convert radians to degrees
     double theta = mounting_pitch - cmnPI_2; // convert from pitch relative to horizontal to angle relative to PSM default base frame
     this->config->base_frame->transform = vctFrm4x4(vctAxAnRot3(vct3(1.0, 0.0, 0.0), theta), vct3(0.0));
