@@ -13,35 +13,24 @@
                 },
                 "configure-parameter": "sawPSMove-camera-MTMs.json"
             }
-            ,
-            // this is to use the dvrk_arm_from_ros class
-            {
-                "shared-library": "dvrk_arm_from_ros",
-                "class-name": "dvrk_psm_from_ros",
-                "constructor-arg": {
-                    "Name": "PSM1",
-                    "Period": 0.01
-                }
-            }
         ]
     }
     ,
     "arms":
     [
-    {
+        {
             "name": "MTMR",  // created previously using custom components
             "type": "MTM_GENERIC",
             "component": "PSMove",
             "interface": "MTMR"
         }
         ,
-    {
-            "name": "PSM1",  // created previously using custom components
-            "type": "PSM_GENERIC",
-            "component": "PSM1",
-            "interface": "PSM1",
-            "skip_ROS_bridge": true // this is to make sure we don't republish on the same topics as the remote PSM
-        }
+        {
+            "name": "PSM1",
+            "type": "PSM",
+            "simulation": "KINEMATIC",
+            "arm_file": "arm/PSM_KIN_SIMULATED_LARGE_NEEDLE_DRIVER_400006.json"
+         }
     ]
     ,
     "consoles":
