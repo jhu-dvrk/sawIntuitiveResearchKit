@@ -94,4 +94,11 @@ class {
         visibility public;
         default true;
     }
+
+    member {
+        name MTM_is_haptic;
+        type bool;
+        visibility public;
+        default true;
+    }
 }
