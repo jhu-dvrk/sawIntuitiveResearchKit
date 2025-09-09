@@ -42,12 +42,12 @@ CMN_IMPLEMENT_SERVICES(dvrk_system_ROS);
 
 dvrk::system_ROS::system_ROS(const std::string & name,
                              cisst_ral::node_ptr_t node_handle,
-                             const double & publish_rate_in_seconds,
-                             const double & tf_rate_in_seconds,
+                             const double & publish_period_in_seconds,
+                             const double & tf_period_in_seconds,
                              dvrk::system * dVRK_system):
     mts_ros_crtk_bridge_provided(name, node_handle),
-    m_publish_rate(publish_rate_in_seconds),
-    m_tf_rate(tf_rate_in_seconds),
+    m_publish_rate(publish_period_in_seconds),
+    m_tf_rate(tf_period_in_seconds),
     m_system(dVRK_system)
 {
     // start creating components
@@ -58,7 +58,7 @@ dvrk::system_ROS::system_ROS(const std::string & name,
     cisst_ral::clean_namespace(m_bridge_name);
 
     // shared publish bridge
-    m_pub_bridge = new mtsROSBridge(m_bridge_name, publish_rate_in_seconds, node_handle);
+    m_pub_bridge = new mtsROSBridge(m_bridge_name, publish_period_in_seconds, node_handle);
     m_pub_bridge->AddIntervalStatisticsInterface();
     componentManager->AddComponent(m_pub_bridge);
 
@@ -78,17 +78,17 @@ dvrk::system_ROS::system_ROS(const std::string & name,
         if (!config.skip_ROS_bridge) {
             if (config.native_or_derived_MTM()) {
                 bridge_interface_provided_MTM(name, "Arm",
-                                              publish_rate_in_seconds, tf_rate_in_seconds);
+                                              publish_period_in_seconds, tf_period_in_seconds);
             } else if (config.native_or_derived_ECM()) {
                 bridge_interface_provided_ECM(name, "Arm",
-                                              publish_rate_in_seconds, tf_rate_in_seconds);
+                                              publish_period_in_seconds, tf_period_in_seconds);
                 if (config.simulation
                     == dvrk::simulation::SIMULATION_NONE) {
                     add_topics_ECM_IO(name, iter.second->m_IO_component_name);
                 }
             } else if (config.native_or_derived_PSM()) {
                 bridge_interface_provided_PSM(name, "Arm",
-                                              publish_rate_in_seconds, tf_rate_in_seconds);
+                                              publish_period_in_seconds, tf_period_in_seconds);
                 if (config.simulation
                     == dvrk::simulation::SIMULATION_NONE) {
                     add_topics_PSM_IO(name, iter.second->m_IO_component_name);
@@ -96,16 +96,9 @@ dvrk::system_ROS::system_ROS(const std::string & name,
             } else if (config.generic()) {
                 bridge_interface_provided(config.component,
                                           config.interface,
-                                          publish_rate_in_seconds, tf_rate_in_seconds);
+                                          publish_period_in_seconds, tf_period_in_seconds);
             } else if (config.SUJ()) {
-                const auto _sujs = std::list<std::string>({"PSM1", "PSM2", "PSM3", "ECM"});
-                for (auto const & _suj : _sujs) {
-                    bridge_interface_provided(name,
-                                              _suj,
-                                              "SUJ/" + _suj,
-                                              publish_rate_in_seconds,
-                                              tf_rate_in_seconds);
-                }
+                bridge_interface_provided_SUJ(name, publish_period_in_seconds, tf_period_in_seconds);
             }
         }
     }
@@ -118,7 +111,7 @@ dvrk::system_ROS::system_ROS(const std::string & name,
         for (auto const & teleop : console.second->m_teleop_proxies) {
             const auto teleop_name = teleop.first;
             bridge_interface_provided(teleop_name, "Setting", teleop_name,
-                                      publish_rate_in_seconds, 0.0); // do no republish info already provided by arm, set tf period to 0
+                                      publish_period_in_seconds, 0.0); // do no republish info already provided by arm, set tf period to 0
             switch(teleop.second->type()) {
             case teleop_proxy::PSM:
                 add_topics_teleop_PSM(teleop_name);
@@ -253,6 +246,7 @@ void dvrk::system_ROS::bridge_interface_provided_MTM(const std::string & _arm_na
          _arm_name + "/gripper/closed");
 }
 
+
 void dvrk::system_ROS::bridge_interface_provided_PSM(const std::string & _arm_name,
                                                      const std::string & _interface_name,
                                                      const double _publish_period_in_seconds,
@@ -289,6 +283,28 @@ void dvrk::system_ROS::bridge_interface_provided_PSM(const std::string & _arm_na
         (required_interface_name, "tool_type",
          _arm_name + "/tool_type");
 }
+
+
+void dvrk::system_ROS::bridge_interface_provided_SUJ(const std::string & _component_name,
+                                                     const double _publish_period_in_seconds,
+                                                     const double _tf_period_in_seconds)
+{
+    subscribers_bridge().AddSubscriberToCommandWrite<std::string, CISST_RAL_MSG(std_msgs, String)>
+        (_component_name, "set_reference_arm", _component_name + "/set_reference_arm");
+
+    const auto _sujs = std::list<std::string>({"PSM1", "PSM2", "PSM3", "ECM"});
+    for (auto const & _suj : _sujs) {
+        bridge_interface_provided(_component_name,
+                                  _suj,
+                                  "SUJ/" + _suj,
+                                  _publish_period_in_seconds,
+                                  _tf_period_in_seconds);
+    }
+
+    m_connections.Add(subscribers_bridge().GetName(), _component_name,
+                      _component_name, "Arm");
+}
+
 
 void dvrk::system_ROS::add_topics_system(const std::string & _name)
 {
@@ -338,9 +354,6 @@ void dvrk::system_ROS::add_topics_console(const std::string & _name)
         (interface_name, "teleop_enabled",
          ros_namespace + "teleop/enabled");
 
-    // subscribers_bridge().AddSubscriberToCommandWrite<std::string, CISST_RAL_MSG(std_msgs, String)>
-    //     ("Console", "cycle_teleop_PSM_by_MTM",
-    //      _ros_namespace + "teleop/cycle_teleop_PSM_by_MTM");
     subscribers_bridge().AddSubscriberToCommandWrite<std::string, CISST_RAL_MSG(std_msgs, String)>
         (interface_name, "select_teleop",
          ros_namespace + "teleop/select_teleop");

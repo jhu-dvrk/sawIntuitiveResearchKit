@@ -480,6 +480,8 @@ void mtsIntuitiveResearchKitSUJ::init(void)
 
     m_interface = AddInterfaceProvided("Arm");
     if (m_interface) {
+        m_interface->AddCommandWrite(&mtsIntuitiveResearchKitSUJ::set_reference_arm,
+                                     this, "set_reference_arm", std::string(""));
         // Arm State
         m_interface->AddCommandWrite(&mtsIntuitiveResearchKitSUJ::state_command,
                                      this, "state_command", std::string(""));
@@ -1256,6 +1258,18 @@ void mtsIntuitiveResearchKitSUJ::set_homed(const bool homed)
         m_operating_state.IsHomed() = homed;
         dispatch_operating_state();
     }
+}
+
+
+void mtsIntuitiveResearchKitSUJ::set_reference_arm(const std::string & arm_name)
+{
+    for (size_t arm_index = 0; arm_index < 4; ++arm_index) {
+        if (m_sarms[arm_index]->m_name == arm_name) {
+            m_reference_arm_index = arm_index;
+            return;
+        }
+    }
+    m_interface->SendError(this->GetName() + ": set_reference_arm, " + arm_name + " not found");
 }
 
 

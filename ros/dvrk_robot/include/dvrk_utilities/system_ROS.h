@@ -34,8 +34,8 @@ namespace dvrk {
     public:
         system_ROS(const std::string & name,
                    cisst_ral::node_ptr_t node_handle,
-                   const double & publish_rate_in_seconds,
-                   const double & tf_rate_in_seconds,
+                   const double & publish_period_in_seconds,
+                   const double & tf_period_in_seconds,
                    dvrk::system * dVRK_system);
 
         // methods using CRTK bridge_interface_provided method
@@ -59,6 +59,9 @@ namespace dvrk {
                                            const double _publish_period_in_seconds,
                                            const double _tf_period_in_seconds);
 
+        void bridge_interface_provided_SUJ(const std::string & _component_name,
+                                           const double _publish_period_in_seconds,
+                                           const double _tf_period_in_seconds);
         // dVRK specific topics
         void add_topics_endoscope_focus(void);
 
