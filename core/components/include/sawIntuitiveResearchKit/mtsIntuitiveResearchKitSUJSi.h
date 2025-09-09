@@ -88,6 +88,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJSi: public mtsTaskPeriodic
     /*! internal method used by state_command. */
     void set_homed(const bool homed);
 
+    /*! Change the reference arm, ECM by default */
+    void set_reference_arm(const std::string & arm_name);
+
     // state machine
     mtsStateMachine m_state_machine;
     prmOperatingState m_operating_state;

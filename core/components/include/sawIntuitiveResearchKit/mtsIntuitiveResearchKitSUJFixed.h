@@ -85,6 +85,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJFixed: public mtsTaskPeriodic
     /*! internal method used by state_command. */
     void set_homed(const bool homed);
 
+    /*! Change the reference arm, ECM by default */
+    void set_reference_arm(const std::string & arm_name);
+
     // state machine
     mtsStateMachine m_state_machine;
     prmOperatingState m_operating_state;
@@ -93,7 +96,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJFixed: public mtsTaskPeriodic
     struct {
         mtsFunctionWrite operating_state;
     } state_events;
-    mtsInterfaceProvided * m_interface_provided;
+    mtsInterfaceProvided * m_interface;
 
     vctFixedSizeVector<mtsIntuitiveResearchKitSUJFixedArmData *, 4> m_sarms;
     size_t m_reference_arm_index; // arm used to provide base frame to all other SUJ arms, traditionally the ECM

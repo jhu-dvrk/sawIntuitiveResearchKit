@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2022-07-27
 
-  (C) Copyright 2022-2024 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2022-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -478,6 +478,8 @@ void mtsIntuitiveResearchKitSUJSi::init(void)
 
     m_interface = AddInterfaceProvided("Arm");
     if (m_interface) {
+        m_interface->AddCommandWrite(&mtsIntuitiveResearchKitSUJSi::set_reference_arm,
+                                     this, "set_reference_arm", std::string(""));
         // Arm State
         m_interface->AddCommandWrite(&mtsIntuitiveResearchKitSUJSi::state_command,
                                      this, "state_command", std::string(""));
@@ -1011,6 +1013,18 @@ void mtsIntuitiveResearchKitSUJSi::set_homed(const bool homed)
         m_operating_state.IsHomed() = homed;
         dispatch_operating_state();
     }
+}
+
+
+void mtsIntuitiveResearchKitSUJSi::set_reference_arm(const std::string & arm_name)
+{
+    for (size_t arm_index = 0; arm_index < 4; ++arm_index) {
+        if (m_sarms[arm_index]->m_name == arm_name) {
+            m_reference_arm_index = arm_index;
+            return;
+        }
+    }
+    m_interface->SendError(this->GetName() + ": set_reference_arm, " + arm_name + " not found");
 }
 
 
