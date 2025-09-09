@@ -95,6 +95,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJ: public mtsTaskPeriodic
 
     void set_homed(const bool homed);
 
+    /*! Change the reference arm, ECM by default */
+    void set_reference_arm(const std::string & arm_name);
+
     /*! Set velocity for motorized PSM lift. normalized between -1.0 and 1.0. */
     void set_lift_velocity(const double & velocity);
 
