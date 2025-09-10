@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2023-06-16
 
-  (C) Copyright 2023 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2023-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -54,28 +54,28 @@ public:
         m_state_table.AddData(m_local_measured_cp, "local/measured_cp");
 
         CMN_ASSERT(interface_provided);
-        m_interface_provided = interface_provided;
+        m_interface = interface_provided;
 
         // set position
-        m_interface_provided->AddCommandWrite(&mtsIntuitiveResearchKitSUJFixedArmData::local_servo_cp,
-                                              this, "local/servo_cp");
-        m_interface_provided->AddCommandReadState(m_state_table, m_measured_cp,
-                                                  "measured_cp");
-        m_interface_provided->AddCommandReadState(m_state_table, m_local_measured_cp,
-                                                  "local/measured_cp");
+        m_interface->AddCommandWrite(&mtsIntuitiveResearchKitSUJFixedArmData::local_servo_cp,
+                                     this, "local/servo_cp");
+        m_interface->AddCommandReadState(m_state_table, m_measured_cp,
+                                         "measured_cp");
+        m_interface->AddCommandReadState(m_state_table, m_local_measured_cp,
+                                         "local/measured_cp");
 
         // dummy joint stuff for GUI
-        m_interface_provided->AddCommandRead(&mtsIntuitiveResearchKitSUJFixedArmData::measured_js,
-                                             this, "measured_js");
-        m_interface_provided->AddCommandRead(&mtsIntuitiveResearchKitSUJFixedArmData::configuration_js,
-                                             this, "configuration_js");
+        m_interface->AddCommandRead(&mtsIntuitiveResearchKitSUJFixedArmData::measured_js,
+                                    this, "measured_js");
+        m_interface->AddCommandRead(&mtsIntuitiveResearchKitSUJFixedArmData::configuration_js,
+                                    this, "configuration_js");
 
         // Events
-        m_interface_provided->AddEventWrite(state_events.operating_state, "operating_state", prmOperatingState());
-        m_interface_provided->AddMessageEvents();
+        m_interface->AddEventWrite(state_events.operating_state, "operating_state", prmOperatingState());
+        m_interface->AddMessageEvents();
         // Stats
-        m_interface_provided->AddCommandReadState(m_state_table, m_state_table.PeriodStats,
-                                                  "period_statistics");
+        m_interface->AddCommandReadState(m_state_table, m_state_table.PeriodStats,
+                                         "period_statistics");
 
         CMN_ASSERT(interface_required);
         m_interface_required = interface_required;
@@ -101,7 +101,7 @@ public:
     std::string m_name;
 
     // interfaces
-    mtsInterfaceProvided * m_interface_provided = nullptr;
+    mtsInterfaceProvided * m_interface = nullptr;
     mtsInterfaceRequired * m_interface_required = nullptr;
 
     // state of this SUJ arm
@@ -173,19 +173,21 @@ void mtsIntuitiveResearchKitSUJFixed::init(void)
     m_operating_state.SetIsHomed(true);
     StateTable.AddData(m_operating_state, "operating_state");
 
-    m_interface_provided = AddInterfaceProvided("Arm");
-    if (m_interface_provided) {
+    m_interface = AddInterfaceProvided("Arm");
+    if (m_interface) {
+        m_interface->AddCommandWrite(&mtsIntuitiveResearchKitSUJFixed::set_reference_arm,
+                                     this, "set_reference_arm", std::string(""));
         // Arm State
-        m_interface_provided->AddCommandWrite(&mtsIntuitiveResearchKitSUJFixed::state_command,
-                                              this, "state_command", std::string(""));
-        m_interface_provided->AddCommandReadState(StateTable,
-                                                  m_operating_state, "operating_state");
+        m_interface->AddCommandWrite(&mtsIntuitiveResearchKitSUJFixed::state_command,
+                                     this, "state_command", std::string(""));
+        m_interface->AddCommandReadState(StateTable,
+                                         m_operating_state, "operating_state");
         // Events
-        m_interface_provided->AddMessageEvents();
-        m_interface_provided->AddEventWrite(state_events.operating_state, "operating_state", prmOperatingState());
+        m_interface->AddMessageEvents();
+        m_interface->AddEventWrite(state_events.operating_state, "operating_state", prmOperatingState());
         // Stats
-        m_interface_provided->AddCommandReadState(StateTable, StateTable.PeriodStats,
-                                                  "period_statistics");
+        m_interface->AddCommandReadState(StateTable, StateTable.PeriodStats,
+                                         "period_statistics");
     }
 }
 
@@ -510,29 +512,41 @@ void mtsIntuitiveResearchKitSUJFixed::set_homed(const bool homed)
 }
 
 
+void mtsIntuitiveResearchKitSUJFixed::set_reference_arm(const std::string & arm_name)
+{
+    for (size_t arm_index = 0; arm_index < 4; ++arm_index) {
+        if (m_sarms[arm_index]->m_name == arm_name) {
+            m_reference_arm_index = arm_index;
+            return;
+        }
+    }
+    m_interface->SendError(this->GetName() + ": set_reference_arm, " + arm_name + " not found");
+}
+
+
 void mtsIntuitiveResearchKitSUJFixed::dispatch_error(const std::string & message)
 {
-    m_interface_provided->SendError(message);
+    m_interface->SendError(message);
     for (auto sarm : m_sarms) {
-        sarm->m_interface_provided->SendError(sarm->m_name + " " + message);
+        sarm->m_interface->SendError(sarm->m_name + " " + message);
     }
 }
 
 
 void mtsIntuitiveResearchKitSUJFixed::dispatch_warning(const std::string & message)
 {
-    m_interface_provided->SendWarning(message);
+    m_interface->SendWarning(message);
     for (auto sarm : m_sarms) {
-        sarm->m_interface_provided->SendWarning(sarm->m_name + " " + message);
+        sarm->m_interface->SendWarning(sarm->m_name + " " + message);
     }
 }
 
 
 void mtsIntuitiveResearchKitSUJFixed::dispatch_status(const std::string & message)
 {
-    m_interface_provided->SendStatus(message);
+    m_interface->SendStatus(message);
     for (auto sarm : m_sarms) {
-        sarm->m_interface_provided->SendStatus(sarm->m_name + " " + message);
+        sarm->m_interface->SendStatus(sarm->m_name + " " + message);
     }
 }
 
