@@ -6,8 +6,19 @@
     "type": "object",
     "description": "Configuration file format for the dVRK system.\n\n - This format is used by the application `sawIntuitiveResearchKitSystem` and the ROS application `dvrk_robot dvrk_system`\n - For details of implementation, see code under `sawIntuitiveResearchKit/core/components/code/system.cpp`\n - [Schema file](dvrk-system.schema.json)",
     "additionalProperties": false,
+    "required": ["$id", "$version"],
 
     "properties": {
+
+	"$id": {
+	    "type": "string",
+	    "description": "Schema used for this configuration file",
+	    "enum": ["dvrk-system.schema.json"]
+	},
+	"$version": {
+	    "type": "string",
+	    "description": "Schema version"
+	},
 
         "IOs": {
             "type": "array",
@@ -28,17 +39,17 @@
 
         "arms": {
             "type": "array",
-            "description": "List of arms for the system. Arms can be native, i.e. dVRK supported retired da Vinci arms, or compatible arms (with CRTK interface) created using the *cisst* `component-manager` section of the system configuration",
+            "description": "List of arms for the system. Arms can be native, i.e. dVRK supported retired da Vinci arms, or compatible arms (with CRTK interface) created using the *cisst* `component_manager` section of the system configuration",
             "items": {
                 "type": "object",
-                "description": "Configuration for a single arm",
+                "description": "Configuration for a single arm proxy",
                 "$ref": "dvrk-system-arm.schema.json"
             }
         },
 
         "consoles": {
             "type": "array",
-            "description": "List of consoles (as in surgeon's console).  A dVRK system can have multiple consoles to control (teleoperate) a single patient's cart. Each console is defined by the IOs used for the clutch and camera pedals as well as the sensor used to detect operator presence. Within the console, two lists are used to declare the teleoperation components to be created (PSM and ECM teleoperation). All the arms and IOs used in the console must be declared at the top level of the system configuration file.",
+            "description": "List of consoles (as in surgeon's console). A dVRK system can have multiple consoles to control (teleoperate) a single patient's cart.\n\n Each console is defined by the IOs used for the clutch and camera pedals as well as the sensor used to detect operator presence.\n Within the console, two lists are used to declare the teleoperation components to be created (PSM and ECM teleoperation).\n All the arms and IOs used in the console must be declared at the top level of the system configuration file.",
             "items": {
                 "type": "object",
                 "description": "Configuration for a single console",
@@ -62,7 +73,7 @@
                 {
                     "ISI_focus_controller": {
                         "IO": "IO1",
-                        "IO_file": "io/sawRobotIO1394-MTML-dv-endoscope-focus.xml"
+                        "IO_file": "io/sawRobotIO1394-MTML-dv-endoscope-focus.json"
                     }
                 }
             ]
