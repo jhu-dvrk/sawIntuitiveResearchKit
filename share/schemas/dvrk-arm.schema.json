@@ -5,9 +5,20 @@
     "title": "dVRK arm",
     "type": "object",
     "description": "Configuration file format for the dVRK arm component.  See the [dVRK wiki](https://dvrk.readthedocs.io).  This schema is not used directly, it is extended for each arm type: [ECM](dvrk-ecm.html), [MTM](dvrk-mtm.html) and [PSM](dvrk-psm.html).\n\n - For details of implementation, see code under `sawIntuitiveResearchKit/core/components/code/mtsIntuitiveResearchKitArm.cpp`\n - [Schema file](dvrk-arm.schema.json)",
-    "required": ["kinematic", "generation"],
+    "required": ["$id", "$version", "kinematic", "generation"],
     "properties": {
-        "kinematic": {
+
+	"$id": {
+	    "type": "string",
+	    "description": "Schema used for this configuration file",
+	    "enum": ["dvrk-mtm.schema.json", "dvrk-psm.schema.json", "dvrk-ecm.schema.json"]
+	},
+	"$version": {
+	    "type": "string",
+	    "description": "Schema version"
+	},
+
+	"kinematic": {
             "description": "Kinematic configuration file, i.e. DH parameters for class `robManipulator`. Kinematic files are provided under `share/io`. The kinematic configuration files should not be changed for most users.",
             "type": "string"
         },
