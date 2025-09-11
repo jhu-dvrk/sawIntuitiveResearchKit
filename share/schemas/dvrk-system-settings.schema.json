@@ -13,13 +13,13 @@
             "type": "array",
             "items": {
                 "type": "string",
-                "description": "Directory used to locate dVRK configuration files. The directory can be relative. In this case, the search will be relative to the current working directory.  This feature should be used with caution as users might inadvertently include the wrong configuration file. The log file cisstLog-xxx.txt can be used to determine the full path and content of the files actually loaded."
+                "description": "Directories used to locate dVRK configuration files.\n\n Directories can be relative. In this case, the search will be relative to the current working directory. This feature should be used with caution as users might inadvertently include the wrong configuration files. The log file cisstLog-xxx.txt can be used to determine the full path and content of the files actually loaded."
             }
         }
         ,
         "audio_volume": {
             "type": "",
-            "description": "Sets the audio volume (as a ratio of the operating state volume set on the computer). This can be useful if you are getting tried of the beeps emitted by the dVRK system application when console events occur (e.g. clutch, camera, operator present...)",
+            "description": "Sets the audio volume (as a ratio of the operating state volume set on the computer).\n\n This can be useful if you are getting tired of the beeps emitted by the dVRK system application when system events occur (e.g. clutch, camera, operator present...)",
             "type": "number",
             "exclusiveMinimum": 0.0,
             "maximum": 1.0,
@@ -28,7 +28,7 @@
         ,
         "chatty": {
             "type": "boolean",
-            "description": "Make the console say something useless when it starts.  It's mostly a way to test the text-to-speech feature.",
+            "description": "Make the system say something useless when it starts.\n It's mostly a way to test the text-to-speech feature.",
             "default": false
         }
     }

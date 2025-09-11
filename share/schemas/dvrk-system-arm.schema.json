@@ -10,7 +10,7 @@
 
         "name": {
             "type": "string",
-            "description": "Name of the arm. For dVRK arms, use one of MTML, MTML, PSM1, PSM2, PSM3 or ECM. Note that the name of the arm is used to infer which other configuration files should be loaded.",
+            "description": "Name of the arm. For dVRK arms, use one of MTML, MTMR, PSM1, PSM2, PSM3 or ECM. Note that the name of the arm is used to infer which other configuration files should be loaded.\n\nFor systems with multiple consoles, one should use MTML1, MTML2... The name of the IO port (`name_on_IO`) must then be provided to find all the arm's configuration files.",
             "examples": [
                 {
                     "name": "MTMR"
@@ -24,7 +24,7 @@
                      "MTM_DERIVED", "PSM_DERIVED", "ECM_DERIVED",
                      "MTM_GENERIC", "PSM_GENERIC", "ECM_GENERIC",
                      "SUJ_Classic", "SUJ_Si", "SUJ_Fixed", "FOCUS_CONTROLLER"],
-            "description": "Type of arm.  This determines which class should be used to instantiate the arm.\n\n - `MTM`, `PSM` and `ECM` correspond to the default classes provided for the dVRK arms.  These are the most common ones.\n - `xxx_DERIVED` corresponds to classes derived from the base classes provided in the dVRK stack.  Users can derive the base arm classes to alter their behavior.  In this case, the system knows that the derived class has all the features from the base class so the connections to the PID, IO, Qt widget and ROS bridge are the same as those for the base class.\n - `xxx_GENERIC` corresponds to classes not derived from the dVRK base classes.  The system will not create any IO, PID components for this arm.  The system will use a generic Qt Widget and add ROS topics if and only if the provided interface has CRTK compatible commands and events.  Examples include Force Dimension devices ([sawForceDimensionSDK](https://github.com/jhu-saw/sawForceDimensionSDK) ) and the Sensable Omni ([sawSensablePhantom](https://github.com/jhu-saw/sawSensablePhantom) ).\n - `SUJ_Classic` and `SUJ_Si` are for the clinical systems with original setup joints\n - `SUJ_Fixed` is for arms on a custom mount\n - For `xxx_DERIVED` and `xxx_GENERIC`, the system has no way to automatically create the component, so the user has to provide the proper `component_manager` configuration to first create the component for the arm.",
+            "description": "Type of arm.  This determines which class should be used to instantiate the arm.\n\n - `MTM`, `PSM` and `ECM` correspond to the default classes provided for the dVRK arms.  These are the most common ones.\n - `xxx_DERIVED` corresponds to classes derived from the base classes provided in the dVRK stack.  Users can derive the base arm classes to alter their behavior.  In this case, the system knows that the derived class has all the features from the base class so the connections to the PID, IO, Qt widget and ROS bridge are the same as those for the base class.\n - `xxx_GENERIC` corresponds to classes not derived from the dVRK base classes.  The system will not create any IO, PID components for this arm.  The system will use a generic Qt Widget and add ROS topics if and only if the provided interface has CRTK compatible commands and events.  Examples include Force Dimension devices ([sawForceDimensionSDK](https://github.com/jhu-saw/sawForceDimensionSDK) ) and the Sensable Omni ([sawSensablePhantom](https://github.com/jhu-saw/sawSensablePhantom) ).\n - `SUJ_Classic` and `SUJ_Si` are for the clinical systems with original setup joints\n - `SUJ_Fixed` is for arms on a custom mount. It can also be used to bypass the mechanical SUJs and replace the arms reference frame with the results from an external registration\n - For `xxx_DERIVED` and `xxx_GENERIC`, the system has no way to automatically create the component, so the user has to provide the proper `component_manager` configuration to first create the component for the arm.",
             "examples": [
                 {
                     "arms":
@@ -69,7 +69,7 @@
 
         "arm_file": {
             "type": "string",
-            "description": "Arm configuration file.  Note that this is optional if the `serial` number has been provided.  If the `serial` number has been provided, the application will assume the arm file is `<name>-<serial>.json`.  For example `PSM1-22723.json`.  This attribute is useful mostly if the arm is simulated (`\"simulation\": \"KINEMATIC\"`)."
+            "description": "Arm configuration file.  Note that this is **optional** if the `serial` number has been provided.  If the `serial` number has been provided, the application will assume the arm file is `<name>-<serial>.json`.  For example `PSM1-22723.json`.  This attribute is useful mostly if the arm is simulated (`\"simulation\": \"KINEMATIC\"`)."
         },
 
         "simulation": {
@@ -129,19 +129,19 @@
         },
 
         "period": {
-            "description": "Override the default periodicity of the arm class.  Most user should steer away from changing the default arm periodicity.  This works only for the dVRK base types ('MTM, PSM, ECM).",
+            "description": "Override the default periodicity of the arm class.\n\nMost user should steer away from changing the default arm periodicity.  This works only for the dVRK base types (MTM, PSM, ECM).",
             "type": "number",
             "exclusiveMinimum": 0.0
         },
 
         "IO_file": {
             "type": "string",
-            "description": "Name of the XML configuration file for the low level arm's IO (from *sawRobotIO1394*).  The name of the IO configuration file is now inferred from the `name` and `serial` attributes by default. It should be specified if and only if the user needs to change the default IO configuration file."
+            "description": "Name of the JSON configuration file for the low level arm's IO (from *sawRobotIO1394*).\n\nThe name of the IO configuration file is now inferred from the `name` and `serial` attributes by default. It should be specified if and only if the user needs to change the default IO configuration file."
         },
 
         "PID_file": {
             "type": "string",
-            "description": "Name of the XML configuration file for the arm's PID (from *sawControllers*, `mtsPID`). The name of the PID configuration file is now inferred from the arm's `name` attribute by default. It should be specified if and only if the user needs to change the default PID configuration file."
+            "description": "Name of the JSON configuration file for the arm's PID (from *sawControllers*, `mtsPID`).\n\nThe name of the PID configuration file is now inferred from the arm's `name` attribute by default. It should be specified if and only if the user needs to change the default PID configuration file."
         },
 
 
@@ -151,7 +151,7 @@
         },
 
         "interface": {
-            "description": "For arm of type xxx_GENERIC only.  Name of the provided interface for the generic arm.  For the dVRK arms, the component is named after the arm (e.g. \"MTML\") and the interface is always \"Arm\".  For other devices (e.g. `sawSensablePhantom`) the component might be able to provide multiple arms so the arm name is used for the \"interface\".",
+            "description": "For arm of type xxx_GENERIC only.  Name of the provided interface for the generic arm.\n\n For the dVRK arms, the component is named after the arm (e.g. \"MTML\") and the interface is always \"Arm\".\n For other devices (e.g. `sawSensablePhantom`) the component might be able to provide multiple arms so the arm name is used for the \"interface\".",
             "type": "string",
             "examples":
 			[
@@ -182,7 +182,7 @@
                 }
             ]
         },
-		
+
         "skip_ROS_bridge": {
             "description": "Tell the dVRK system to not expose the arm commands to ROS. By default, the component manager will expose the arm to ROS using the cisst ROS CRTK bridge. It should be set when one uses an \"arm from ROS\" (see `dvrk_arm_from_ros\") since the arm shouldn't publish on the topics it uses.",
             "type": "boolean",

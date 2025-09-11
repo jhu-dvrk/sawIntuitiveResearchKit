@@ -1085,12 +1085,16 @@ def generateArmConfig(robotTypeName, hardwareVersion, serialNumber, generation):
     kinematic = '    "kinematic": "kinematic/';
     if robotTypeName.startswith('PSM'):
         kinematic += 'PSM'
+        schema = 'psm'
     elif robotTypeName == 'MTML':
         kinematic += 'MTML'
+        schema = 'mtm'
     elif robotTypeName == 'MTMR':
         kinematic += 'MTMR'
+        schema = 'mtm'
     elif robotTypeName == 'ECM':
         kinematic += 'ECM'
+        schema = 'ecm'
     else:
         raise ValueError('Unrecognized robot type: {}'.format(robotTypeName))
     if generation == 'Si':
@@ -1101,7 +1105,7 @@ def generateArmConfig(robotTypeName, hardwareVersion, serialNumber, generation):
     with open(fileName, "w") as f:
         f.write('{\n')
         f.write('    // see https://dvrk.readthedocs.io\n')
-        f.write('    "$id": "dvrk-arm.schema.json",\n')
+        f.write('    "$id": "dvrk-' + schema + '.schema.json",\n')
         f.write('    "$version": "1",\n')
         f.write(kinematic)
         f.write('    "generation": "' + generation + '"\n')
@@ -1125,7 +1129,7 @@ def generateArmConfig(robotTypeName, hardwareVersion, serialNumber, generation):
                 f.write('    , "endoscope": "Classic_HD_STRAIGHT" // or UP or DOWN\n')
                 mounting_pitch = -45
         elif robotTypeName.startswith("MTM"):
-            f.write('    // , "gravity_compensation": "gc-' + robotTypeName + '-' + serialNumber + '.json"\n')
+            f.write('    , "gravity_compensation": "gc-' + robotTypeName + '-' + serialNumber + '.json"\n')
         if mounting_pitch != 0.0:
             f.write(f'    , "mounting_pitch": {(mounting_pitch * math.pi / 180.0):.5f} // {mounting_pitch} for {generation} {robotTypeName} on SUJ\n')
         f.write("}\n")

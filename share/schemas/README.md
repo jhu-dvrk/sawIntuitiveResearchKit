@@ -18,19 +18,26 @@ To allow testing offline, we provide two python scripts that will load all the s
 * Usage:
   Assuming your working directory is the *dVRK* `share/schemas`:
     ```sh
-  ./json-schema.py -s dvrk-console.schema.json <files-to-test>
+  ./json-schema.py -s dvrk-system.schema.json <files-to-test>
   ```
-  To test console files in multiple directories, for example all JHU console files:
+  To test system files in multiple directories, for example all JHU system files:
     ```sh
-  ./json-schema.py -s dvrk-console.schema.json ../console/console-* ../jhu-daVinci/console-* ../jhu-dVRK/console-*
+  ./json-schema.py -s dvrk-system.schema.json ../system/system-*.json ~/ros2_ws/src/dvrk/dvrk_config_jhu/*/system-*.json
   ```
   The output is the Python stack if any error is found.  You will need to read it all to figure out the issue.  If there are no issue found, the scripts outputs **All good**.
 
-  To test arm files, make sure you use the right schema.  Examples below are for arms at JHU:
+  To test arm files, make sure you use the right schema.  Examples below are for the shared arm configuration files:
     ```sh
-  ./json-schema.py -s dvrk-mtm.schema.json ../*/MTML-*.json ../*/MTMR-*.json
-  ./json-schema.py -s dvrk-psm.schema.json ../*/PSM1-*.json ../*/PSM2-*.json ../*/PSM3-*.json
-  ./json-schema.py -s dvrk-ecm.schema.json ../*/ECM-*.json
+  ./json-schema.py -s dvrk-mtm.schema.json ../arm/MTM*.json
+  ./json-schema.py -s dvrk-psm.schema.json ../arm/PSM*.json
+  ./json-schema.py -s dvrk-ecm.schema.json ../arm/ECM*.json
+  ```
+
+  To test the JHU configuration files:
+    ```sh
+  ./json-schema.py -s dvrk-mtm.schema.json ~/ros2_ws/src/dvrk/dvrk_config_jhu/*/MTM*.json
+  ./json-schema.py -s dvrk-psm.schema.json ~/ros2_ws/src/dvrk/dvrk_config_jhu/*/PSM*.json
+  ./json-schema.py -s dvrk-ecm.schema.json ~/ros2_ws/src/dvrk/dvrk_config_jhu/*/ECM*.json
   ```
 
   To test the tool index files:
@@ -40,7 +47,7 @@ To allow testing offline, we provide two python scripts that will load all the s
 
 # Generate html documentation from schemas
 
-This section is for the dVRK maintainers.  Most users should use the online documentation: https://dvrk.readthedocs.io/
+This section is for the dVRK maintainers.  Most users should use the online documentation: https://dvrk.readthedocs.io/.  The `conf.py` for the dVRK reStructuredText includes steps to download the schemas and compile the documentation.
 
 * Installation:
     ```sh
@@ -52,4 +59,4 @@ This section is for the dVRK maintainers.  Most users should use the online docu
   ./generate-html.py -d . -v v2.1
   ```
 
-`-d` is for the directory containing all the `.schema.json` files.   `-v` is for a subdirectory for all the generated files.  If you are a dVRK maintainer, make sure you also upload the generated documentation to `https://dvrk.lcsr.jhu.edu/documentation/schemas/`.
+`-d` is for the directory containing all the `.schema.json` files.   `-v` is for a subdirectory for all the generated files.
