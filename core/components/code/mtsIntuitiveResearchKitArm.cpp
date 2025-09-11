@@ -674,12 +674,19 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
         }
 
         // optionally disable GC
-        const Json::Value jsonDisableGC = jsonConfig["disable_gravity_compensation"];
-        if (jsonDisableGC.isBool()) {
-            m_gravity_compensation = !jsonDisableGC.asBool();
+        const Json::Value jsonSkipGC = jsonConfig["skip_gravity_compensation"];
+        bool skip_GC = false;
+        if (jsonSkipGC.isBool()) {
+            skip_GC = jsonSkipGC.asBool();
+            if (skip_GC) {
+                CMN_LOG_CLASS_INIT_WARNING << "Configure " << this->GetName()
+                                           << ": ignoring gravity compensation because skip_gravity_compensation is set to True" << std::endl;
+            }
         }
-        // arm specific configuration for gravity compensation
-        ConfigureGC(jsonConfig, configPath, filename);
+        if (!skip_GC) {
+            // arm specific configuration for gravity compensation
+            ConfigureGC(jsonConfig, configPath, filename);
+        }
 
         // arm specific configuration
         PostConfigure(jsonConfig, configPath, filename);
@@ -922,10 +929,10 @@ void mtsIntuitiveResearchKitArm::get_robot_data(void)
         UpdateStateJointKinematics();
 
         // updated joint efforts for gravity compensation
-        if (m_gravity_compensation && gravity_compensation) {
+        if (m_gravity_compensation && m_rob_gravity_compensation) {
             double pitch = (m_mounting_pitch < std::numeric_limits<double>::max()) ? m_mounting_pitch : 0.0;
             vct3 gravity(0.0, sin(pitch) * 9.81, cos(pitch) * 9.81);
-            m_gravity_compensation_setpoint_js.Effort() = gravity_compensation->compute(m_kin_measured_js, gravity);
+            m_gravity_compensation_setpoint_js.Effort() = m_rob_gravity_compensation->compute(m_kin_measured_js, gravity);
         } else {
             m_gravity_compensation_setpoint_js.Effort().Zeros();
         }
@@ -2408,10 +2415,16 @@ void mtsIntuitiveResearchKitArm::body_set_cf_orientation_absolute(const bool & a
     m_body_cf_orientation_absolute = absolute;
 }
 
+
 void mtsIntuitiveResearchKitArm::use_gravity_compensation(const bool & gravityCompensation)
 {
-    m_gravity_compensation = gravityCompensation;
+    if (m_rob_gravity_compensation) {
+        m_gravity_compensation = gravityCompensation;
+    } else if (gravityCompensation) {
+        m_arm_interface->SendWarning(this->GetName() + ": use_gravity_compensation(true) since gravity compensation is not loaded");
+    }
 }
+
 
 void mtsIntuitiveResearchKitArm::servo_ci(const prmCartesianImpedance & goal)
 {

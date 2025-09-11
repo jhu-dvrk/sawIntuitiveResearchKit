@@ -221,7 +221,7 @@ void mtsIntuitiveResearchKitECM::ConfigureGC(const Json::Value & jsonConfig,
     m_gc = std::make_unique<GravityCompensationECM>();
     bool ok = m_gc->configure(physical_dh);
     if (ok) {
-        gravity_compensation = m_gc.get();
+        m_rob_gravity_compensation = m_gc.get();
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureGC: " << this->GetName()
                                  << " using GC kinematics file \"" << physical_dh << "\", got error \""

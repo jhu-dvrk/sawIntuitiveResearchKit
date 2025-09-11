@@ -236,8 +236,8 @@ void mtsIntuitiveResearchKitPSM::PostConfigure(const Json::Value & jsonConfig,
 }
 
 void mtsIntuitiveResearchKitPSM::ConfigureGC(const Json::Value & jsonConfig,
-                                               const cmnPath & configPath,
-                                               const std::string & filename)
+                                             const cmnPath & configPath,
+                                             const std::string & filename)
 {
     std::string physical_dh_name;
     const auto jsonPhysicalDH = jsonConfig["kinematic_gc"];
@@ -262,7 +262,7 @@ void mtsIntuitiveResearchKitPSM::ConfigureGC(const Json::Value & jsonConfig,
     m_gc = std::make_unique<GravityCompensationPSM>();
     bool ok = m_gc->configure(physical_dh);
     if (ok) {
-        gravity_compensation = m_gc.get();
+        m_rob_gravity_compensation = m_gc.get();
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureGC: " << this->GetName()
                                  << " using GC kinematics file \"" << physical_dh << "\", got error \""

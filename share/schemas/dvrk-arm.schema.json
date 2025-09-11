@@ -23,8 +23,8 @@
             "type": "string"
         },
 
-        "disable_gravity_compensation": {
-            "description": "Option to start arm with gravity compensation disabled - can be later enabled while running",
+        "skip_gravity_compensation": {
+            "description": "Option to completely disable gravity compensation.",
             "type": "boolean",
             "default": false
         },

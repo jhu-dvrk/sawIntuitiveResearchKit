@@ -382,7 +382,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     double m_mounting_pitch = std::numeric_limits<double>::infinity(); // used for ECMs Classic and Si as well as PSMs Si
     // used in get_robot_data to compute gravity compensation setpoint
     // ! Note: non-owning pointer - subclass should own actual instance
-    robGravityCompensation* gravity_compensation = nullptr;
+    robGravityCompensation * m_rob_gravity_compensation = nullptr;
 
     // Velocities
     prmVelocityCartesianGet
