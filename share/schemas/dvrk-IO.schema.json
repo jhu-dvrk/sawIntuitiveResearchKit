@@ -71,7 +71,7 @@
             "description": "Extra configuration files to configure the IO component. The IO component can also be configured to support custom hardware using the controllers spare digital and analog IOs.\n\nThis setting shouldn't be used for the hardware supported by the dVRK software stack such as foot pedals, head sensor, focus controller... See examples in directory `share/io`.",
             "items": {
                 "type": "string"
-            }
+            },
             "examples": [
                 {
                     "configuration_files": ["sawRobotIO1394_my_contact_sensor.json"]
