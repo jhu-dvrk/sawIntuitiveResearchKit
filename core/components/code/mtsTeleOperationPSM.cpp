@@ -374,11 +374,13 @@ void mtsTeleOperationPSM::Cleanup(void)
     CMN_LOG_CLASS_INIT_VERBOSE << "Cleanup" << std::endl;
 }
 
+
 void mtsTeleOperationPSM::arm_error_event_handler(const mtsMessage & message)
 {
     mTeleopState.SetDesiredState("DISABLED");
     mInterface->SendError(this->GetName() + ": received from arm [" + message.Message + "]");
 }
+
 
 void mtsTeleOperationPSM::clutch_event_handler(const prmEventButton & button)
 {
@@ -393,11 +395,9 @@ void mtsTeleOperationPSM::clutch_event_handler(const prmEventButton & button)
         break;
     }
 
-    // if the teleoperation is activated
-    if (mTeleopState.DesiredState() == "ENABLED") {
-        Clutch(m_clutched);
-    }
+    Clutch(m_clutched);
 }
+
 
 void mtsTeleOperationPSM::Clutch(const bool & clutch)
 {
@@ -407,7 +407,7 @@ void mtsTeleOperationPSM::Clutch(const bool & clutch)
         m_operator.was_active_before_clutch = m_operator.is_active;
         set_following(false);
 
-        mMTM.m_move_cp.Goal().Rotation().FromNormalized(mPSM.m_setpoint_cp.Position().Rotation()); 
+        mMTM.m_move_cp.Goal().Rotation().FromNormalized(mPSM.m_setpoint_cp.Position().Rotation());
         mMTM.m_move_cp.Goal().Translation().Assign(mMTM.m_measured_cp.Position().Translation());
         mInterface->SendStatus(this->GetName() + ": console clutch pressed");
         // only for haptic MTMs that can move/lock/effort
@@ -417,9 +417,11 @@ void mtsTeleOperationPSM::Clutch(const bool & clutch)
                 prmForceCartesianSet wrench;
                 mMTM.body_servo_cf(wrench);
             }
-            if (mMTM.use_gravity_compensation.IsValid())
+            if (mMTM.use_gravity_compensation.IsValid()) {
                 mMTM.use_gravity_compensation(true);
-            if ((m_config.align_MTM || m_config.rotation_locked)
+            }
+            if ((mTeleopState.CurrentState() != "DISABLED")
+                && (m_config.align_MTM || m_config.rotation_locked)
                 && mMTM.lock_orientation.IsValid()) {
                 // lock in current position
                 mMTM.lock_orientation(mMTM.m_measured_cp.Position().Rotation());
@@ -733,7 +735,7 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
     if (!m_config.align_MTM && m_config.MTM_is_haptic && mMTM.move_cp.IsValid()) {
         mMTM.m_move_cp.Goal().Assign(mMTM.m_setpoint_cp.Position());
         mMTM.move_cp(mMTM.m_move_cp);
-    } 
+    }
 
     if (m_back_from_clutch) {
         m_operator.is_active = m_operator.was_active_before_clutch;
