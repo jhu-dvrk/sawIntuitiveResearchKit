@@ -142,6 +142,7 @@ void ConsolesContainer::openConsole(ConsoleConfig& config) {
 }
 
 void ConsolesContainer::removeConsole(int index) {
+    // index 0 is the "add console" button
     if (index <= 0) {
         return;
     }
@@ -149,9 +150,11 @@ void ConsolesContainer::removeConsole(int index) {
     ConsoleEditor* editor = qobject_cast<ConsoleEditor*>(this->widget(index));
     bool ok_to_close = editor->close();
     if (ok_to_close) {
-        model->console_configs->deleteItem(index);
+        // use index-1 since index zero doesn't correspond to a console config
+        model->console_configs->deleteItem(index - 1);
+
         this->removeTab(index);
-        delete editor;
+        delete editor; // removeTab does not delete widget
     }
 }
 
