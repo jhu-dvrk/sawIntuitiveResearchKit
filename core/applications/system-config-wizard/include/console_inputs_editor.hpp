@@ -18,6 +18,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <QtWidgets>
 
+#include "config_sources.hpp"
 #include "models/config_model.hpp"
 #include "models/enum_list_model.hpp"
 
@@ -27,10 +28,11 @@ class ConsoleInputsEditor : public QWidget {
     Q_OBJECT
 
 public:
-    ConsoleInputsEditor(ConsoleInputConfig& model, ListModelT<ArmConfig>& arms, QWidget* parent = nullptr);
+    ConsoleInputsEditor(ConsoleInputConfig& model, ConfigSources& sources, ListModelT<ArmConfig>& arms, QWidget* parent = nullptr);
 
 private:
     ConsoleInputConfig* model;
+    ConfigSources* config_sources;
     ListModelT<ArmConfig>* arms;
 
     EnumListModel<ConsoleInputType> input_type_model;

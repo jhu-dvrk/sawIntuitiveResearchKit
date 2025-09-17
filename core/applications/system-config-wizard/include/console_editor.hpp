@@ -18,6 +18,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <QtWidgets>
 
+#include "config_sources.hpp"
 #include "models/config_model.hpp"
 
 #include "console_inputs_editor.hpp"
@@ -29,7 +30,7 @@ class ConsoleEditor : public QWidget {
     Q_OBJECT
 
 public:
-    ConsoleEditor(ConsoleConfig& config, SystemConfigModel& model, QWidget* parent = nullptr);
+    ConsoleEditor(ConsoleConfig& config, SystemConfigModel& model, ConfigSources& config_sources, QWidget* parent = nullptr);
 
     bool close();
 
@@ -38,6 +39,7 @@ signals:
 
 private:
     ConsoleConfig* config;
+
     ConsoleInputsEditor* inputs_editor;
     TeleopEditor psm_teleop_editor;
     TeleopEditor ecm_teleop_editor;
@@ -49,7 +51,7 @@ class ConsolesContainer : public QTabWidget {
     Q_OBJECT
 
 public:
-    ConsolesContainer(SystemConfigModel& model, QWidget* parent = nullptr);
+    ConsolesContainer(SystemConfigModel& model, ConfigSources& config_sources, QWidget* parent = nullptr);
 
 private:
     void openConsole(ConsoleConfig& config);
@@ -57,6 +59,7 @@ private:
     void removeConsole(int index);
 
     SystemConfigModel* model;
+    ConfigSources* config_sources;
 };
 
 }

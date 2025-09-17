@@ -145,7 +145,7 @@ ConfigEditor::ConfigEditor(
 
     bool has_consoles = model->console_configs->count() > 0;
     Accordion* console_panel = new Accordion("Consoles", "rgb(79, 146, 201)", has_consoles, this);
-    ConsolesContainer* consoles = new ConsolesContainer(*model);
+    ConsolesContainer* consoles = new ConsolesContainer(*model, config_sources);
     console_panel->setWidget(consoles);
 
     scroller_layout->addWidget(ios);

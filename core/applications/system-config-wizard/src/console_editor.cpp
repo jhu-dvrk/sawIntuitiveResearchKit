@@ -1,14 +1,15 @@
 #include "accordion.hpp"
 #include "console_editor.hpp"
+#include "config_sources.hpp"
 #include "console_inputs_editor.hpp"
 #include "teleop_view.hpp"
 
 namespace config_wizard {
 
-ConsoleEditor::ConsoleEditor(ConsoleConfig& config, SystemConfigModel& model, QWidget* parent) :
+ConsoleEditor::ConsoleEditor(ConsoleConfig& config, SystemConfigModel& model, ConfigSources& config_sources, QWidget* parent) :
     QWidget(parent),
     config(&config),
-    inputs_editor(new ConsoleInputsEditor(*config.inputs, *model.arm_configs)),
+    inputs_editor(new ConsoleInputsEditor(*config.inputs, config_sources, *model.arm_configs)),
     psm_teleop_editor(*config.psm_teleops, TeleopType::Value::PSM_TELEOP, *model.arm_configs),
     ecm_teleop_editor(*config.ecm_teleops, TeleopType::Value::ECM_TELEOP, *model.arm_configs)
 {
@@ -92,7 +93,9 @@ bool ConsoleEditor::close() {
     }
 }
 
-ConsolesContainer::ConsolesContainer(SystemConfigModel& model, QWidget* parent) : QTabWidget(parent), model(&model) {
+ConsolesContainer::ConsolesContainer(SystemConfigModel& model, ConfigSources& config_sources, QWidget* parent)
+  : QTabWidget(parent), model(&model), config_sources(&config_sources)
+{
     this->setMovable(true);
     this->setTabsClosable(true);
 
@@ -126,7 +129,7 @@ void ConsolesContainer::addConsole() {
 }
 
 void ConsolesContainer::openConsole(ConsoleConfig& config) {
-    std::unique_ptr<ConsoleEditor> editor = std::make_unique<ConsoleEditor>(config, *model);
+    std::unique_ptr<ConsoleEditor> editor = std::make_unique<ConsoleEditor>(config, *model, *config_sources);
     ConsoleEditor* ptr = editor.get(); // save non-owning pointer
     this->addTab(editor.release(), QString::fromStdString(config.name)); // transfer ownership to Qt GUI tree
 
