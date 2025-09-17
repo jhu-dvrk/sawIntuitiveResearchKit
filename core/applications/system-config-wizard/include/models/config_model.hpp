@@ -47,7 +47,7 @@ public:
         return config;
     }
 
-    Json::Value toJSON() const {
+    Json::Value toJSON(std::filesystem::path CMN_UNUSED(destination)) const {
         Json::Value value;
 
         value["shared-library"] = library_name;
@@ -83,7 +83,7 @@ public:
         return config;
     }
 
-    Json::Value toJSON() const {
+    Json::Value toJSON(std::filesystem::path CMN_UNUSED(destination)) const {
         Json::Value json;
         json["component"] = component_name;
         json["interface"] = interface_name;
@@ -635,7 +635,7 @@ public:
     IOConfig(std::string name)
         : name(name),
           port(IOPort::Value::FIREWIRE),
-          protocol(IOProtocol::Value::SEQUENTIAL_READ_SEQUENTIAL_WRITE)
+          protocol(IOProtocol::Value::BROADCAST_READ_BROADCAST_WRITE)
         { }
 
     static std::unique_ptr<IOConfig> fromJSON(Json::Value value) {
@@ -658,7 +658,7 @@ public:
         return config;
     }
 
-    Json::Value toJSON() const {
+    Json::Value toJSON(std::filesystem::path CMN_UNUSED(destination)) const {
         Json::Value value;
 
         value["name"] = name;
@@ -705,14 +705,14 @@ public:
         return config;
     }
 
-    Json::Value toJSON() const {
+    Json::Value toJSON(std::filesystem::path destination) const {
         if (use_custom_transform) {
             Json::Value json;
             json["reference_frame"] = reference_frame_name;
             cmnDataJSON<vctFrm4x4>::SerializeText(transform, json["transform"]);
             return json;
         } else {
-            return base_frame_component.toJSON();
+            return base_frame_component.toJSON(destination);
         }
     }
 
@@ -802,26 +802,38 @@ public:
         }
     }
 
-    Json::Value toJSON() const {
+    Json::Value toJSON(std::filesystem::path destination) const {
         Json::Value value;
         value["name"] = name;
         value["type"] = type.serialize();
 
         if (arm_file.has_value()) {
-            value["arm_file"] = arm_file->string();
+            // only save arm config file path if it differs from the default
+            std::string default_filename = name + "-" + serial_number.value_or("") + ".json";
+            if (arm_file->filename() != default_filename || arm_file->parent_path() != destination.parent_path()) {
+                value["arm_file"] = arm_file->string();
+            }
         }
 
-        if (io_file.has_value()) {
-            value["IO_file"] = io_file->string();
+        if (io_file.has_value() && arm_file->parent_path() != destination.parent_path()) {
+            // only save IO config file path if it differs from the default
+            std::string default_filename = "sawRobotIO1394-" + name +  + "-" + serial_number.value_or("") + ".json";
+            if (io_file->filename() != default_filename || io_file->parent_path() != destination.parent_path()) {
+                value["IO_file"] = io_file->string();
+            }
         }
 
         if (io_gripper_file.has_value()) {
-            value["IO_gripper_file"] = io_gripper_file->string();
+            // only save IO gripper config file path if it differs from the default
+            std::string default_filename = "sawRobotIO1394-" + name + "-gripper-" + serial_number.value_or("") + ".json";
+            if (io_gripper_file->filename() != default_filename || io_gripper_file->parent_path() != destination.parent_path()) {
+                value["IO_gripper_file"] = io_gripper_file->string();
+            }
         }
 
         if (config_type == ArmConfigType::NATIVE || config_type == ArmConfigType::SIMULATED) {
             if (base_frame) {
-                value["base_frame"] = base_frame->toJSON();
+                value["base_frame"] = base_frame->toJSON(destination);
             }
 
             if (is_simulated.has_value() && is_simulated.value()) {
@@ -913,7 +925,7 @@ public:
         return config;
     }
 
-    Json::Value toJSON() const {
+    Json::Value toJSON(std::filesystem::path destination) const {
         Json::Value value;
         Json::Value parameters;
 
@@ -922,7 +934,7 @@ public:
             value["PSM"] = arm_names.at(1);
 
             if (PSM_base_frame.has_value()) {
-                value["PSM_base_frame"] = PSM_base_frame->toJSON();
+                value["PSM_base_frame"] = PSM_base_frame->toJSON(destination);
             }
         } else if (type == TeleopType::Value::ECM_TELEOP) {
             value["ECM"] = arm_names.at(0);
@@ -1113,7 +1125,7 @@ public:
         return config;
     }
 
-    Json::Value toJSON() const {
+    Json::Value toJSON(std::filesystem::path CMN_UNUSED(destination)) const {
         auto source = getSource();
         std::string io_name = source && source->io_name ? *source->io_name : source_io_name;
         bool is_dqla = source ? (source->controller_type == ControllerType::DQLA) : source_is_dqla;
@@ -1183,7 +1195,7 @@ public:
         }
     }
 
-    Json::Value toJSON() const {
+    Json::Value toJSON(std::filesystem::path CMN_UNUSED(destination)) const {
         if (type == HeadSensorType::Value::GOOVIS) {
             Json::Value value;
             value["HID_file"] = "hid/goovis-hd.json";
@@ -1271,7 +1283,7 @@ public:
         return config;
     }
 
-    Json::Value toJSON() const {
+    Json::Value toJSON(std::filesystem::path destination) const {
         auto source = getSource();
         if (!source.has_value()) { return Json::Value(); }
 
@@ -1289,9 +1301,9 @@ public:
         }
 
         Json::Value json;
-        json["operator_present"] = operator_present.toJSON();
-        json["clutch"] = clutch.toJSON();
-        json["camera"] = camera.toJSON();
+        json["operator_present"] = operator_present.toJSON(destination);
+        json["clutch"] = clutch.toJSON(destination);
+        json["camera"] = camera.toJSON(destination);
         return json;
     }
 
@@ -1362,11 +1374,11 @@ public:
         return config;
     }
 
-    Json::Value toJSON() const {
+    Json::Value toJSON(std::filesystem::path destination) const {
         Json::Value value;
 
         if (type == ConsoleInputType::Value::FOOT_PEDALS) {
-            value["IO_pedals"] = pedals->toJSON();
+            value["IO_pedals"] = pedals->toJSON(destination);
             if (head_sensor->type == HeadSensorType::Value::GOOVIS) {
                 value["input_type"] = "PEDALS_GOOVIS_HEAD_SENSOR";
             } else if (head_sensor->type == HeadSensorType::Value::DVRK) {
@@ -1377,14 +1389,14 @@ public:
                 value["input_type"] = "PEDALS_ONLY";
             }
 
-            Json::Value sibling = head_sensor->toJSON();
+            Json::Value sibling = head_sensor->toJSON(destination);
             for (const std::string& k : sibling.getMemberNames()) {
                 value[k] = sibling[k];
             }
         } else if (type == ConsoleInputType::Value::FORCE_DIMENSION_BUTTONS) {
             value["input_type"] = "COMPONENTS";
 
-            Json::Value sibling = force_dimension_buttons->toJSON();
+            Json::Value sibling = force_dimension_buttons->toJSON(destination);
             for (const std::string& k : sibling.getMemberNames()) {
                 value[k] = sibling[k];
             }
@@ -1458,15 +1470,15 @@ public:
         return config;
     }
 
-    Json::Value toJSON() const {
+    Json::Value toJSON(std::filesystem::path destination) const {
         Json::Value value;
 
         value["name"] = name;
-        value["teleop_PSMs"] = psm_teleops->toJSON();
-        value["teleop_ECMs"] = ecm_teleops->toJSON();
+        value["teleop_PSMs"] = psm_teleops->toJSON(destination);
+        value["teleop_ECMs"] = ecm_teleops->toJSON(destination);
 
         // need to merge in console input config
-        Json::Value sibling = inputs->toJSON();
+        Json::Value sibling = inputs->toJSON(destination);
         for (const std::string& k : sibling.getMemberNames()) {
             value[k] = sibling[k];
         }
@@ -1537,7 +1549,8 @@ public:
             std::cerr << "Unexpected schema id \"" << schema_id << "\", aborting. Are you sure file is a dVRK system config?" << std::endl;
             return nullptr;
         }
-	std::string schema_version = json_config.get("$version", std::string("1")).asString();
+
+        std::string schema_version = json_config.get("$version", std::string("1")).asString();
         if (schema_version != "1") {
             std::cerr << "Unsupported schema version " << schema_version << ", aborting" << std::endl;
             return nullptr;
@@ -1599,16 +1612,16 @@ public:
         config["$id"] = "dvrk-system.schema.json";
         config["$version"] = "1";
 
-        config["IOs"] = io_configs->toJSON();
-        config["arms"] = arm_configs->toJSON();
-        config["consoles"] = console_configs->toJSON();
+        config["IOs"] = io_configs->toJSON(config_file);
+        config["arms"] = arm_configs->toJSON(config_file);
+        config["consoles"] = console_configs->toJSON(config_file);
 
         // Collect any components used by the arms
         Json::Value component_configs;
         for (int idx = 0; idx < arm_configs->count(); idx++) {
             ArmConfig& arm = arm_configs->ref(idx);
             if (arm.component && arm.component->component) {
-                component_configs.append(arm.component->component->toJSON());
+                component_configs.append(arm.component->component->toJSON(config_file));
             }
         }
 

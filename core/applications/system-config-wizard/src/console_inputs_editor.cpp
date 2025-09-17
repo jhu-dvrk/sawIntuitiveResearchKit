@@ -15,15 +15,17 @@ http://www.cisst.org/cisst/license.txt.
 
 #include "console_inputs_editor.hpp"
 
+#include "config_sources.hpp"
 #include "models/config_model.hpp"
 #include "models/list_model.hpp"
 
 namespace config_wizard {
 
-ConsoleInputsEditor::ConsoleInputsEditor(ConsoleInputConfig& model, ListModelT<ArmConfig>& arms, QWidget* parent)
-    : QWidget(parent), model(&model), arms(&arms)
+ConsoleInputsEditor::ConsoleInputsEditor(ConsoleInputConfig& model, ConfigSources& config_sources, ListModelT<ArmConfig>& arms, QWidget* parent)
+    : QWidget(parent), model(&model), config_sources(&config_sources), arms(&arms)
 {
     QObject::connect(this->arms, &ListModel::updated, this, &ConsoleInputsEditor::updateAvailableArms);
+    QObject::connect(&this->config_sources->getModel(),  &ListModel::updated, this, &ConsoleInputsEditor::updateAvailableArms);
 
     QVBoxLayout* layout = new QVBoxLayout(this);
 
@@ -145,6 +147,7 @@ void ConsoleInputsEditor::updateAvailableArms() {
     head_sensor_available_mtms->clear();
     available_forcedimensions->clear();
 
+    // Native+simulated arms added to system config can be used as console input source
     for (int idx = 0; idx < arms->count(); idx++) {
         const ArmConfig& arm = arms->get(idx);
         bool native_or_simulated = arm.config_type == ArmConfigType::NATIVE || arm.config_type == ArmConfigType::SIMULATED;
@@ -156,6 +159,23 @@ void ConsoleInputsEditor::updateAvailableArms() {
 
         if (arm.config_type == ArmConfigType::HAPTIC_MTM && arm.type.isMTM()) {
             available_forcedimensions->addItem(QString::fromStdString(arm.name));
+        }
+    }
+
+    // Also add arms from config sources as console input options, even if not added to system config
+    for (int i = 0; i < config_sources->getModel().count(); i++) {
+        auto arm = config_sources->getModel().get(i);
+        QString name = QString::fromStdString(arm.name);
+
+        // skip arms we've already added
+        if (pedals_available_mtms->findText(name) != -1) {
+            continue;
+        }
+
+        bool controller_has_io_ports = arm.controller_type == ControllerType::QLA || arm.controller_type == ControllerType::DQLA;
+        if (controller_has_io_ports) {
+            pedals_available_mtms->addItem(QString::fromStdString(arm.name));
+            head_sensor_available_mtms->addItem(QString::fromStdString(arm.name));
         }
     }
 

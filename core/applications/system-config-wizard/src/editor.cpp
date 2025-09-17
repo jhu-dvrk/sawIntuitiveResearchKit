@@ -121,6 +121,7 @@ void Editor::saveAs() {
 }
 
 void Editor::closeConfig(int index) {
+    // index 0 is the "add new config" button
     if (index <= 0) {
         return;
     }
