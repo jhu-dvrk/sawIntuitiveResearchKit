@@ -49,7 +49,7 @@
 
         "serial": {
             "type": "string",
-            "description": "Arm's serial number.  To verify the serial number, locate the label on the arm itself (See the [dVRK wiki](https://dvrk.readthedocs.io)).  The serial number and the arm's name are used to locate the arm configuration file assuming the arm configuration file name is `<arm_name>-<arm_serial>.json` (e.g. `MTML-22723.json`).",
+            "description": "Arm's serial number.  To verify the serial number, locate the label on the arm itself (See the [dVRK documentation](https://dvrk.readthedocs.io)).  The serial number and the arm's name are used to locate the arm configuration file assuming the arm configuration file name is `<arm_name>-<arm_serial>.json` (e.g. `MTML-22723.json`).",
             "examples": [
                 {
                     "serial": "22723"

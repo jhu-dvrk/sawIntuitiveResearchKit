@@ -3,7 +3,7 @@
     "$id": "dvrk-tool-list.schema.json",
     "title": "dVRK tool list",
     "type": "object",
-    "description": "Configuration file format for the dVRK tool list.  See the [dVRK wiki](https://dvrk.readthedocs.io).\n\n - This format is used by the application `sawIntuitiveResearchKitSystem` and the ROS application `dvrk_robot dvrk_system`\n - This file defines the mapping between an instrument's name the the file used to define all the parameters for said instrument, i.e. DH, joint limits, maximum torques...\n - For details of implementation, see code under `sawIntuitiveResearchKit/core/components/code/mtsToolList.cpp`\n - [Schema file](dvrk-tool-list.schema.json)\n - Examples can be found in `sawIntuitiveResearchKit/share/tool/index.json` and `sawIntuitiveResearchKit/share/jhu-dVRK/custom-tool/custom-tool-index.json`",
+    "description": "Configuration file format for the dVRK tool list.  See the [dVRK documentation](https://dvrk.readthedocs.io).\n\n - This format is used by the application `sawIntuitiveResearchKitSystem` and the ROS application `dvrk_robot dvrk_system`\n - This file defines the mapping between an instrument's name the the file used to define all the parameters for said instrument, i.e. DH, joint limits, maximum torques...\n - For details of implementation, see code under `sawIntuitiveResearchKit/core/components/code/mtsToolList.cpp`\n - [Schema file](dvrk-tool-list.schema.json)\n - Examples can be found in `sawIntuitiveResearchKit/share/tool/index.json` and `sawIntuitiveResearchKit/share/jhu-dVRK/custom-tool/custom-tool-index.json`",
     "additionalProperties": false,
     "properties": {
 

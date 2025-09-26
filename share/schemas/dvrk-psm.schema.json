@@ -3,19 +3,20 @@
     "$id": "dvrk-psm.schema.json",
     "$version": "1",
     "title": "dVRK PSM",
-    "description": "Configuration file format for the dVRK PSM arm component. See the [dVRK wiki](https://dvrk.readthedocs.io).\n\n - PSM schema extends [arm schema](dvrk-arm.html)\n - For details of implementation, see code under `sawIntuitiveResearchKit/core/components/code/mtsIntuitiveResearchKitPSM.cpp`\n - [Schema file](dvrk-psm.schema.json)",
+    "description": "Configuration file format for the dVRK PSM arm component. See the [dVRK documentation](https://dvrk.readthedocs.io).\n\n - PSM schema extends [dVRK arm schema](dvrk-arm.html)\n - For details of implementation, see code under `sawIntuitiveResearchKit/core/components/code/mtsIntuitiveResearchKitPSM.cpp`\n - [Schema file](dvrk-psm.schema.json)",
     "allOf": [
         { "$ref": "dvrk-arm.schema.json" },
 
         {
+            "title": "PSM specific",
             "properties": {
                 "custom_tool_index": {
-                    "description": "Extra instrument list loaded for this arm.  By default, the supported instruments are defined in the file `share/tool/index.html` but one might need some new instruments.  This can be to support custom instruments or standard ISI instruments not yet supported by the dVRK (See the [dVRK wiki](https://dvrk.readthedocs.io)).  The filename can be absolute or relative to `sawIntuitiveResearchKit/share`.  For example \"jhu-dVRK/custom-tool/custom-tool-index.json\"",
+                    "description": "Extra instrument list loaded for this arm.  By default, the supported instruments are defined in the file `share/tool/index.html` but one might need some new instruments.  This can be to support custom instruments or standard ISI instruments not yet supported by the dVRK (See the [dVRK documentation](https://dvrk.readthedocs.io)).  The filename can be absolute or relative to `sawIntuitiveResearchKit/share`.  For example \"jhu-dVRK/custom-tool/custom-tool-index.json\"",
                     "type": "string"
                 }
                 ,
                 "tool_detection": {
-                    "description": "Set the tool detection method.  Possible values are defined in `sawIntuitiveResearchKit/core/components/code/mtsIntuitiveResearchKitToolTypes.cdg`.  For more details regarding tool detection see the [dVRK wiki](https://dvrk.readthedocs.io).",
+                    "description": "Set the tool detection method.  Possible values are defined in `sawIntuitiveResearchKit/core/components/code/mtsIntuitiveResearchKitToolTypes.cdg`.  For more details regarding tool detection see the [dVRK documentation](https://dvrk.readthedocs.io).",
                     "type": "string",
                     "enum": ["AUTOMATIC", "MANUAL", "FIXED"],
                     "default": "AUTOMATIC"

@@ -3,7 +3,7 @@
     "$id": "dvrk-IO_configuration.schema.json",
     "title": "dVRK tool list",
     "type": "object",
-    "description": "Configuration file format for an extra IO configuration file.  See the [dVRK wiki](https://dvrk.readthedocs.io).\n\n - This format is used by the dVRK system configuration file.\n - For details of implementation, see code under `sawIntuitiveResearchKit/core/components/code/IO_configuration.cdg`\n - [Schema file](dvrk-IO-configuration.schema.json)",
+    "description": "Configuration file format for an extra IO configuration file.  See the [dVRK documentation](https://dvrk.readthedocs.io).\n\n - This format is used by the dVRK system configuration file.\n - For details of implementation, see code under `sawIntuitiveResearchKit/core/components/code/IO_configuration.cdg`\n - [Schema file](dvrk-IO-configuration.schema.json)",
     "additionalProperties": false,
     "required": ["IO", "IO_file"],
     "properties": {

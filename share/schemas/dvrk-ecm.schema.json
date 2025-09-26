@@ -3,11 +3,12 @@
     "$id": "dvrk-ecm.schema.json",
     "$version": "1",
     "title": "dVRK ECM",
-    "description": "Configuration file format for the dVRK ECM arm component. See the [dVRK wiki](https://dvrk.readthedocs.io).\n\n - ECM schema extends [arm schema](dvrk-arm.html)\n - For details of implementation, see code under `sawIntuitiveResearchKit/core/components/code/mtsIntuitiveResearchKitECM.cpp`\n - [Schema file](dvrk-ecm.schema.json)",
+    "description": "Configuration file format for the dVRK ECM arm component. See the [dVRK documentation](https://dvrk.readthedocs.io).\n\n - ECM schema extends [dVRK arm schema](dvrk-arm.html)\n - For details of implementation, see code under `sawIntuitiveResearchKit/core/components/code/mtsIntuitiveResearchKitECM.cpp`\n - [Schema file](dvrk-ecm.schema.json)",
     "allOf": [
         { "$ref": "dvrk-arm.schema.json" },
 
         {
+            "title": "ECM specific",
             "required": [ "endoscope" ],
             "properties": {
                 "endoscope": {
