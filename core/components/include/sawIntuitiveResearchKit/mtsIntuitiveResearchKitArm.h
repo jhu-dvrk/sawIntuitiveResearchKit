@@ -434,9 +434,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
       callbacks will be using the methods provided in this class.
       If either the space or mode is "USER", a callback must be
       provided. */
-    void SetControlSpaceAndMode(const mtsIntuitiveResearchKitControlTypes::ControlSpace space,
-                                const mtsIntuitiveResearchKitControlTypes::ControlMode mode,
-                                mtsCallableVoidBase * callback = 0);
+    virtual void SetControlSpaceAndMode(const mtsIntuitiveResearchKitControlTypes::ControlSpace space,
+                                        const mtsIntuitiveResearchKitControlTypes::ControlMode mode,
+                                        mtsCallableVoidBase * callback = 0);
 
     /*! Set the control space and mode along with a callback for
       control.  The callback method will be use only if either the
