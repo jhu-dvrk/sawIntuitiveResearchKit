@@ -17,6 +17,7 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 // system include
+#include "cisstParameterTypes/prmStateJoint.h"
 #include <iostream>
 #include <time.h>
 
@@ -200,8 +201,9 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mArmNotReadyTimeLastMessage = 0.0;
 
     // initialize trajectory data
-    m_servo_jp.SetSize(number_of_joints());
-    m_servo_jv.SetSize(number_of_joints());
+    m_servo_js.SetSize(number_of_joints());
+    m_servo_js.Velocity().Zeros();
+    m_servo_js.Effort().Zeros();
     m_servo_jp_param.Goal().SetSize(number_of_joints());
     m_trajectory_j.v_max.SetSize(number_of_joints());
     m_trajectory_j.v.SetSize(number_of_joints());
@@ -404,6 +406,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                          this, "move_cp");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_jf,
                                          this, "servo_jf");
+        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_js,
+                                            this, "servo_js");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::body_servo_cf,
                                          this, "body/servo_cf");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::body_set_cf_orientation_absolute,
@@ -1381,15 +1385,16 @@ void mtsIntuitiveResearchKitArm::EnterHoming(void)
     // compute joint goal position
     this->SetGoalHomingArm();
     // initialize trajectory with current position and velocities
-    m_servo_jp.Assign(m_pid_setpoint_js.Position());
-    m_servo_jv.Assign(m_pid_measured_js.Velocity());
+    m_servo_js.Position().Assign(m_pid_setpoint_js.Position());
+    m_servo_js.Velocity().Assign(m_pid_setpoint_js.Velocity());
+    m_servo_js.Effort().Zeros();
     m_trajectory_j.goal_v.Zeros();
     m_trajectory_j.end_time = 0.0;
     SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::JOINT_SPACE,
                            mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE);
 
     // enable PID on all joints
-    mtsIntuitiveResearchKitArm::servo_jp_internal(m_servo_jp, vctDoubleVec());
+    mtsIntuitiveResearchKitArm::servo_jp_internal(m_servo_js.Position(), vctDoubleVec());
     PID.enable(true);
     PID.enable_joints(vctBoolVec(number_of_joints(), true));
 }
@@ -1399,11 +1404,11 @@ void mtsIntuitiveResearchKitArm::RunHoming(void)
     static const double extraTime = 2.0 * cmn_s;
     const double currentTime = this->StateTable.GetTic();
 
-    m_trajectory_j.Reflexxes.Evaluate(m_servo_jp,
-                                      m_servo_jv,
+    m_trajectory_j.Reflexxes.Evaluate(m_servo_js.Position(),
+                                      m_servo_js.Velocity(),
                                       m_trajectory_j.goal,
                                       m_trajectory_j.goal_v);
-    mtsIntuitiveResearchKitArm::servo_jp_internal(m_servo_jp, m_servo_jv);
+    mtsIntuitiveResearchKitArm::servo_jp_internal(m_servo_js.Position(), m_servo_js.Velocity());
 
     const robReflexxes::ResultType trajectoryResult = m_trajectory_j.Reflexxes.ResultValue();
     bool isHomed;
@@ -1530,7 +1535,7 @@ void mtsIntuitiveResearchKitArm::clip_jp(vctDoubleVec & jp) const
 void mtsIntuitiveResearchKitArm::control_servo_jp(void)
 {
     if (m_pid_new_goal) {
-        servo_jp_internal(m_servo_jp, m_servo_jv);
+        servo_jp_internal(m_servo_js.Position(), m_servo_js.Velocity());
         // reset flag
         m_pid_new_goal = false;
     }
@@ -1543,11 +1548,11 @@ void mtsIntuitiveResearchKitArm::control_move_jp(void)
         return;
     }
 
-    m_trajectory_j.Reflexxes.Evaluate(m_servo_jp,
-                                      m_servo_jv,
+    m_trajectory_j.Reflexxes.Evaluate(m_servo_js.Position(),
+                                      m_servo_js.Velocity(),
                                       m_trajectory_j.goal,
                                       m_trajectory_j.goal_v);
-    servo_jp_internal(m_servo_jp, m_servo_jv);
+    servo_jp_internal(m_servo_js.Position(), m_servo_js.Velocity());
 
     const robReflexxes::ResultType trajectoryResult = m_trajectory_j.Reflexxes.ResultValue();
     const double currentTime = this->StateTable.GetTic();
@@ -1797,8 +1802,9 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
             PID.EnableTorqueMode(vctBoolVec(number_of_joints(), false));
             m_pid_new_goal = false;
             mCartesianRelative = vctFrm3::Identity();
-            m_servo_jp.Assign(m_pid_setpoint_js.Position(), number_of_joints());
-            m_servo_jv.Zeros();
+            m_servo_js.Position().Assign(m_pid_setpoint_js.Position(), number_of_joints());
+            m_servo_js.Velocity().Zeros();
+            m_servo_js.Effort().Zeros();
             m_effort_orientation_locked = false;
             break;
         case mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE:
@@ -1807,13 +1813,16 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
             PID.EnableTorqueMode(vctBoolVec(number_of_joints(), false));
             m_effort_orientation_locked = false;
             // initialize trajectory
-            m_servo_jp.Assign(m_pid_setpoint_js.Position(), number_of_joints());
+            m_servo_js.Position().Assign(m_pid_setpoint_js.Position(), number_of_joints());
             if (m_control_mode == mtsIntuitiveResearchKitControlTypes::POSITION_MODE) {
-                m_servo_jv.Assign(m_pid_measured_js.Velocity(), number_of_joints());
+                m_servo_js.Velocity().Assign(m_pid_measured_js.Velocity(), number_of_joints());
+                m_servo_js.Effort().Zeros();
             } else {
                 // we're switching from effort or no mode
-                m_servo_jv.SetSize(number_of_joints());
-                m_servo_jv.Zeros();
+                m_servo_js.Velocity().SetSize(number_of_joints());
+                m_servo_js.Velocity().Zeros();
+                m_servo_js.Effort().SetSize(number_of_joints());
+                m_servo_js.Effort().Zeros();
             }
             m_trajectory_j.Reflexxes.Set(m_trajectory_j.v,
                                          m_trajectory_j.a,
@@ -2037,6 +2046,10 @@ void mtsIntuitiveResearchKitArm::apply_feed_forward(void)
         jf.Ref(gc_jf.size()).Assign(gc_jf);
     }
 
+    if (m_servo_js.Effort().size() == number_of_joints_kinematics()) {
+        jf.Ref(number_of_joints_kinematics()) += m_servo_js.Effort();
+    }
+
     if (m_has_coupling) {
         jf = m_coupling.JointToActuatorEffort() * jf;
     }
@@ -2073,7 +2086,9 @@ void mtsIntuitiveResearchKitArm::hold(void)
     SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::JOINT_SPACE,
                            mtsIntuitiveResearchKitControlTypes::POSITION_MODE);
     // set goal
-    m_servo_jp.Assign(m_pid_setpoint_js.Position());
+    m_servo_js.Position().Assign(m_pid_setpoint_js.Position());
+    m_servo_js.Velocity().Zeros();
+    m_servo_js.Effort().Zeros();
     m_pid_new_goal = true;
 
     // turn off feedfoward in case it is set
@@ -2105,8 +2120,26 @@ void mtsIntuitiveResearchKitArm::servo_jp(const prmPositionJointSet & jp)
     SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::JOINT_SPACE,
                            mtsIntuitiveResearchKitControlTypes::POSITION_MODE);
     // set goal
-    m_servo_jp.Assign(jp.Goal(), number_of_joints_kinematics());
-    m_servo_jv.Assign(jp.Velocity(), jp.Velocity().size());
+    m_servo_js.Position().Assign(jp.Goal(), number_of_joints_kinematics());
+    m_servo_js.Velocity().Assign(jp.Velocity(), jp.Velocity().size());
+    m_servo_js.Effort().Zeros();
+    m_pid_new_goal = true;
+}
+
+void mtsIntuitiveResearchKitArm::servo_js(const prmStateJoint & js)
+{
+    if (!ArmIsReady("servo_js", mtsIntuitiveResearchKitControlTypes::JOINT_SPACE)) {
+        return;
+    }
+
+    // set control mode
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::JOINT_SPACE,
+                           mtsIntuitiveResearchKitControlTypes::POSITION_MODE);
+    // set goal
+    m_servo_js.Position().Assign(js.Position(), number_of_joints_kinematics());
+    m_servo_js.Velocity().Assign(js.Velocity(), number_of_joints_kinematics());
+    m_servo_js.Effort().Assign(js.Effort(), number_of_joints_kinematics());
+
     m_pid_new_goal = true;
 }
 
@@ -2121,9 +2154,11 @@ void mtsIntuitiveResearchKitArm::servo_jr(const prmPositionJointSet & difference
                            mtsIntuitiveResearchKitControlTypes::POSITION_MODE);
     // if there's no current goal, reset it
     if (!m_pid_new_goal) {
-        m_servo_jp.Assign(m_pid_setpoint_js.Position());
+        m_servo_js.Position().Assign(m_pid_setpoint_js.Position());
     }
-    m_servo_jp.Ref(number_of_joints_kinematics()).Add(difference.Goal());
+    m_servo_js.Position().Ref(number_of_joints_kinematics()).Add(difference.Goal());
+    m_servo_js.Velocity().Zeros();
+    m_servo_js.Effort().Zeros();
     m_pid_new_goal = true;
 }
 

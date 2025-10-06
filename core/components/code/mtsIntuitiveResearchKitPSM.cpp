@@ -1035,8 +1035,9 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         PID.enable_measured_setpoint_check(true);
 
         // make sure we start from current state
-        m_servo_jp.Assign(m_pid_setpoint_js.Position());
-        m_servo_jv.Assign(m_pid_setpoint_js.Velocity());
+        m_servo_js.Position().Assign(m_pid_setpoint_js.Position());
+        m_servo_js.Velocity().Assign(m_pid_setpoint_js.Velocity());
+        m_servo_js.Effort().Zeros();
 
         // keep first two joint values as is
         m_trajectory_j.goal.Ref(2, 0).Assign(m_pid_setpoint_js.Position().Ref(2, 0));
@@ -1052,11 +1053,11 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         return;
     }
 
-    m_trajectory_j.Reflexxes.Evaluate(m_servo_jp,
-                                      m_servo_jv,
+    m_trajectory_j.Reflexxes.Evaluate(m_servo_js.Position(),
+                                      m_servo_js.Velocity(),
                                       m_trajectory_j.goal,
                                       m_trajectory_j.goal_v);
-    servo_jp_internal(m_servo_jp, m_servo_jv);
+    servo_jp_internal(m_servo_js.Position(), m_servo_js.Velocity());
 
     const robReflexxes::ResultType trajectoryResult = m_trajectory_j.Reflexxes.ResultValue();
 
@@ -1140,8 +1141,9 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         PID.enable_measured_setpoint_check(true);
 
         // make sure we start from current state
-        m_servo_jp.Assign(m_pid_setpoint_js.Position());
-        m_servo_jv.Assign(m_pid_setpoint_js.Velocity());
+        m_servo_js.Position().Assign(m_pid_setpoint_js.Position());
+        m_servo_js.Velocity().Assign(m_pid_setpoint_js.Velocity());
+        m_servo_js.Effort().Zeros();
 
         // check if the tool in outside the cannula, measured_cp is
         // not yet computed by get_robot_data so we need to compute
@@ -1177,11 +1179,11 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         return;
     }
 
-    m_trajectory_j.Reflexxes.Evaluate(m_servo_jp,
-                                      m_servo_jv,
+    m_trajectory_j.Reflexxes.Evaluate(m_servo_js.Position(),
+                                      m_servo_js.Velocity(),
                                       m_trajectory_j.goal,
                                       m_trajectory_j.goal_v);
-    servo_jp_internal(m_servo_jp, m_servo_jv);
+    servo_jp_internal(m_servo_js.Position(), m_servo_js.Velocity());
 
     const robReflexxes::ResultType trajectoryResult = m_trajectory_j.Reflexxes.ResultValue();
 
@@ -1323,13 +1325,15 @@ void mtsIntuitiveResearchKitPSM::jaw_servo_jp(const prmPositionJointSet & jawPos
             SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::JOINT_SPACE,
                                    mtsIntuitiveResearchKitControlTypes::POSITION_MODE);
             // make sure all other joints have a reasonable goal
-            m_servo_jp.Assign(m_pid_setpoint_js.Position(), number_of_joints());
+            m_servo_js.Position().Assign(m_pid_setpoint_js.Position(), number_of_joints());
         }
     }
 
     // save goal
     m_jaw_servo_jp = jawPosition.Goal().at(0);
-    m_servo_jp.at(6) = m_jaw_servo_jp;
+    m_servo_js.Position().at(6) = m_jaw_servo_jp;
+    m_servo_js.Velocity().Zeros();
+    m_servo_js.Effort().Zeros();
     m_pid_new_goal = true;
 }
 

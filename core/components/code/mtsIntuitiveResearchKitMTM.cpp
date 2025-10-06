@@ -401,11 +401,11 @@ void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
     static const double extraTime = 2.0 * cmn_s;
     const double currentTime = this->StateTable.GetTic();
 
-    m_trajectory_j.Reflexxes.Evaluate(m_servo_jp,
-                                      m_servo_jv,
+    m_trajectory_j.Reflexxes.Evaluate(m_servo_js.Position(),
+                                      m_servo_js.Velocity(),
                                       m_trajectory_j.goal,
                                       m_trajectory_j.goal_v);
-    servo_jp_internal(m_servo_jp, m_servo_jv);
+    servo_jp_internal(m_servo_js.Position(), m_servo_js.Velocity());
 
     const robReflexxes::ResultType trajectoryResult = m_trajectory_j.Reflexxes.ResultValue();
 
@@ -420,7 +420,7 @@ void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
 
         // detect tracking error and set lower limit
         PID.measured_js(m_pid_measured_js);
-        trackingError = std::abs(m_pid_measured_js.Position().at(JNT_WRIST_ROLL) - m_servo_jp.at(JNT_WRIST_ROLL));
+        trackingError = std::abs(m_pid_measured_js.Position().at(JNT_WRIST_ROLL) - m_servo_js.Position().at(JNT_WRIST_ROLL));
         if (trackingError > maxTrackingError) {
             // disable PID
             PID.enable(false);
@@ -565,11 +565,11 @@ void mtsIntuitiveResearchKitMTM::control_servo_cf_orientation_locked(void)
         jointSet[JNT_WRIST_ROLL] = jointSet[JNT_WRIST_ROLL] + differenceInTurns * 2.0 * cmnPI;
         // initialize trajectory
         m_trajectory_j.goal.Ref(number_of_joints_kinematics()).Assign(jointSet);
-        m_trajectory_j.Reflexxes.Evaluate(m_servo_jp,
-                                          m_servo_jv,
+        m_trajectory_j.Reflexxes.Evaluate(m_servo_js.Position(),
+                                          m_servo_js.Velocity(),
                                           m_trajectory_j.goal,
                                           m_trajectory_j.goal_v);
-        servo_jp_internal(m_servo_jp, m_servo_jv);
+        servo_jp_internal(m_servo_js.Position(), m_servo_js.Velocity());
     } else {
         m_arm_interface->SendWarning(this->GetName() + ": unable to solve inverse kinematics in control_servo_cf_orientation_locked");
     }
@@ -655,8 +655,8 @@ void mtsIntuitiveResearchKitMTM::lock_orientation(const vctMatRot3 & orientation
         m_effort_orientation_locked = true;
         SetControlEffortActiveJoints();
         // initialize trajectory
-        m_servo_jp.Assign(m_pid_measured_js.Position(), number_of_joints());
-        m_servo_jv.Assign(m_pid_measured_js.Velocity(), number_of_joints());
+        m_servo_js.Position().Assign(m_pid_measured_js.Position(), number_of_joints());
+        m_servo_js.Velocity().Assign(m_pid_measured_js.Velocity(), number_of_joints());
         m_trajectory_j.Reflexxes.Set(m_trajectory_j.v,
                                      m_trajectory_j.a,
                                      StateTable.PeriodStats.PeriodAvg(),

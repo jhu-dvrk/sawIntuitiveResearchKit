@@ -200,6 +200,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual void hold(void);
     virtual void free(void);
     virtual void servo_jp(const prmPositionJointSet & jp);
+    virtual void servo_js(const prmStateJoint & js);
     virtual void servo_jr(const prmPositionJointSet & difference);
     virtual void move_jp(const prmPositionJointSet & jp);
     virtual void move_jr(const prmPositionJointSet & jp);
@@ -343,8 +344,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     // joints
     prmPositionJointSet m_servo_jp_param;
-    vctDoubleVec m_servo_jp;
-    vctDoubleVec m_servo_jv;
+    prmStateJoint m_servo_js;
     prmStateJoint
         m_pid_measured_js,
         m_pid_setpoint_js,
