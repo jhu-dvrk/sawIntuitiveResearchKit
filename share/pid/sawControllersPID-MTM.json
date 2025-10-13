@@ -66,12 +66,12 @@
             "index": 4,
             "name": "wrist_pitch",
             "type": "REVOLUTE",
-            "p_gain": 2.0,
-            "d_gain": 0.07,
+            "p_gain": 1.0,
+            "d_gain": 0.028,
             "i_gain": 0.0,
             "i_forget_rate": 0.99,
             "i_limit": 0.0,
-            "p_deadband": 0.008,
+            "p_deadband": 0.0,
             "pid_max_output": -1.0, // disabled, motors are not that powerful
             "p_measured_setpoint_tolerance": 0.5 // ~30 degrees
         },
