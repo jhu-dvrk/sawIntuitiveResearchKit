@@ -356,10 +356,10 @@ void dvrk::system_ROS::add_topics_console(const std::string & _name)
 
     subscribers_bridge().AddSubscriberToCommandWrite<std::string, CISST_RAL_MSG(std_msgs, String)>
         (interface_name, "select_teleop",
-         ros_namespace + "teleop/select_teleop");
+         ros_namespace + "teleop/select");
     subscribers_bridge().AddSubscriberToCommandWrite<std::string, CISST_RAL_MSG(std_msgs, String)>
         (interface_name, "unselect_teleop",
-         ros_namespace + "teleop/unselect_teleop");
+         ros_namespace + "teleop/unselect");
     subscribers_bridge().AddSubscriberToCommandWrite<double, CISST_RAL_MSG(std_msgs, Float64)>
         (interface_name, "set_scale",
          ros_namespace + "teleop/set_scale");
@@ -368,10 +368,10 @@ void dvrk::system_ROS::add_topics_console(const std::string & _name)
          ros_namespace + "teleop/scale");
     events_bridge().AddPublisherFromEventWrite<std::string, CISST_RAL_MSG(std_msgs, String)>
         (interface_name, "teleop_selected",
-         ros_namespace + "teleop/teleop_selected");
+         ros_namespace + "teleop/selected");
     events_bridge().AddPublisherFromEventWrite<std::string, CISST_RAL_MSG(std_msgs, String)>
         (interface_name, "teleop_unselected",
-         ros_namespace + "teleop/teleop_unselected");
+         ros_namespace + "teleop/unselected");
     const auto events = std::list<std::string>({"operator_present", "clutch", "camera"});
     for (const auto & event : events) {
         events_bridge().AddPublisherFromEventWrite<prmEventButton, CISST_RAL_MSG(sensor_msgs, Joy)>

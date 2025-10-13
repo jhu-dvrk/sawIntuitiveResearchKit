@@ -511,16 +511,16 @@ void mtsIntuitiveResearchKitPSM::UpdateStateJointKinematics(void)
     }
 
     const size_t nbPIDJoints = m_pid_measured_js.Name().size();
-    const size_t jawIndex = nbPIDJoints - 1;
+    const size_t jaw_index = nbPIDJoints - 1;
 
-    m_jaw_measured_js.Position().at(0) = m_pid_measured_js.Position().at(jawIndex);
-    m_jaw_measured_js.Velocity().at(0) = m_pid_measured_js.Velocity().at(jawIndex);
-    m_jaw_measured_js.Effort().at(0)   = m_pid_measured_js.Effort().at(jawIndex);
+    m_jaw_measured_js.Position().at(0) = m_pid_measured_js.Position().at(jaw_index);
+    m_jaw_measured_js.Velocity().at(0) = m_pid_measured_js.Velocity().at(jaw_index);
+    m_jaw_measured_js.Effort().at(0)   = m_pid_measured_js.Effort().at(jaw_index);
     m_jaw_measured_js.Timestamp() = m_pid_measured_js.Timestamp();
     m_jaw_measured_js.Valid() = m_pid_measured_js.Valid();
 
-    m_jaw_setpoint_js.Position().at(0) = m_pid_setpoint_js.Position().at(jawIndex);
-    m_jaw_setpoint_js.Effort().at(0)   = m_pid_setpoint_js.Effort().at(jawIndex);
+    m_jaw_setpoint_js.Position().at(0) = m_pid_setpoint_js.Position().at(jaw_index);
+    m_jaw_setpoint_js.Effort().at(0)   = m_pid_setpoint_js.Effort().at(jaw_index);
     m_jaw_setpoint_js.Timestamp() = m_pid_setpoint_js.Timestamp();
     m_jaw_setpoint_js.Valid() = m_pid_setpoint_js.Timestamp();
 
@@ -820,6 +820,25 @@ bool mtsIntuitiveResearchKitPSM::is_cartesian_ready(void) const
 {
     return m_powered && m_encoders_biased_from_pots && Tool.IsEngaged;
 }
+
+
+void mtsIntuitiveResearchKitPSM::SetControlSpaceAndMode(const mtsIntuitiveResearchKitControlTypes::ControlSpace space,
+                                                        const mtsIntuitiveResearchKitControlTypes::ControlMode mode,
+                                                        mtsCallableVoidBase * callback)
+{
+    if (mode != m_control_mode) {
+        if ((mode == mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE)
+            || (mode == mtsIntuitiveResearchKitControlTypes::POSITION_MODE)) {
+            const size_t jaw_index = m_pid_measured_js.Name().size() - 1;
+            m_jaw_servo_jp = m_pid_setpoint_js.Position().at(jaw_index);
+        }
+        if (m_control_mode == mtsIntuitiveResearchKitControlTypes::EFFORT_MODE) {
+            m_jaw_servo_jf = 0.0;
+        }
+    }
+    mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(space, mode, callback);
+}
+
 
 void mtsIntuitiveResearchKitPSM::SetGoalHomingArm(void)
 {
@@ -1388,6 +1407,7 @@ void mtsIntuitiveResearchKitPSM::servo_jp_internal(const vctDoubleVec & jp,
     apply_feed_forward();
 }
 
+
 void mtsIntuitiveResearchKitPSM::jaw_servo_jf(const prmForceTorqueJointSet & effort)
 {
     if (!ArmIsReady("servo_jf", mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE)) {
@@ -1416,6 +1436,7 @@ void mtsIntuitiveResearchKitPSM::jaw_servo_jf(const prmForceTorqueJointSet & eff
     // save the desired effort
     m_jaw_servo_jf = effort.ForceTorque().at(0);
 }
+
 
 void mtsIntuitiveResearchKitPSM::servo_jf_internal(const vctDoubleVec & newEffort)
 {

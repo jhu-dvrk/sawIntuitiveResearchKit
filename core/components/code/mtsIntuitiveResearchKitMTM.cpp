@@ -684,6 +684,6 @@ void mtsIntuitiveResearchKitMTM::unlock_orientation(void)
 bool mtsIntuitiveResearchKitMTM::should_use_gravity_compensation(void)
 {
     return m_gravity_compensation &&
-           // m_control_mode != mtsIntuitiveResearchKitControlTypes::POSITION_MODE &&
+           m_control_mode != mtsIntuitiveResearchKitControlTypes::POSITION_MODE &&
            m_gravity_compensation_setpoint_js.Valid();
 }

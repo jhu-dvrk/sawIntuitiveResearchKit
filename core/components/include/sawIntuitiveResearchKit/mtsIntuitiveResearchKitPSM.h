@@ -40,7 +40,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     mtsIntuitiveResearchKitPSM(const std::string & componentName, const double periodInSeconds);
     mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicConstructorArg & arg);
     ~mtsIntuitiveResearchKitPSM();
-    
+
     void set_simulated(void) override;
 
  protected:
@@ -99,6 +99,10 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     void unhome(void) override;
     bool is_joint_ready(void) const override;
     bool is_cartesian_ready(void) const override;
+
+    void SetControlSpaceAndMode(const mtsIntuitiveResearchKitControlTypes::ControlSpace space,
+                                const mtsIntuitiveResearchKitControlTypes::ControlMode mode,
+                                mtsCallableVoidBase * callback = 0) override;
 
     // state related methods
     void SetGoalHomingArm(void) override;
