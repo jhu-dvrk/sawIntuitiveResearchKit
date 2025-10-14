@@ -69,6 +69,7 @@ int main(int argc, char * argv[])
 
     std::cout << "Loading config file ..." << std::endl;
     mtsRobotIO1394 * port = new mtsRobotIO1394("io", 1.0 * cmn_ms, portName);
+    port->set_calibration_mode(true);
     port->Configure(configFile);
 
     std::cout << "Creating robot ..." << std::endl;
@@ -96,16 +97,15 @@ int main(int argc, char * argv[])
         std::cerr << "Caught exception: " << e.what() << std::endl;
     }
 
-    std::cout << std::endl
-              << "Press any key to start collecting data." << std::endl;
-    cmnGetChar();
     std::cout << "Fully open and close the gripper up to the second spring on the MTM multiple times." << std::endl
               << "NOTE: It is very important to not close the gripper all the way; stop when you feel some resistance from the second spring." << std::endl
               << "Keep closing and opening until the counter and range stop increasing." << std::endl
               << "Press any key to stop collecting data." << std::endl << std::endl;
 
-    double minRad = std::numeric_limits<double>::max();
-    double maxRad = std::numeric_limits<double>::min();
+    double min_v = std::numeric_limits<double>::max();
+    double max_v = std::numeric_limits<double>::min();
+    double min_p = std::numeric_limits<double>::max();
+    double max_p = std::numeric_limits<double>::min();
     size_t counter = 0;
     while (1) {
         if (cmnKbHit()) {
@@ -113,105 +113,98 @@ int main(int argc, char * argv[])
             break;
         }
         port->Read();
-        // read values in radians to test existing coeffcients
-        double value = robot->PotentiometerPosition().at(0);
+        // read values in volts in case scale and offsets are set to 0
+        double v = robot->PotentiometerVoltage().at(0);
         bool newValue = false;
-        if (value > maxRad) {
-            counter++;
-            maxRad = value;
-            newValue = true;
-        } else if (value < minRad) {
-            minRad = value;
-            counter++;
+        if (v > max_v) {
+            max_v = v;
             newValue = true;
         }
+        if (v < min_v) {
+            min_v = v;
+            newValue = true;
+        }
+        // read values in radians to test existing coefficients
+        double p = robot->PotentiometerPosition().at(0);
+        if (p > max_p) {
+            max_p = p;
+        }
+        if (p < min_p) {
+            min_p = p;
+        }
         if (newValue) {
+            counter++;
             std::cout << '\r' << " Counter: "
                       << std::setfill(' ') << std::setw(5) << counter
-                      << ", range: [ "
+                      << "    Range voltage: [ "
                       <<  std::fixed << std::setprecision(3) << std::setfill(' ') << std::setw(8)
-                      << minRad * cmn180_PI << " - "
+                      << min_v << " ; "
                       <<  std::fixed << std::setprecision(3) << std::setfill(' ') << std::setw(8)
-                      << maxRad * cmn180_PI << " ]" << std::flush;
+                      << max_v << " ]    Range angle (deg): [ "
+                      <<  std::fixed << std::setprecision(3) << std::setfill(' ') << std::setw(8)
+                      << min_p * cmn180_PI << " ; "
+                      <<  std::fixed << std::setprecision(3) << std::setfill(' ') << std::setw(8)
+                      << max_p * cmn180_PI << " ]" << std::flush;
         }
         osaSleep(1.0 * cmn_ms);
     }
     cmnGetChar(); // to read the pressed key
+    std::cout << std::endl;
 
-    std::cout << std::endl
-              << "Status: found range [" << minRad * cmn180_PI << ", " << maxRad * cmn180_PI
-              << "] degrees using " << counter << " samples." << std::endl
+    // load json file
+    std::ifstream jsonStream;
+    Json::Value jsonConfig;
+    Json::Reader jsonReader;
+
+    jsonStream.open(configFile.c_str());
+    if (!jsonReader.parse(jsonStream, jsonConfig)) {
+        std::cerr << "Failed to parse configuration file \""
+                  << configFile << "\"\n"
+                  << jsonReader.getFormattedErrorMessages();
+        exit(EXIT_FAILURE);
+    }
+    jsonStream.close();
+
+    // query previous current offset and scales
+    Json::Value & conversionJson = jsonConfig["robots"][0]["actuators"][0]["potentiometer"]["voltage_to_position"];
+    double previousOffset = conversionJson["offset"].asDouble();
+    double previousScale = conversionJson["scale"].asDouble();
+
+    // compute new offsets assuming a range [0, user-max]
+    double userMaxRad = 60.0 * cmnPI / 180.0;
+    // find corresponding pot values using voltage range
+    double newScale = userMaxRad / (min_v - max_v);
+    double newOffset = - newScale * max_v;
+
+    // ask one last confirmation from user
+    std::cout << "Status: offset and scale in JSON configuration file: " << previousOffset << " " << previousScale << std::endl
+              << "Status: new offset and scale:                       " << newOffset << " " << newScale << std::endl
               << std::endl
-              << "Do you want to update the config file with these values? [Y/y]" << std::endl;
-
-    // save if needed
+              << "Do you want to save these values? [S/s]" << std::endl;
     char key = cmnGetChar();
-    if ((key == 'y') || (key == 'Y')) {
+    if ((key == 's') || (key == 'S')) {
 
-        // load json file
-        std::ifstream jsonStream;
-        Json::Value jsonConfig;
-        Json::Reader jsonReader;
+        // rename old file and save in place
+        const double abs_time = osaGetTime();
+        std::string date, time;
+        osaGetDateString(date, abs_time, '-');
+        osaGetTimeString(time, abs_time, ':');
+        const std::string newName = configFile + "-backup-" + date + "_" + time;
+        cmnPath::RenameFile(configFile, newName);
+        std::cout << "Existing IO config file has been renamed " << newName << std::endl;
 
-        jsonStream.open(configFile.c_str());
-        if (!jsonReader.parse(jsonStream, jsonConfig)) {
-            std::cerr << "Failed to parse configuration file \""
-                      << configFile << "\"\n"
-                      << jsonReader.getFormattedErrorMessages();
-            exit(EXIT_FAILURE);
-        }
-        jsonStream.close();
-
-        // query previous current offset and scales
-        Json::Value & conversionJson = jsonConfig["robots"][0]["actuators"][0]["potentiometer"]["voltage_to_position"];
-        double previousOffset = conversionJson["offset"].asDouble();
-        double previousScale = conversionJson["scale"].asDouble();
-
-        // compute new offsets assuming a range [0, user-max]
-        double userMaxDeg;
-        std::cout << "Enter the new desired max for the gripper, 60 (degrees) is recommended to match the maximum tool opening." << std::endl;
-        std::cin >> userMaxDeg;
-        cmnGetChar(); // to get the CR
-        double userMaxRad = userMaxDeg * cmnPI / 180.0;
-        // find corresponding pot values using previous scale and offset
-        double minVolt = (minRad - previousOffset) / previousScale;
-        double maxVolt = (maxRad - previousOffset) / previousScale;
-        // compute new scale and offset to match pot -> [0, user-max]
-        double newScale = (userMaxRad - 0.0) / (maxVolt - minVolt);
-        double newOffset = - newScale * minVolt;
-
-        // ask one last confirmation from user
-        std::cout << "Status: offset and scale in JSON configuration file: " << previousOffset << " " << previousScale << std::endl
-                  << "Status: new offset and scale:                       " << newOffset << " " << newScale << std::endl
-                  << std::endl
-                  << "Do you want to save these values? [S/s]" << std::endl;
-        key = cmnGetChar();
-        if ((key == 's') || (key == 'S')) {
-
-            // rename old file and save in place
-            const double abs_time = osaGetTime();
-            std::string date, time;
-            osaGetDateString(date, abs_time, '-');
-            osaGetTimeString(time, abs_time, ':');
-            const std::string newName = configFile + "-backup-" + date + "_" + time;
-            cmnPath::RenameFile(configFile, newName);
-            std::cout << "Existing IO config file has been renamed " << newName << std::endl;
-
-            // save new data
-            Json::StreamWriterBuilder builder;
-            builder["indentation"] = "    ";
-            std::ofstream outputFile(configFile);
-            std::unique_ptr<Json::StreamWriter> writer(builder.newStreamWriter());
-            jsonConfig["robots"][0]["actuators"][0]["potentiometer"]["voltage_to_position"]["offset"] = newOffset;
-            jsonConfig["robots"][0]["actuators"][0]["potentiometer"]["voltage_to_position"]["scale"] = newScale;
-            writer->write(jsonConfig, &outputFile);
-            outputFile.close();
-            std::cout << "Results saved in IO config file " << configFile << std::endl;
-        } else {
-            std::cout << "Status: user didn't want to save new offsets." << std::endl;
-        }
+        // save new data
+        Json::StreamWriterBuilder builder;
+        builder["indentation"] = "    ";
+        std::ofstream outputFile(configFile);
+        std::unique_ptr<Json::StreamWriter> writer(builder.newStreamWriter());
+        jsonConfig["robots"][0]["actuators"][0]["potentiometer"]["voltage_to_position"]["offset"] = newOffset;
+        jsonConfig["robots"][0]["actuators"][0]["potentiometer"]["voltage_to_position"]["scale"] = newScale;
+        writer->write(jsonConfig, &outputFile);
+        outputFile.close();
+        std::cout << "Results saved in IO config file " << configFile << std::endl;
     } else {
-        std::cout << "Status: no data saved in config file." << std::endl;
+        std::cout << "Status: user didn't want to save new offsets." << std::endl;
     }
 
     delete port;
