@@ -827,8 +827,8 @@ void mtsIntuitiveResearchKitPSM::SetControlSpaceAndMode(const mtsIntuitiveResear
                                                         mtsCallableVoidBase * callback)
 {
     if (mode != m_control_mode) {
-        if ((m_control_mode == mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE)
-            || (m_control_mode == mtsIntuitiveResearchKitControlTypes::POSITION_MODE)) {
+        if ((mode == mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE)
+            || (mode == mtsIntuitiveResearchKitControlTypes::POSITION_MODE)) {
             const size_t jaw_index = m_pid_measured_js.Name().size() - 1;
             m_jaw_servo_jp = m_pid_setpoint_js.Position().at(jaw_index);
         }

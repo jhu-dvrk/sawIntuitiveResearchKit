@@ -668,8 +668,8 @@ class MTMGripper(Robot):
             * (self.pitch(0) / self.gearRatio(0))
         )
 
-        self.voltsToPosScale = -2.0
-        self.voltsToPosOffset = 30.0
+        self.voltsToPosScale = 0.0
+        self.voltsToPosOffset = 0.0
         super().__init__(robotTypeName, hardwareVersion, serialNumber, calData, 1, 0)
 
     def generatePotentiometers(self):

@@ -1466,7 +1466,7 @@ void mtsIntuitiveResearchKitArm::EnterHomed(void)
     }
 
     // enable PID and start from current position
-    mtsIntuitiveResearchKitArm::servo_jp_internal(m_pid_setpoint_js.Position(), vctDoubleVec());
+    servo_jp_internal(m_pid_setpoint_js.Position(), vctDoubleVec());
     PID.enable_measured_setpoint_check(should_use_measured_setpoint_check());
     PID.enable_joints(vctBoolVec(number_of_joints(), true));
     PID.enforce_position_limits(true);
