@@ -2046,8 +2046,8 @@ void mtsIntuitiveResearchKitArm::apply_feed_forward(void)
         jf.Ref(gc_jf.size()).Assign(gc_jf);
     }
 
-    if (m_servo_js.Effort().size() == number_of_joints_kinematics()) {
-        jf.Ref(number_of_joints_kinematics()) += m_servo_js.Effort();
+    if (m_servo_js.Effort().size() != 0) {
+        jf.Ref(number_of_joints_kinematics()) += m_servo_js.Effort().Ref(number_of_joints_kinematics());
     }
 
     if (m_has_coupling) {
