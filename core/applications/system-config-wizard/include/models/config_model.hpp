@@ -1321,7 +1321,13 @@ private:
         if (arms == nullptr) { return {}; }
 
         std::optional<ArmConfig> source = arms->find(
-            [this](const ArmConfig& arm){ return arm.name == source_arm_name; }
+            [this](const ArmConfig& arm){
+                if (!arm.component.has_value()) {
+                    return false;
+                }
+
+                return arm.component->interface_name == source_arm_name;
+            }
         );
 
         return source;

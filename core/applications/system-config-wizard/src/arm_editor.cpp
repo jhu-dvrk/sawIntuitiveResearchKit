@@ -277,7 +277,7 @@ HapticMTMPage::HapticMTMPage(ArmConfig& config, QWidget *parent) : QWizardPage(p
         // Configure arm's interface to component
         this->config->component = ComponentInterfaceConfig();
         this->config->component->component_name = component.name;
-        this->config->component->interface_name = this->config->name;
+        this->config->component->interface_name = (left_right_selector->currentIndex() == 0) ? "MTML" : "MTMR";
         this->config->component->component = component;
 
         emit completeChanged();
