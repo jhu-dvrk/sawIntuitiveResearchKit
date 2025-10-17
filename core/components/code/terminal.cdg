@@ -4,6 +4,11 @@
 inline-header {
 // Always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
+
+// Following needed on Windows
+#ifdef interface
+#undef interface
+#endif
 }
 
 class {
