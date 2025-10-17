@@ -348,10 +348,10 @@ void HapticMTMPage::showEvent(QShowEvent *CMN_UNUSED(event)) {
         }
 
         // Should detect e.g. MTML2 as a left MTM
-        std::string interface = config->component ? config->component->interface_name : "";
-        if (interface.size() >= 4 && interface.substr(0, 4) == "MTML") {
+        std::string interface_name = config->component ? config->component->interface_name : "";
+        if (interface_name.size() >= 4 && interface_name.substr(0, 4) == "MTML") {
             left_right_selector->setCurrentIndex(0);
-        } else if (interface.size() >= 4 && interface.substr(0, 4) == "MTMR") {
+        } else if (interface_name.size() >= 4 && interface_name.substr(0, 4) == "MTMR") {
             left_right_selector->setCurrentIndex(1);
         }
 
