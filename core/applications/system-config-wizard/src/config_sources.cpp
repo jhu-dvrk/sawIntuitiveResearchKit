@@ -48,6 +48,17 @@ ConfigSources::ConfigSources(QWidget* parent) : QWidget(parent) {
     }
 
     QObject::connect(model, &QFileSystemModel::directoryLoaded, this, &ConfigSources::loaded);
+    QObject::connect(view, &QTreeView::doubleClicked, this, [this](const QModelIndex& index) {
+        QString path = this->model->filePath(index);
+        std::filesystem::path config_path = path.toStdString();
+
+        // check if selected item is a system config file (rather than directory, arm config, etc.)
+        if (!config_path.has_filename()) { return; }
+        bool is_system_file = config_path.filename().string().substr(0, 6) == "system";
+        if (!is_system_file) { return; }
+
+        emit this->systemConfigChosen(path);
+    });
 }
 
 ListModelT<ConfigSources::Arm>& ConfigSources::getModel() {

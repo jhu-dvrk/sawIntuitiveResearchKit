@@ -83,13 +83,7 @@ void Editor::openConfig() {
     }
 
     std::filesystem::path file_path(file_name.toStdString());
-    std::unique_ptr<ConfigEditor> editor = ConfigEditor::open(file_path, *config_sources, *launcher);
-    if (editor == nullptr) {
-        // TODO: display validation/error message
-        return;
-    }
-
-    createTab(std::move(editor));
+    openConfigFile(file_path);
 }
 
 void Editor::openConfigFile(std::filesystem::path config_file) {

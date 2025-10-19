@@ -56,6 +56,9 @@ public:
 
     std::optional<std::filesystem::path> dir();
 
+signals:
+    void systemConfigChosen(const QString &path);
+
 public slots:
     void addSource(QDir directory);
     void loaded(const QString &path);

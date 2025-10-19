@@ -14,6 +14,7 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 #include "mainwindow.hpp"
+#include "config_sources.hpp"
 
 #include <QtWidgets>
 #include <QFileDialog>
@@ -27,6 +28,10 @@ MainWindow::MainWindow(SystemLauncher& launcher) : directory_chooser(this, "Open
     directory_chooser.setOptions(QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
 
     config_sources = new ConfigSources();
+    QObject::connect(config_sources, &ConfigSources::systemConfigChosen, this, [this](const QString& path) {
+        std::filesystem::path config_path = path.toStdString();
+        this->editor->openConfigFile(config_path);
+    });
 
     editor = new Editor(*config_sources, launcher);
     QObject::connect(&launcher, &SystemLauncher::error, this, [this](std::string message) {
