@@ -2,24 +2,6 @@
     "state-collectors":
     [
         {
-            "component": "io",
-            "tables":
-            [
-                {
-                    "sampling": 20,
-                    "table": "MTMLRead",
-                    "signals": ["measured_js"]
-                }
-                ,
-                {
-                    "sampling": 20,
-                    "table": "PSM1Read",
-                    "signals": ["measured_js"]
-                }
-            ]
-        }
-        ,
-        {
             "component": "MTML",
             "tables":
             [
