@@ -1,5 +1,5 @@
 {
-    "state-collectors":
+    "state_collectors":
     [
         {
             "component": "io",
@@ -8,13 +8,13 @@
                 {
                     "sampling": 20,
                     "table": "MTMLRead",
-                    "signals": ["measured_js"]
+                    "signals": ["measured_js"] // actuators, not joints
                 }
                 ,
                 {
                     "sampling": 20,
                     "table": "MTMRRead",
-                    "signals": ["measured_js"]
+                    "signals": ["measured_js"] // actuators, not joints
                 }
             ]
         }
@@ -26,7 +26,7 @@
                 {
                     "sampling": 5,
                     "table": "StateTable",
-                    "signals": ["measured_cp"]
+                    "signals": ["measured_js", "jaw/measured_js", "measured_cp"] // joints and cartesian
                 }
             ]
         }
@@ -38,7 +38,7 @@
                 {
                     "sampling": 5,
                     "table": "StateTable",
-                    "signals": ["measured_cp"]
+                    "signals": ["measured_js", "jaw/measured_js", "measured_cp"] // joints and cartesian
                 }
             ]
         }

@@ -1,5 +1,5 @@
 {
-    "state-collectors":
+    "state_collectors":
     [
         {
             "component": "MTML",
@@ -21,6 +21,19 @@
                     "sampling": 5,
                     "table": "StateTable",
                     "signals": ["measured_cp", "jaw/measured_js"]
+                }
+            ]
+        }
+    ]
+    ,
+    "event_collectors":
+    [
+        {
+            "component": "PSM1",
+            "interfaces": [
+                {
+                    "name": "Arm",
+                    "events_write": ["operating_state", "tool_type", "goal_reached"]
                 }
             ]
         }
