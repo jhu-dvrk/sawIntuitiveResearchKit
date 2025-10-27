@@ -176,8 +176,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     mtsStateMachine mArmState;
     // Just to have read commands to retrieve states
     mtsStateTable mStateTableState;
-    mtsStdString mStateTableStateCurrent;
-    mtsStdString mStateTableStateDesired;
+    std::string mStateTableStateCurrent;
+    std::string mStateTableStateDesired;
     prmOperatingState m_operating_state; // crtk operating state
     // state machine
     std::string m_resume_current_state, m_resume_desired_state;
