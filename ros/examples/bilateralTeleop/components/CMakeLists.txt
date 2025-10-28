@@ -14,19 +14,18 @@ project (saw_intuitive_research_kit_example_bilateral_teleop VERSION 2.3.0)
 
 # first test for ROS1
 set (ROS1_depends
-  cisst_ros_crtk roscpp roslib)
+     cisst_ros_crtk roscpp roslib)
 
 find_package (catkin QUIET
-  COMPONENTS
-  ${ROS1_depends})
+              COMPONENTS ${ROS1_depends})
 
 # ROS 1
 if (catkin_FOUND)
   set (ROS_VERSION 1)
   file (MAKE_DIRECTORY "${CATKIN_DEVEL_PREFIX}/include")
   catkin_package (INCLUDE_DIRS include "${CATKIN_DEVEL_PREFIX}/include"
-    LIBRARIES saw_intuitive_research_kit_example_bilateral_teleop
-    CATKIN_DEPENDS ${ROS1_depends})
+                  LIBRARIES saw_intuitive_research_kit_example_bilateral_teleop
+                  CATKIN_DEPENDS ${ROS1_depends})
   include_directories (${catkin_INCLUDE_DIRS})
 else (catkin_FOUND)
 
@@ -82,27 +81,37 @@ if (cisst_FOUND_AS_REQUIRED)
       ${saw_intuitive_research_kit_example_bilateral_teleop_INCLUDE_DIR}
       ${CMAKE_BINARY_DIR}
       ${CMAKE_CURRENT_BINARY_DIR}
-      ${sawIntuitiveResearchKit_INCLUDE_DIR}
-      ${catkin_INCLUDE_DIRS})
+      ${sawIntuitiveResearchKit_INCLUDE_DIR})
 
     link_directories (
       ${sawIntuitiveResearchKit_LIBRARY_DIR})
 
+
+    set (BILATERAL_SOURCES
+         "include/mtsBilateralTeleOperationPSM.h"
+         "include/sawIntuitiveResearchKitBilateralTeleopExport.h"
+         "code/mtsBilateralTeleOperationPSM.cpp")
+
+    if (ROS_VERSION)
+      set (BILATERAL_SOURCES ${BILATERAL_SOURCES}
+           "include/mtsBilateralTeleOperationPSMROSBridge.h"
+           "code/mtsBilateralTeleOperationPSMROSBridge.cpp")
+    endif ()
+
     add_library (sawIntuitiveResearchKitBilateralTeleop
-      "include/mtsBilateralTeleOperationPSMROSBridge.h"
-      "include/mtsBilateralTeleOperationPSM.h"
-      "code/mtsBilateralTeleOperationPSMROSBridge.cpp"
-      "code/mtsBilateralTeleOperationPSM.cpp"
-    )
+                 ${BILATERAL_SOURCES})
 
     cisst_target_link_libraries (sawIntuitiveResearchKitBilateralTeleop
-      ${REQUIRED_CISST_LIBRARIES})
+                                 ${REQUIRED_CISST_LIBRARIES})
 
     # link against non cisst libraries and cisst components
     target_link_libraries (sawIntuitiveResearchKitBilateralTeleop
-      ${sawIntuitiveResearchKit_LIBRARIES}
-      ${catkin_LIBRARIES}
-      )
+                           ${sawIntuitiveResearchKit_LIBRARIES})
+
+    if (ROS_VERSION EQUAL 1)
+      target_link_libraries (sawIntuitiveResearchKitBilateralTeleop
+                             ${catkin_LIBRARIES})
+    endif ()
 
     if (ROS_VERSION EQUAL 2)
       ament_target_dependencies (

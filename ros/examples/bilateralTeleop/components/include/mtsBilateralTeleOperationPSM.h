@@ -27,6 +27,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmForceCartesianGet.h>
 #include <cisstParameterTypes/prmStateCartesian.h>
 
+// Always include last
+#include <sawIntuitiveResearchKitBilateralTeleopExport.h>
+
 class CISST_EXPORT mtsBilateralTeleOperationPSM: public mtsTeleOperationPSM
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
