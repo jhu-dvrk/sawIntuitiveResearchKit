@@ -359,10 +359,20 @@
         ,
         {
             "model": "420183",
+            "version_max": 10,
             "names": ["PERMANENT_CAUTERY_HOOK"],
             "description": "Permanent Cautery Hook",
             "generation": "S",
             "file": "PERMANENT_CAUTERY_HOOK_420183.json"
+        }
+        ,
+        {
+            "model": "420183",
+            "version_min": 11,
+            "names": ["PERMANENT_CAUTERY_HOOK"],
+            "description": "Permanent Cautery Hook (Geared)",
+            "generation": "S",
+            "file": "PERMANENT_CAUTERY_HOOK_420183_GEARED.json"
         }
         ,
         {
