@@ -173,13 +173,6 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     void virtual UpdateGripperToJawConfiguration(void);
 
     struct {
-        double max = 60.0 * cmnPI_180; // from 2012, we assumed MTM gripper is 0 to 60 degrees
-        double zero = 0.0; // value corresponding to closed SPM jaws,
-                           // MTM gripper might go lower to force negative
-                           // PSM jaw PID goal and stronger forces
-    } m_gripper;
-
-    struct {
         double roll_min;
         double roll_max;
         double gripper_min;

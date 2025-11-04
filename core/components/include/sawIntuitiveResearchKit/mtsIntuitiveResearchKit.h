@@ -106,6 +106,12 @@ namespace mtsIntuitiveResearchKit {
         const double JawRate =  4.0 * cmnPI * cmn_s; // 720 d/s
         const double JawRateAfterClutch =  0.2 * cmnPI * cmn_s; // 36.0 d/s
         const double JawDifferenceForCaughtUp =  2.0 * cmnPI_180; // in radians
+        const double GripperZero = 0.0; // value corresponding to
+                                        // closed PSM jaws, MTM
+                                        // gripper might go lower to
+                                        // force negative, PSM jaw PID
+                                        // goal and stronger forces
+        const double GripperMax = 60.0 * cmnPI_180; // from 2012, we assumed MTM gripper is 0 to 60 degrees
     }
 
     namespace TeleOperationECM {
