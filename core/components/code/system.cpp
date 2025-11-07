@@ -280,7 +280,6 @@ void dvrk::system::Configure(const std::string & filename)
                           IO, "endoscope_focus_in");
         m_connections.Add(controller, "endoscope_focus_out",
                           IO, "endoscope_focus_out");
-        std::cerr << CMN_LOG_DETAILS << " --------------- the following two connections should likely happen in the console class.  To test with two consoles!" << std::endl;
         m_connections.Add(controller, "focus_in",
                           IO, "focus_plus");
         m_connections.Add(controller, "focus_out",
@@ -346,7 +345,7 @@ void dvrk::system::Configure(const std::string & filename)
         }
         // create interface for system
         _ire_cmd.append(this->GetName() + " = cisstMultiTask.mtsCreateClientInterface(clientName = 'system_Python', serverName = '" + this->GetName() + "', interfaceName = 'Main');");
-        
+
         // create interfaces for all arms
         for (auto & iter : m_arm_proxies) {
             const std::string name = iter.first;
