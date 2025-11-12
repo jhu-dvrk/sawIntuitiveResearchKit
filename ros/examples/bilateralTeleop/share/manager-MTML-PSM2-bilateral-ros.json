@@ -12,4 +12,17 @@
             "configure-parameter": "MTML_PSM2" // name of teleop component to bridge, make sure this matches
         }
     ]
+    ,
+    "connections": [
+        {
+            "provided": {
+                "component": "PSM2",
+                "interface": "Arm"
+            },
+            "required": {
+                "component": "MTML_PSM2",
+                "interface": "PSM2_Arm_force_source"
+            }
+        }
+    ]
 }

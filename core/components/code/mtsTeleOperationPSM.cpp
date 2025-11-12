@@ -258,7 +258,7 @@ void mtsTeleOperationPSM::Configure(const std::string & filename)
     mtsComponent::ConfigureJSON(jsonConfig);
 
     // JSON part
-    mtsTeleOperationPSM::Configure(jsonConfig);
+    Configure(jsonConfig);
 }
 
 

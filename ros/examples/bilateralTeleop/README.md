@@ -20,10 +20,10 @@ The example component can be switched on the fly between bilateral and unilatera
 
 # Config options
 
-The bilateral teleop component supports all the same configuration options are the default one, as well as a few more described below.
+The bilateral teleop component supports all the same configuration options are the default one, as well as a few more described below. Note that since the component is created by the component manager, the teleop config should go into a separate file as shown in the example, and the component's `configure-parameter` should be set to the name of that config file.
 
 `mtm_torque_gain` (floating point, default 0.2): scale down torque forces applied to MTM, used to reduce some oscillation/instability that is frequently present
 
-`psm_force_source`: format `{ "component": <component name>, "interface": <name>, "read_command": <name> }`, used to specify a cisst component to get force estimation from for the PSM. For example, a force sensor or a custom component running a dynamics model. The read command should return type `prmForceCartesianGet`. By default, this component will use the PSM's `measured_cf` if no other source is specified.
+`psm_force_source`: format `{ "component": <component name>, "interface": <name>, "function": <name> }`, used to specify a cisst component to get force estimation from for the PSM (by default, `measured_cf` from motor torques will be used). For example, a force sensor or a custom component running a dynamics model. The read command function should return type `prmForceCartesianGet`. In addition, you will need to add an explicit connection to the component manager file (e.g. `manager-MTML-PSM2-bilteral-ros.json` in the example) to connect the force source interface (e.g. `ATI_gamma:force_sensor`) to the teleop component's corresponding interface (e.g. `MTML_PSM2:ATI_gamma_force_sensor_force_source`). The teleop's corresponding interface will be named `<source component name>_<source interface_name>_force_source`. The required connection is illustrated in the example configuration.
 
 `mtm_force_source`: same as `psm_force_source`, but provides estimation of forces on the MTM.

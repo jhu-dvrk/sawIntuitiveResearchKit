@@ -18,7 +18,8 @@
                 "constructor-arg": {
                     "Name": "MTML_PSM2",
                     "Period": 0.001
-                }
+                },
+                "configure-parameter": "MTML_PSM2_teleop_config.json"
             }
         ]
     },
