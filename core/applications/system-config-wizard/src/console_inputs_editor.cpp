@@ -129,42 +129,29 @@ ConsoleInputsEditor::ConsoleInputsEditor(ConsoleInputConfig& model, ConfigSource
         emit this->model->updated();
     });
 
-    // when we update the list of available arms, it will end up setting the model values
-    // to the first arm on the list, so we first save a copy of the correct values here
-    std::string head_sensor_arm = model.head_sensor != nullptr ? model.head_sensor->source_arm_name : "";
-    std::string pedals_arm = model.pedals != nullptr ? model.pedals->source_arm_name : "";
-    std::string force_dimension_interface = model.force_dimension_buttons != nullptr ? model.force_dimension_buttons->source_arm_name : "";
-
-    // Force dimension buttons interface name is not necessarily same as arm name,
-    // so we need to find the actual name of the arm
-    std::string force_dimension_buttons_arm = "";
-    for (int idx = 0; idx < arms.count(); idx++) {
-        const ArmConfig& arm = arms.get(idx);
-        if (arm.component && arm.component->interface_name == force_dimension_interface) {
-            force_dimension_buttons_arm = arm.name;
-            break;
-        }
-    }
-
+    // will also set set model's values as current drop-down selection
     updateAvailableArms();
 
     if (model.head_sensor != nullptr) {
         head_sensor_type->setCurrentIndex(model.head_sensor->type.id());
-        head_sensor_available_mtms->setCurrentText(QString::fromStdString(head_sensor_arm));
     }
 
     if (model.type == ConsoleInputType::Value::FOOT_PEDALS) {
         input_type->setCurrentIndex(1);
         user_input_stack->setCurrentIndex(1);
-        pedals_available_mtms->setCurrentText(QString::fromStdString(pedals_arm));
     } else if (model.type == ConsoleInputType::Value::FORCE_DIMENSION_BUTTONS) {
         input_type->setCurrentIndex(2);
         user_input_stack->setCurrentIndex(2);
-        available_forcedimensions->setCurrentText(QString::fromStdString(force_dimension_buttons_arm));
     }
 }
 
 void ConsoleInputsEditor::updateAvailableArms() {
+    // Don't send updates, we are only "temporarily" modifying the current value of the comboboxes
+    // otherwise, it sets the model values to empty
+    const QSignalBlocker pedals_blocker(pedals_available_mtms);
+    const QSignalBlocker head_sensor_blocker(head_sensor_available_mtms);
+    const QSignalBlocker forcedimension_blocker(available_forcedimensions);
+
     pedals_available_mtms->clear();
     head_sensor_available_mtms->clear();
     available_forcedimensions->clear();

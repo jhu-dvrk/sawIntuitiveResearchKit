@@ -810,24 +810,27 @@ public:
         if (arm_file.has_value()) {
             // only save arm config file path if it differs from the default
             std::string default_filename = name + "-" + serial_number.value_or("") + ".json";
-            if (arm_file->filename() != default_filename || arm_file->parent_path() != destination.parent_path()) {
-                value["arm_file"] = arm_file->string();
+            std::string arm_filename = arm_file->lexically_proximate(destination.parent_path());
+            if (arm_filename != default_filename) {
+                value["arm_file"] = arm_filename;
             }
         }
 
-        if (io_file.has_value() && arm_file->parent_path() != destination.parent_path()) {
+        if (io_file.has_value()) {
             // only save IO config file path if it differs from the default
             std::string default_filename = "sawRobotIO1394-" + name +  + "-" + serial_number.value_or("") + ".json";
-            if (io_file->filename() != default_filename || io_file->parent_path() != destination.parent_path()) {
-                value["IO_file"] = io_file->string();
+            std::string io_filename = io_file->lexically_proximate(destination.parent_path());
+            if (io_filename != default_filename) {
+                value["IO_file"] = io_filename;
             }
         }
 
         if (io_gripper_file.has_value()) {
             // only save IO gripper config file path if it differs from the default
             std::string default_filename = "sawRobotIO1394-" + name + "-gripper-" + serial_number.value_or("") + ".json";
-            if (io_gripper_file->filename() != default_filename || io_gripper_file->parent_path() != destination.parent_path()) {
-                value["IO_gripper_file"] = io_gripper_file->string();
+            std::string io_gripper_filename = io_gripper_file->lexically_proximate(destination.parent_path());
+            if (io_gripper_filename != default_filename) {
+                value["IO_gripper_file"] = io_gripper_filename;
             }
         }
 
