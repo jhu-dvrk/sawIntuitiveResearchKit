@@ -12,7 +12,7 @@ Once you've created a copy with a new package/library name, you are free to begi
 
 # Usage
 
-To use the teleoperation component, we simply need need to create a dVRK console configuration file for it. See `share/console-MTML-PSM2-bilateral-teleop.json` for an example of how to do this (make sure you put the console config file with your usual console config files or the dVRK won't be able to find your arm config files). The `classname` and `shared-library` fields tell the dVRK where to find the new teleop component, so if you are modifying this example also make sure they match your package.
+To use the teleoperation component, we simply need need to create a dVRK console configuration file for it. See `share/system-MTML-PSM2-bilateral-teleop.json` for an example of how to do this (make sure you put the console config file with your usual console config files or the dVRK won't be able to find your arm config files). The `classname` and `shared-library` fields tell the dVRK where to find the new teleop component, so if you are modifying this example also make sure they match your package.
 
 It is recommend you tune the PID disturbance observers for the PSM and MTM used in bilateral teleoperation (or simply disable them). This can be done by editing `sawIntuitiveResearchKit/share/pid/sawControllersPID-<arm type>.json`, and replace `use_disturbance_observer: true` with `use_disturbance_observer: false` for each actuator (or tune the disturbance observer).
 
@@ -24,6 +24,6 @@ The bilateral teleop component supports all the same configuration options are t
 
 `mtm_torque_gain` (floating point, default 0.2): scale down torque forces applied to MTM, used to reduce some oscillation/instability that is frequently present
 
-`psm_force_source`: format `{ "component": <component name>, "interface": <name>, "read_command": <name> }`, used to specify a cisst component to get force estimation from for the PSM. For example, a force sensor or a custom component running a dynamics model. The read command should return type `prmForceCartesianGet`.
+`psm_force_source`: format `{ "component": <component name>, "interface": <name>, "read_command": <name> }`, used to specify a cisst component to get force estimation from for the PSM. For example, a force sensor or a custom component running a dynamics model. The read command should return type `prmForceCartesianGet`. By default, this component will use the PSM's `measured_cf` if no other source is specified.
 
 `mtm_force_source`: same as `psm_force_source`, but provides estimation of forces on the MTM.
