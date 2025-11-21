@@ -111,10 +111,17 @@ class {
     }
 
     member {
-        name use_MTM_velocity;
+        name use_MTM_linear_velocity;
         type bool;
         visibility public;
         default true;
+    }
+
+    member {
+        name use_MTM_angular_velocity;
+        type bool;
+        visibility public;
+        default false;
     }
 
     member {

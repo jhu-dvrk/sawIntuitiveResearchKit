@@ -121,7 +121,7 @@ prmStateCartesian mtsBilateralTeleOperationPSM::ArmMTM::state()
     state.Position() = teleop->mMTM.m_measured_cp.Position();
     state.PositionIsValid() = teleop->mMTM.m_measured_cp.Valid();
 
-    if (teleop->m_config.use_MTM_velocity) {
+    if (teleop->m_config.use_MTM_linear_velocity || teleop->m_config.use_MTM_angular_velocity) {
         auto mtm_velocity = teleop->mMTM.m_measured_cv;
         state.Velocity().Ref<3>(0) = mtm_velocity.VelocityLinear();
         state.Velocity().Ref<3>(3) = mtm_velocity.VelocityAngular();
