@@ -1147,7 +1147,7 @@ public:
     /* Store source arm name, and prefer retrieving IO name from current arm, so that changes to source arm config are reflected here */
     std::string source_arm_name;
     bool source_is_dqla = false;
-    std::string source_io_name;
+    std::string source_io_name = "IO";
 
 private:
     ListModelT<ArmConfig> const* arms = nullptr;
