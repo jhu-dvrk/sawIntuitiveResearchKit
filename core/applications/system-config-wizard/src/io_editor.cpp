@@ -75,7 +75,7 @@ IOEditPage::IOEditPage(IOConfig& config, const SystemConfigModel& model, QWidget
     });
 
     QLabel* name_label = new QLabel("Name:");
-    name_label->setToolTip("I/O name - typically just \"io\"");
+    name_label->setToolTip("I/O name - typically just \"IO\"");
     form->addRow(name_label, name_input);
     form->addRow(name_invalid_msg);
 

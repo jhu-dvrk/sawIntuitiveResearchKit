@@ -60,7 +60,7 @@ Editor::Editor(ConfigSources& config_sources, SystemLauncher& launcher, QWidget*
 
 void Editor::newConfig() {
     std::unique_ptr<SystemConfigModel> model = std::make_unique<SystemConfigModel>();
-    model->io_configs->appendItem(IOConfig("io")); // default I/O
+    model->io_configs->appendItem(IOConfig("IO")); // default I/O
 
     std::unique_ptr<ConsoleConfig> default_console = std::make_unique<ConsoleConfig>();
     default_console->name = "Console";

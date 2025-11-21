@@ -602,7 +602,7 @@ BaseFramePage::BaseFramePage(ArmConfig& config, SystemConfigModel& system_model,
     ecm_mounting_pitch = new QSpinBox();
     ecm_mounting_pitch->setRange(-90, 0);
     ecm_mounting_pitch->setSingleStep(5);
-    ecm_mounting_pitch->setValue(-45);
+    ecm_mounting_pitch->setValue(-60);
     QLabel* fixed_ecm_description = new QLabel("Re-orients PSM base frame to match a fixed camera frame. Camera is assumed to have X-axis parallel to PSM X-axis, mounting pitch angle is then 0 degrees when camera is parallel to ground and -90 degrees have camera is pointing straight down.");
     fixed_ecm_description->setWordWrap(true);
     ecm_mounting_layout->addRow(fixed_ecm_description);
@@ -614,7 +614,7 @@ BaseFramePage::BaseFramePage(ArmConfig& config, SystemConfigModel& system_model,
     hrsv_pitch = new QSpinBox();
     hrsv_pitch->setRange(-90, 0);
     hrsv_pitch->setSingleStep(5);
-    hrsv_pitch->setValue(-45);
+    hrsv_pitch->setValue(-60);
     QLabel* hrsv_description = new QLabel("Re-orients MTM base frame to match a stereo display. Pitch is 0 degrees when stereo display depth axis is parallel to ground, and -90 when pointing at ground. Typically mounting pitch is -30 or -45 degrees.");
     hrsv_description->setWordWrap(true);
     hrsv_mounting_layout->addRow(hrsv_description);
@@ -666,8 +666,8 @@ void BaseFramePage::initializePage() {
 
     block_suj_updates = false;
 
-    ecm_mounting_pitch->setValue(-45);
-    hrsv_pitch->setValue(-45);
+    ecm_mounting_pitch->setValue(-60.0);
+    hrsv_pitch->setValue(-60.0);
 
     if (config->base_frame.has_value()) {
         if (!config->base_frame->use_custom_transform) {

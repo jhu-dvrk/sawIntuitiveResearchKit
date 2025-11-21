@@ -639,7 +639,7 @@ public:
         { }
 
     static std::unique_ptr<IOConfig> fromJSON(Json::Value value) {
-        auto config = std::make_unique<IOConfig>("io");
+        auto config = std::make_unique<IOConfig>("IO");
         config->name = value.get("name", "").asString();
 
         auto port = IOPort::deserialize(value["port"].asString());
@@ -966,7 +966,7 @@ public:
 
     std::vector<std::string> arm_names;
 
-    double scale = 0.5;
+    double scale = 0.3;
     bool has_MTM_gripper = false;
     bool has_MTM_wrist_actuation = false;
     std::optional<ComponentInterfaceConfig> PSM_base_frame;
