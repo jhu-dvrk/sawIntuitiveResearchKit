@@ -128,6 +128,21 @@ void Editor::closeConfig(int index) {
     }
 }
 
+bool Editor::closeAllConfigs() {
+    // Close all tabs from right to left (skipping index 0 which is the add button)
+    for (int i = tabs->count() - 1; i > 0; i--) {
+        ConfigEditor* editor = qobject_cast<ConfigEditor*>(tabs->widget(i));
+        bool ok_to_close = editor->close();
+        if (!ok_to_close) {
+            return false; // User cancelled, stop closing
+        }
+        tabs->removeTab(i);
+        delete editor;
+    }
+
+    return true;
+}
+
 void Editor::createTab(std::unique_ptr<ConfigEditor> config_editor) {
     ConfigEditor* ptr = config_editor.get(); // save non-owning pointer
     tabs->addTab(config_editor.release(), ""); // transfer ownership to Qt GUI tree

@@ -96,6 +96,11 @@ void MainWindow::createActions() {
     save_config_as->setShortcuts(QKeySequence::SaveAs);
     save_config_as->setStatusTip("Save as");
     connect(save_config_as, &QAction::triggered, editor, &Editor::saveAs);
+
+    quit_action = new QAction("Quit", this);
+    quit_action->setShortcuts(QKeySequence::Quit);
+    quit_action->setStatusTip("Quit application");
+    connect(quit_action, &QAction::triggered, this, &QWidget::close);
 }
 
 void MainWindow::createMenus() {
@@ -105,6 +110,8 @@ void MainWindow::createMenus() {
     file_menu->addAction(open_config);
     file_menu->addAction(save_config);
     file_menu->addAction(save_config_as);
+    file_menu->addSeparator();
+    file_menu->addAction(quit_action);
 }
 
 void MainWindow::open_folder() {
@@ -130,6 +137,14 @@ void MainWindow::folder_chosen() {
     }
 
     config_sources->addSource(selected_directory);
+}
+
+void MainWindow::closeEvent(QCloseEvent* event) {
+    if (editor->closeAllConfigs()) {
+        event->accept();
+    } else {
+        event->ignore();
+    }
 }
 
 }
