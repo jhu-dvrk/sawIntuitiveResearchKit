@@ -957,13 +957,13 @@ void mtsTeleOperationPSM::RunCartesianTeleop() {
         // linear is scaled and re-oriented
         mPSM.m_servo_cp.Velocity() = m_config.scale * mMTM.m_measured_cv.VelocityLinear();
     } else {
-        mPSM.m_servo_cp.Velocity().Assign(vct3(0));
+        mPSM.m_servo_cp.Velocity().Assign(vct3(0.0));
     }
     if (m_config.use_MTM_angular_velocity) {
         // angular is not scaled
         mPSM.m_servo_cp.VelocityAngular() = mMTM.m_measured_cv.VelocityAngular();
     } else {
-        mPSM.m_servo_cp.VelocityAngular().Assign(vct3(0));
+        mPSM.m_servo_cp.VelocityAngular().Assign(vct3(0.0));
     }
 
     mPSM.servo_cp(mPSM.m_servo_cp);
