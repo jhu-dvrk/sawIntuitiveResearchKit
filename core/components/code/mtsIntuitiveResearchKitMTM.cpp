@@ -49,11 +49,16 @@ mtsIntuitiveResearchKitMTM::mtsIntuitiveResearchKitMTM(const mtsTaskPeriodicCons
 
 mtsIntuitiveResearchKitMTM::~mtsIntuitiveResearchKitMTM() = default;
 
-void mtsIntuitiveResearchKitMTM::set_simulated(void)
+void mtsIntuitiveResearchKitMTM::set_simulated(bool isHwSimulated)
 {
-    mtsIntuitiveResearchKitArm::set_simulated();
-    // in simulation mode, we don't need IO Gripper
-    RemoveInterfaceRequired("GripperIO");
+    mtsIntuitiveResearchKitArm::set_simulated(isHwSimulated);
+
+    // if we are in hardware simulation mode, remove interfaces not needed
+    // since we are simulating the bare hardware connected to the MTM
+    if (!isHwSimulated) {
+        // in simulation mode, we don't need IO Gripper
+        RemoveInterfaceRequired("GripperIO");
+    }
 }
 
 void mtsIntuitiveResearchKitMTM::Init(void)
@@ -352,8 +357,8 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
 
     if (!m_calibration_mode) {
-        if (m_simulated || is_homed()) {
-            if (m_simulated) {
+        if (m_simulated || is_homed() || m_isHwSimulated) {
+            if (m_simulated || m_isHwSimulated) {
                 // all encoders are biased, including roll
                 m_encoders_biased = true;
             }
@@ -390,7 +395,7 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
 void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
 {
     if (!m_calibration_mode) {
-        if (m_simulated || is_homed()) {
+        if (m_simulated || is_homed() || m_isHwSimulated) {
             mArmState.SetCurrentState("ROLL_CALIBRATED");
             return;
         }
@@ -460,7 +465,7 @@ void mtsIntuitiveResearchKitMTM::EnterResettingRollEncoder(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
 
-    if (m_simulated || is_homed()) {
+    if (m_simulated || is_homed() || m_isHwSimulated) {
         mArmState.SetCurrentState("HOMING");
         return;
     }

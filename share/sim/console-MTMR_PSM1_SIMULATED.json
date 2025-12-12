@@ -1,0 +1,35 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "$id": "dvrk-system.schema.json",
+    "$version": "1",
+    "IOs": [
+        {
+            "name": "IO1",
+            "port": "simulation",
+            "protocol": "sequential-read-write"
+        }
+    ],
+    "arms": [
+        {
+            "name": "MTMR",
+            "type": "MTM",
+            "IO": "IO1",
+            "serial": "12345",
+            "PID_file": "sim/sawControllersPID-MTM-simulated.json",
+            "base_frame": {
+                "reference_frame": "HRSV",
+                "transform": [[-1.0, 0.0, 0.0, -0.180],
+                              [0.0, 0.866, 0.5000, 0.400],
+                              [0.0, 0.500, -0.866, 0.475],
+                              [0.0, 0.0, 0.0, 1.0]]
+            }
+        },
+        {
+            "name": "PSM1",
+            "type": "PSM",
+            "IO": "IO1",
+            "serial": "12345",
+            "PID_file": "sim/sawControllersPID-PSM-simulated.json"
+        }
+    ]
+}

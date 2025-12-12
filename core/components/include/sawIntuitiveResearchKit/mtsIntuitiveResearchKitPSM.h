@@ -41,7 +41,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicConstructorArg & arg);
     ~mtsIntuitiveResearchKitPSM();
 
-    void set_simulated(void) override;
+    void set_simulated(bool) override;
 
  protected:
     void set_generation(const dvrk::generation generation) override;

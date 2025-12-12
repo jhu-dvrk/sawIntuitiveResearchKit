@@ -100,7 +100,7 @@ void dvrk::arm_proxy::post_configure(void)
 }
 
 
-void dvrk::arm_proxy::create_arm(void)
+void dvrk::arm_proxy::create_arm()
 {
     if (!m_config->native_or_derived()) {
         return;
@@ -292,8 +292,9 @@ void dvrk::arm_proxy::create_arm(void)
         && !m_config->SUJ()) {
         CMN_ASSERT(m_arm != nullptr);
         if (m_config->simulation == dvrk::simulation::SIMULATION_KINEMATIC) {
-            m_arm->set_simulated();
+            m_arm->set_simulated(true);
         }
+
         m_arm->set_calibration_mode(m_calibration_mode);
         m_arm->Configure(m_arm_configuration_file);
         set_base_frame_if_needed();
@@ -363,6 +364,11 @@ void dvrk::arm_proxy::configure_IO(void)
     CMN_ASSERT(iter_IO != m_system->m_IO_proxies.end());
     iter_IO->second->m_IO->Configure(m_IO_configuration_file);
 
+    // forward the isHwSimulated flag to the MTM arm
+    if (iter_IO->second->m_IO->IsHardwareSimulated())
+    {
+        m_arm->set_simulated(true);
+    }
 
     // search for the gripper config file
     if (m_config->MTM()) {

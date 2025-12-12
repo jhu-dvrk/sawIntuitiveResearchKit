@@ -857,11 +857,18 @@ void mtsIntuitiveResearchKitArm::Cleanup(void)
     CMN_LOG_CLASS_INIT_VERBOSE << GetName() << ": Cleanup" << std::endl;
 }
 
-void mtsIntuitiveResearchKitArm::set_simulated(void)
+void mtsIntuitiveResearchKitArm::set_simulated(bool hw_simulated)
 {
-    m_simulated = true;
-    // in simulation mode, we don't need IO
-    RemoveInterfaceRequired("RobotIO");
+    // if we are simulating just the hardware, we still want to use
+    // the simulated IO interface
+    m_isHwSimulated = hw_simulated;
+
+    if (!m_isHwSimulated)
+    {
+        m_simulated = true;
+        // in simulation mode, we don't need IO
+        RemoveInterfaceRequired("RobotIO");
+    }
 }
 
 void mtsIntuitiveResearchKitArm::get_robot_data(void)

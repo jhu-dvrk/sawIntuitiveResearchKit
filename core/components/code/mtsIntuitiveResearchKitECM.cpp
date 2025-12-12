@@ -116,16 +116,21 @@ mtsIntuitiveResearchKitECM::mtsIntuitiveResearchKitECM(const mtsTaskPeriodicCons
 // need to define destructor after definition of GravityCompensationECM is available
 mtsIntuitiveResearchKitECM::~mtsIntuitiveResearchKitECM() = default;
 
-void mtsIntuitiveResearchKitECM::set_simulated(void)
+void mtsIntuitiveResearchKitECM::set_simulated(bool isHwSimulated)
 {
-    mtsIntuitiveResearchKitArm::set_simulated();
-    // in simulation mode, we don't need clutch IO
-    RemoveInterfaceRequired("arm_clutch");
-    // for Si systems, remove a few more interfaces
-    if (m_generation == dvrk::generation::Si) {
-        RemoveInterfaceRequired("SUJ_clutch");
-        RemoveInterfaceRequired("SUJ_clutch_2");
-        RemoveInterfaceRequired("SUJ_brake");
+    mtsIntuitiveResearchKitArm::set_simulated(isHwSimulated);
+
+    // if we are in hardware simulation mode, remove interfaces not needed
+    // since we are simulating the bare hardware connected to the ECM
+    if(!isHwSimulated){
+        // in simulation mode, we don't need clutch IO
+        RemoveInterfaceRequired("arm_clutch");
+        // for Si systems, remove a few more interfaces
+        if (m_generation == dvrk::generation::Si) {
+            RemoveInterfaceRequired("SUJ_clutch");
+            RemoveInterfaceRequired("SUJ_clutch_2");
+            RemoveInterfaceRequired("SUJ_brake");
+        }
     }
 }
 

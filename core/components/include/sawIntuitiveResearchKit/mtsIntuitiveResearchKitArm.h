@@ -74,7 +74,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     inline void crtk_version(std::string & placeholder) const {
         placeholder = mtsIntuitiveResearchKit::crtk_version;
     }
-    virtual void set_simulated(void);
+    virtual void set_simulated(bool);
     virtual inline void set_calibration_mode(const bool mode) {
         m_calibration_mode = mode;
     }
@@ -536,6 +536,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     // flag to determine if this is connected to actual IO/hardware or simulated
     bool m_simulated = false;
 
+    // flag to determine if the hardware is simulated or real
+    bool m_isHwSimulated = false;
+    
     // flag to determine if the arm is running in calibration mode, i.e. turn off checks using potentiometers
     bool m_calibration_mode = false;
 };

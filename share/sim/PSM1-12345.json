@@ -1,0 +1,11 @@
+{
+    // see https://dvrk.readthedocs.io
+    "$id": "dvrk-psm.schema.json",
+    "$version": "1",
+    "kinematic": "kinematic/PSM.json",
+    "generation": "Classic",
+    "tool_detection": "FIXED",
+    "tool": "LARGE_NEEDLE_DRIVER:400006"
+    // "tool_detection": "MANUAL"
+    // , "tool_detection": "AUTOMATIC"
+}
