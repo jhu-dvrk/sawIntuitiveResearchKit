@@ -599,6 +599,13 @@ void mtsIntuitiveResearchKitMTM::SetControlEffortActiveJoints(void)
 void mtsIntuitiveResearchKitMTM::control_servo_cf_preload(vctDoubleVec & effortPreload,
                                                           vctDoubleVec & wrenchPreload)
 {
+    // if the hardware is simulated, we don't do preload
+    if (m_isHwSimulated) {
+        effortPreload.SetAll(0.0);
+        wrenchPreload.SetAll(0.0);
+        return;
+    }
+
     // not handling this yet
     if (m_servo_cf_type == WRENCH_SPATIAL) {
         effortPreload.SetAll(0.0);

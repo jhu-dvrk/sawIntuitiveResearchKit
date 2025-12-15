@@ -62,9 +62,9 @@
                             "scale": 5242.88
                         },
                         "effort_to_current": {
-                            "scale": 0.4040893846
+                            "scale": 10.0
                         },
-                        "maximum_current": 1.340
+                        "maximum_current": 10.0
                     },
                     "encoder": {
                         "bits_to_position": {
@@ -102,9 +102,9 @@
                             "scale": 5242.88
                         },
                         "effort_to_current": {
-                            "scale": 0.4040893846
+                            "scale": 10.0
                         },
-                        "maximum_current": 1.340
+                        "maximum_current": 10.0
                     },
                     "encoder": {
                         "bits_to_position": {
@@ -142,9 +142,9 @@
                             "scale": 5242.88
                         },
                         "effort_to_current": {
-                            "scale": 0.0678284321
+                            "scale": 10.0
                         },
-                        "maximum_current": 0.670
+                        "maximum_current": 10.0
                     },
                     "encoder": {
                         "bits_to_position": {
@@ -182,9 +182,9 @@
                             "scale": 5242.88
                         },
                         "effort_to_current": {
-                            "scale": 1.9497053995
+                            "scale": 10.0
                         },
-                        "maximum_current": 0.670
+                        "maximum_current": 10.0
                     },
                     "encoder": {
                         "bits_to_position": {
@@ -222,9 +222,9 @@
                             "scale": 5242.88
                         },
                         "effort_to_current": {
-                            "scale": 1.9497053995
+                            "scale": 10.0
                         },
-                        "maximum_current": 0.670
+                        "maximum_current": 10.0
                     },
                     "encoder": {
                         "bits_to_position": {
@@ -262,9 +262,9 @@
                             "scale": 5242.88
                         },
                         "effort_to_current": {
-                            "scale": 1.9497053995
+                            "scale": 10.0
                         },
-                        "maximum_current": 0.670
+                        "maximum_current": 10.0
                     },
                     "encoder": {
                         "bits_to_position": {
@@ -302,9 +302,9 @@
                             "scale": 5242.88
                         },
                         "effort_to_current": {
-                            "scale": 1.9497053995
+                            "scale": 10.0
                         },
-                        "maximum_current": 0.670
+                        "maximum_current": 10.0
                     },
                     "encoder": {
                         "bits_to_position": {

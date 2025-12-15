@@ -5,7 +5,7 @@
     "IOs": [
         {
             "name": "IO1",
-            "port": "simulation",
+            "port": "sim",
             "protocol": "sequential-read-write"
         }
     ],
