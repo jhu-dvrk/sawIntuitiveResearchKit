@@ -21,8 +21,8 @@ set (REQUIRED_CISST_LIBRARIES
 )
 
 # find cisst and make sure the required libraries have been compiled
-find_package (cisst 1.3.0 REQUIRED ${REQUIRED_CISST_LIBRARIES})
-find_package (sawIntuitiveResearchKit 2.3.1 REQUIRED)
+find_package (cisst 1.4.0 REQUIRED ${REQUIRED_CISST_LIBRARIES})
+find_package (sawIntuitiveResearchKit 2.4.0 REQUIRED)
 
 if (cisst_FOUND_AS_REQUIRED)
 

@@ -12,7 +12,7 @@
 # --- end cisst license ---
 
 cmake_minimum_required(VERSION 3.16)
-project (sawIntuitiveResearchKitTests VERSION 2.3.0)
+project (sawIntuitiveResearchKitTests VERSION 2.4.0)
 
 # create a list of required cisst libraries
 set (REQUIRED_CISST_LIBRARIES

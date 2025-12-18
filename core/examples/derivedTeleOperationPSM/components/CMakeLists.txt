@@ -10,7 +10,7 @@
 # --- end cisst license ---
 
 cmake_minimum_required (VERSION 3.16)
-project (sawIntuitiveResearchKitDerivedTeleOperationPSM VERSION 2.3.0)
+project (sawIntuitiveResearchKitDerivedTeleOperationPSM VERSION 2.4.0)
 
 set (REQUIRED_CISST_LIBRARIES
   cisstCommon
@@ -32,10 +32,10 @@ if (cisst_FOUND)
 
   # sawIntuitiveResearchKit has been compiled within cisst, we should
   # find it automatically
-  find_package (sawTextToSpeech        1.4.0 REQUIRED)
-  find_package (sawRobotIO1394         2.3.0 REQUIRED)
-  find_package (sawControllers         2.2.0 REQUIRED)
-  find_package(sawIntuitiveResearchKit 2.3.0 REQUIRED)
+  find_package (sawTextToSpeech        1.4.1 REQUIRED)
+  find_package (sawRobotIO1394         2.4.0 REQUIRED)
+  find_package (sawControllers         2.3.0 REQUIRED)
+  find_package(sawIntuitiveResearchKit 2.4.0 REQUIRED)
 
   if (sawIntuitiveResearchKit_FOUND)
 
