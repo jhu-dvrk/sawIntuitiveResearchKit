@@ -11,7 +11,7 @@
             "i_gain": 0.0,
             "i_forget_rate": 0.99,
             "i_limit": 0.0,
-            "use_disturbance_observer": true,
+            "use_disturbance_observer": false,
             "nominal_mass": 0.001,
             "disturbance_cutoff": 10.0,
             "pid_max_output": -1.0, // disabled, motors are not that powerful
@@ -26,7 +26,7 @@
             "i_gain": 0.0,
             "i_forget_rate": 0.99,
             "i_limit": 0.0,
-            "use_disturbance_observer": true,
+            "use_disturbance_observer": false,
             "nominal_mass": 0.001,
             "disturbance_cutoff": 10.0,
             "pid_max_output": -1.0, // disabled, motors are not that powerful
@@ -41,7 +41,7 @@
             "i_gain": 0.0,
             "i_forget_rate": 0.99,
             "i_limit": 0.0,
-            "use_disturbance_observer": true,
+            "use_disturbance_observer": false,
             "nominal_mass": 0.001,
             "disturbance_cutoff": 10.0,
             "pid_max_output": -1.0, // disabled, motors are not that powerful
@@ -56,7 +56,7 @@
             "i_gain": 0.0,
             "i_forget_rate": 0.99,
             "i_limit": 0.0,
-            "use_disturbance_observer": true,
+            "use_disturbance_observer": false,
             "nominal_mass": 0.001,
             "disturbance_cutoff": 15.0,
             "pid_max_output": -1.0, // disabled, motors are not that powerful
