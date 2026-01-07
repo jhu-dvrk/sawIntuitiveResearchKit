@@ -6,6 +6,28 @@ inline-header {
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 }
 
+
+class {
+    name teleop_PSM_configuration_gripper_scaling;
+    namespace dvrk;
+    attribute CISST_EXPORT;
+
+    member {
+        name zero;
+        type double;
+        visibility public;
+        default mtsIntuitiveResearchKit::TeleOperationPSM::GripperZero;
+    }
+
+    member {
+        name max;
+        type double;
+        visibility public;
+        default mtsIntuitiveResearchKit::TeleOperationPSM::GripperMax;
+    }
+}
+
+
 class {
     name teleop_PSM_configuration;
     namespace dvrk;
@@ -89,10 +111,17 @@ class {
     }
 
     member {
-        name use_MTM_velocity;
+        name use_MTM_linear_velocity;
         type bool;
         visibility public;
         default true;
+    }
+
+    member {
+        name use_MTM_angular_velocity;
+        type bool;
+        visibility public;
+        default false;
     }
 
     member {
@@ -100,5 +129,12 @@ class {
         type bool;
         visibility public;
         default true;
+    }
+
+    member {
+        name gripper_scaling;
+        type teleop_PSM_configuration_gripper_scaling;
+        visibility public;
+        default teleop_PSM_configuration_gripper_scaling();
     }
 }

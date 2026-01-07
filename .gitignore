@@ -3,3 +3,4 @@ cisstLog.txt
 **/cisstLog*.txt
 *~
 CMakeLists.txt.user
+.vscode

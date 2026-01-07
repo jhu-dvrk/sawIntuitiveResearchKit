@@ -27,6 +27,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmForceCartesianGet.h>
 #include <cisstParameterTypes/prmStateCartesian.h>
 
+// Always include last
+#include <sawIntuitiveResearchKitBilateralTeleopExport.h>
+
 class CISST_EXPORT mtsBilateralTeleOperationPSM: public mtsTeleOperationPSM
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
@@ -47,13 +50,18 @@ protected:
 
         mtsFunctionRead measured_cf;
         prmForceCartesianGet m_measured_cf;
+
+        mtsBilateralTeleOperationPSM* teleop;
+        std::string component_name;
+        std::string provided_interface_name;
+        std::string function_name;
     };
 
     class Arm {
     public:
         Arm(mtsBilateralTeleOperationPSM* teleop) : teleop(teleop) {}
         virtual ~Arm() {};
-        
+
         virtual void populateInterface(mtsInterfaceRequired* interface);
         virtual void add_force_source(std::unique_ptr<ForceSource> source) { force_source = std::move(source); }
 

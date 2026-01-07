@@ -2220,7 +2220,7 @@ void mtsIntuitiveResearchKitArm::servo_cp(const prmPositionCartesianSet & cp)
     m_servo_cs.PositionIsValid() = true;
     m_servo_cs.Velocity().Ref<3>(0) = cp.Velocity();
     m_servo_cs.Velocity().Ref<3>(3) = cp.VelocityAngular();
-    m_servo_cs.VelocityIsValid() = cp.Velocity().Any() && cp.VelocityAngular().Any();
+    m_servo_cs.VelocityIsValid() =  m_servo_cs.Velocity().Any();
     m_servo_cs.ForceIsValid() = false;
 
     m_pid_new_goal = true;

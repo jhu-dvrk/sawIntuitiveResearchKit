@@ -87,6 +87,9 @@ namespace dvrk {
         // SUJ voltages, if requested
         void add_topics_SUJ_voltages(void);
 
+        // collectors, if requested
+        void add_topics_collector_factory(const std::string & _collector_factory_name);
+
         // teleop
         void add_topics_teleop_ECM(const std::string & _name);
         void add_topics_teleop_PSM(const std::string & _name);

@@ -60,7 +60,7 @@ Editor::Editor(ConfigSources& config_sources, SystemLauncher& launcher, QWidget*
 
 void Editor::newConfig() {
     std::unique_ptr<SystemConfigModel> model = std::make_unique<SystemConfigModel>();
-    model->io_configs->appendItem(IOConfig("io")); // default I/O
+    model->io_configs->appendItem(IOConfig("IO")); // default I/O
 
     std::unique_ptr<ConsoleConfig> default_console = std::make_unique<ConsoleConfig>();
     default_console->name = "Console";
@@ -83,13 +83,7 @@ void Editor::openConfig() {
     }
 
     std::filesystem::path file_path(file_name.toStdString());
-    std::unique_ptr<ConfigEditor> editor = ConfigEditor::open(file_path, *config_sources, *launcher);
-    if (editor == nullptr) {
-        // TODO: display validation/error message
-        return;
-    }
-
-    createTab(std::move(editor));
+    openConfigFile(file_path);
 }
 
 void Editor::openConfigFile(std::filesystem::path config_file) {
@@ -132,6 +126,21 @@ void Editor::closeConfig(int index) {
         tabs->removeTab(index);
         delete editor;
     }
+}
+
+bool Editor::closeAllConfigs() {
+    // Close all tabs from right to left (skipping index 0 which is the add button)
+    for (int i = tabs->count() - 1; i > 0; i--) {
+        ConfigEditor* editor = qobject_cast<ConfigEditor*>(tabs->widget(i));
+        bool ok_to_close = editor->close();
+        if (!ok_to_close) {
+            return false; // User cancelled, stop closing
+        }
+        tabs->removeTab(i);
+        delete editor;
+    }
+
+    return true;
 }
 
 void Editor::createTab(std::unique_ptr<ConfigEditor> config_editor) {

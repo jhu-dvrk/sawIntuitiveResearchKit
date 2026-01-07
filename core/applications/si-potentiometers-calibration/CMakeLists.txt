@@ -10,7 +10,7 @@
 # --- end cisst license ---
 
 cmake_minimum_required (VERSION 3.16)
-project (sawIntuitiveResearchKitSiPotentiometersCalibration VERSION 2.3.0)
+project (sawIntuitiveResearchKitSiPotentiometersCalibration VERSION 2.4.0)
 
 # create a list of required cisst libraries
 set (REQUIRED_CISST_LIBRARIES
@@ -21,7 +21,7 @@ set (REQUIRED_CISST_LIBRARIES
   cisstParameterTypes)
 
 # find cisst and make sure the required libraries have been compiled
-find_package (cisst 1.3.0 REQUIRED ${REQUIRED_CISST_LIBRARIES})
+find_package (cisst 1.4.0 REQUIRED ${REQUIRED_CISST_LIBRARIES})
 
 if (cisst_FOUND_AS_REQUIRED)
 
@@ -35,7 +35,7 @@ if (cisst_FOUND_AS_REQUIRED)
   endif ()
 
   # saw components have been compiled within cisst, we should find them automatically
-  find_package (sawRobotIO1394 2.2.1 REQUIRED)
+  find_package (sawRobotIO1394 2.4.0 REQUIRED)
 
   if (sawRobotIO1394_FOUND)
 

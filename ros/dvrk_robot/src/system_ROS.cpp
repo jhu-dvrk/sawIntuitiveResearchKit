@@ -556,6 +556,35 @@ void dvrk::system_ROS::add_topics_SUJ_voltages(void)
 }
 
 
+void dvrk::system_ROS::add_topics_collector_factory(const std::string & _collector_factory_name)
+{
+    CMN_LOG_CLASS_INIT_VERBOSE << "add_topics_collector_factory called" << std::endl;
+    subscribers_bridge().AddSubscriberToCommandWrite<double, CISST_RAL_MSG(std_msgs, Float64)>
+        (_collector_factory_name, "StartCollection",
+         _collector_factory_name + "/start");
+    subscribers_bridge().AddSubscriberToCommandWrite<double, CISST_RAL_MSG(std_msgs, Float64)>
+        (_collector_factory_name, "StopCollection",
+         _collector_factory_name + "/stop");
+    subscribers_bridge().AddSubscriberToCommandWrite<std::string, CISST_RAL_MSG(std_msgs, String)>
+        (_collector_factory_name, "SetWorkingDirectory",
+         _collector_factory_name + "/set_working_directory");
+    subscribers_bridge().AddSubscriberToCommandVoid
+        (_collector_factory_name, "SetOutputToDefault",
+         _collector_factory_name + "/set_output_to_default");
+    events_bridge().AddPublisherFromEventWrite<bool, CISST_RAL_MSG(std_msgs, Bool)>
+        (_collector_factory_name, "CollectionStarted",
+         _collector_factory_name + "/started");
+    events_bridge().AddPublisherFromEventWrite<size_t, CISST_RAL_MSG(std_msgs, UInt64)>
+        (_collector_factory_name, "Progress",
+         _collector_factory_name + "/progress");
+
+    m_connections.Add(subscribers_bridge().GetName(), _collector_factory_name,
+                      _collector_factory_name, "Control");
+    m_connections.Add(events_bridge().GetName(), _collector_factory_name,
+                      _collector_factory_name, "Control");
+}
+
+
 void dvrk::system_ROS::add_topics_teleop_ECM(const std::string & _name)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "add_topics_teleop_ECM called for " << _name << std::endl;

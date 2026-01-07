@@ -48,6 +48,17 @@ ConfigSources::ConfigSources(QWidget* parent) : QWidget(parent) {
     }
 
     QObject::connect(model, &QFileSystemModel::directoryLoaded, this, &ConfigSources::loaded);
+    QObject::connect(view, &QTreeView::doubleClicked, this, [this](const QModelIndex& index) {
+        QString path = this->model->filePath(index);
+        std::filesystem::path config_path = path.toStdString();
+
+        // check if selected item is a system config file (rather than directory, arm config, etc.)
+        if (!config_path.has_filename()) { return; }
+        bool is_system_file = config_path.filename().string().substr(0, 6) == "system";
+        if (!is_system_file) { return; }
+
+        emit this->systemConfigChosen(path);
+    });
 }
 
 ListModelT<ConfigSources::Arm>& ConfigSources::getModel() {
@@ -63,6 +74,11 @@ void ConfigSources::addSource(QDir directory) {
 }
 
 std::optional<ConfigSources::Arm> parseArm(std::filesystem::path file_path) {
+    // Make sure we don't pick up old .xml configs
+    if (file_path.extension() != ".json") {
+        return {};
+    }
+
     std::string file_name = file_path.stem().string();
 
     // Match one of e.g. PSM2, ECM, MTMR2, followed by -, followed by five or six digit serial
@@ -138,12 +154,17 @@ std::optional<ConfigSources::Arm> parseArm(std::filesystem::path file_path) {
 }
 
 std::optional<ConfigSources::Arm> parseSUJ(std::filesystem::path file_path) {
+    // Make sure we don't pick up old .xml configs
+    if (file_path.extension() != ".json") {
+        return {};
+    }
+
     std::string file_name = file_path.stem().string();
 
     // currently there is a hard-coded assumption in dvrk_system that the SUJ component is named "SUJ"
     std::string name = "SUJ";
 
-    std::string io_config_name = "sawRobotIO1394-" + name+ ".json";
+    std::string io_config_name = "sawRobotIO1394-" + name + ".json";
     std::filesystem::path io_config_path = file_path.parent_path() / io_config_name;
 
     if (file_name == "suj-fixed") {

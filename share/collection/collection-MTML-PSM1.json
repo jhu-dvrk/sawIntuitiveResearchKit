@@ -1,24 +1,6 @@
 {
-    "state-collectors":
+    "state_collectors":
     [
-        {
-            "component": "io",
-            "tables":
-            [
-                {
-                    "sampling": 20,
-                    "table": "MTMLRead",
-                    "signals": ["measured_js"]
-                }
-                ,
-                {
-                    "sampling": 20,
-                    "table": "PSM1Read",
-                    "signals": ["measured_js"]
-                }
-            ]
-        }
-        ,
         {
             "component": "MTML",
             "tables":
@@ -39,6 +21,19 @@
                     "sampling": 5,
                     "table": "StateTable",
                     "signals": ["measured_cp", "jaw/measured_js"]
+                }
+            ]
+        }
+    ]
+    ,
+    "event_collectors":
+    [
+        {
+            "component": "PSM1",
+            "interfaces": [
+                {
+                    "name": "Arm",
+                    "events_write": ["operating_state", "tool_type", "goal_reached"]
                 }
             ]
         }

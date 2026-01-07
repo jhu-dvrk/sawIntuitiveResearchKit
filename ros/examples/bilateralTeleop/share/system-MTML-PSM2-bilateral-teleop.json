@@ -1,18 +1,25 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
-    "io":
-    {
-        "footpedals": "io/sawRobotIO1394-MTMR-foot-pedals.xml"
-    },
-    "component-manager": {
+    "$id": "dvrk-system.schema.json",
+    "$version": "1",
+    "IOs":
+    [
+        {
+            "name": "IO",
+            "port": "fw",
+            "protocol": "broadcast-query-read-write"
+        }
+    ],
+    "component_manager": {
         "components": [
             {
                 "shared-library": "sawIntuitiveResearchKitBilateralTeleop",
                 "class-name": "mtsBilateralTeleOperationPSM",
                 "constructor-arg": {
-                    "Name": "MTML-PSM2",
+                    "Name": "MTML_PSM2",
                     "Period": 0.001
-                }
+                },
+                "configure-parameter": "MTML_PSM2_teleop_config.json"
             }
         ]
     },
@@ -21,10 +28,10 @@
         {
             "name": "PSM2",
             "type": "PSM",
-            "system": "jhu-dVRK",
             "serial": "27374",
-            "base-frame": {
-                "reference-frame": "ECM",
+            "IO": "IO",
+            "base_frame": {
+                "reference_frame": "ECM",
                 "transform": [[  1.0,  0.0,          0.0,          0.20],
                               [  0.0, -0.866025404,  0.5,          0.0 ],
                               [  0.0, -0.5,         -0.866025404,  0.0 ],
@@ -37,8 +44,9 @@
             "type": "MTM",
             "system": "jhu-dVRK",
             "serial": "22723",
-            "base-frame": {
-                "reference-frame": "HRSV",
+            "IO": "IO",
+            "base_frame": {
+                "reference_frame": "HRSV",
                 "transform": [[ -1.0,  0.0,          0.0,          0.180],
                               [  0.0,  0.866025404,  0.5,          0.400],
                               [  0.0,  0.5,         -0.866025404,  0.475],
@@ -47,15 +55,23 @@
         }
     ]
     ,
-    "psm-teleops":
+    "consoles":
     [
         {
-            "type": "TELEOP_PSM_DERIVED",
-            "mtm": "MTML",
-            "psm": "PSM2",
-            "configure-parameter": {
-                "scale": 0.5
+            "name": "console",
+            "input_type": "PEDALS_ONLY",
+            "IO_pedals": {
+                "IO": "IO",
+                "IO_file": "io/sawRobotIO1394-MTMR-foot-pedals-QLA1.json"
             }
+            ,
+            "teleop_PSMs":
+            [
+                {
+                    "MTM": "MTML",
+                    "PSM": "PSM2"
+                }
+            ]
         }
     ]
 }

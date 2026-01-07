@@ -28,8 +28,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstOSAbstraction/osaSleep.h>
 #include <cisstMultiTask/mtsManagerLocal.h>
 #include <cisstMultiTask/mtsCollectorFactory.h>
-#include <cisstMultiTask/mtsCollectorQtFactory.h>
-#include <cisstMultiTask/mtsCollectorQtWidget.h>
+#include <cisstMultiTask/mtsCollectorFactoryQtWidget.h>
 
 #include <sawIntuitiveResearchKit/system.h>
 #include <sawIntuitiveResearchKit/system_Qt.h>
@@ -146,7 +145,7 @@ int main(int argc, char ** argv)
     const bool hasQt = !options.IsSet("text-only");
 
     // start creating components
-    mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
+    mtsManagerLocal * component_manager = mtsManagerLocal::GetInstance();
 
     // system
     auto * system = new dvrk::system("system");
@@ -154,7 +153,7 @@ int main(int argc, char ** argv)
     system->set_embedded_python(_IRE_shell);
     file_exists("dVRK system JSON configuration file", jsonMainConfigFile, system);
     system->Configure(jsonMainConfigFile);
-    componentManager->AddComponent(system);
+    component_manager->AddComponent(system);
     system->Connect();
 
     QApplication * application;
@@ -185,20 +184,17 @@ int main(int argc, char ** argv)
         // make sure the json config file exists
         file_exists("JSON data collection configuration", jsonCollectionConfigFile, system);
 
-        auto * collectorFactory = new mtsCollectorFactory("collectors");
-        collectorFactory->Configure(jsonCollectionConfigFile);
-        componentManager->AddComponent(collectorFactory);
-        collectorFactory->Connect();
+        auto * collectors = new mtsCollectorFactory("collectors");
+        collectors->Configure(jsonCollectionConfigFile);
+        component_manager->AddComponent(collectors);
+        collectors->Connect();
 
         if (hasQt) {
-            auto * collectorQtWidget = new mtsCollectorQtWidget();
-            system_Qt->add_tab(collectorQtWidget, "Collection");
-
-            auto * collectorQtFactory = new mtsCollectorQtFactory("collectorsQt");
-            collectorQtFactory->SetFactory("collectors");
-            componentManager->AddComponent(collectorQtFactory);
-            collectorQtFactory->Connect();
-            collectorQtFactory->ConnectToWidget(collectorQtWidget);
+            auto * collectors_Qt = new mtsCollectorFactoryQtWidget("collectors_Qt");
+            system_Qt->add_tab(collectors_Qt, "Collection");
+            component_manager->AddComponent(collectors_Qt);
+            component_manager->Connect(collectors_Qt->GetName(), "Collector",
+                                       collectors->GetName(), "Control");
         }
     }
 
@@ -212,10 +208,14 @@ int main(int argc, char ** argv)
                                                rosNode,
                                                publishPeriod, tfPeriod,
                                                system);
-    componentManager->AddComponent(system_ROS);
+    component_manager->AddComponent(system_ROS);
 
     if (options.IsSet("suj-voltages")) {
         system_ROS->add_topics_SUJ_voltages();
+    }
+
+    if (options.IsSet("collection-config")) {
+        system_ROS->add_topics_collector_factory("collectors");
     }
 
     if (options.IsSet("io-topics-read-write")) {
@@ -234,14 +234,14 @@ int main(int argc, char ** argv)
     system_ROS->Connect();
     
     // custom user component
-    if (!componentManager->ConfigureJSON(managerConfig)) {
+    if (!component_manager->ConfigureJSON(managerConfig)) {
         CMN_LOG_INIT_ERROR << "Configure: failed to configure component-manager, check cisstLog for error messages" << std::endl;
         return -1;
     }
 
     //-------------- create the components ------------------
-    componentManager->CreateAllAndWait(2.0 * cmn_s);
-    componentManager->StartAllAndWait(2.0 * cmn_s);
+    component_manager->CreateAllAndWait(2.0 * cmn_s);
+    component_manager->StartAllAndWait(2.0 * cmn_s);
 
     if (hasQt) {
         application->exec();
@@ -251,8 +251,8 @@ int main(int argc, char ** argv)
         } while (cmnGetChar() != 'q');
     }
 
-    componentManager->KillAllAndWait(2.0 * cmn_s);
-    componentManager->Cleanup();
+    component_manager->KillAllAndWait(2.0 * cmn_s);
+    component_manager->Cleanup();
 
     // stop all logs
     logger.Stop();

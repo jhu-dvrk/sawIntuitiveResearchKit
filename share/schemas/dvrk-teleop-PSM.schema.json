@@ -122,7 +122,7 @@
                 },
 
                 "gripper_scaling": {
-                    "description": "Scaling applied to the MTM gripper angle.  This angle is then used to control the PSM jaw angle.\n\n By default, the tele-operation component assumes that the MTM gripper maximum angle is 60 degrees (as defined in the [gripper calibration](https://dvrk.readthedocs.io){:target=\"_blank\"}) and the angle 0 corresponds to the PSM jaws being closed.  When closed (angle set to 0), the PSM jaws don't apply any significant torque (just enough for the PID control to maintain a zero angle) so to apply a stonger grip, the tele-operation component sends a negative jaw angle to the PSM.  Since the jaws can't have a negative angle, this will lead to a higher tracking error and by direct consequence, the PID will apply a strong torque.  The \"gripper-scaling\" parameters are used to linearly interpolate the MTM gripper angles to the default convention, i.e. [0, 60] for positive range and some room for negative angles. For example, if your MTM has an effective range of [0, 30], set the \"max\" to 30 and the \"zero\" to 5.  This way the values between 5 and 30 will be mapped to [0, 60] and values below 5 will generate negative angles for the PSM jaws (i.e. applying extra torque)",
+                    "description": "Scaling applied to the MTM gripper angle. All angles are in radians! This angle is then used to control the PSM jaw angle.\n\n By default, the tele-operation component assumes that the MTM gripper maximum angle is 60 degrees (as defined in the [gripper calibration](https://dvrk.readthedocs.io) and the angle 0 corresponds to the PSM jaws being closed.  When closed (angle set to 0), the PSM jaws don't apply any significant torque (just enough for the PID control to maintain a zero angle) so to apply a stonger grip, the tele-operation component sends a negative jaw angle to the PSM.  Since the jaws can't have a negative angle, this will lead to a higher tracking error and by direct consequence, the PID will apply a strong torque.  The \"gripper-scaling\" parameters are used to linearly interpolate the MTM gripper angles to the default convention, i.e. [0, 60] for positive range and some room for negative angles. For example, if your MTM has an effective range of [0, 30], set the \"max\" to 30 and the \"zero\" to 5.  This way the values between 5 and 30 will be mapped to [0, 60] and values below 5 will generate negative angles for the PSM jaws (i.e. applying extra torque)",
                     "type": "object",
                     "additionalProperties": false,
                     "properties": {
@@ -139,12 +139,19 @@
                     }
                 },
 
-                "use_MTM_velocity": {
-                    "description": "Use the MTM cartesian velocity, scale it and send it to the PSM along the position to defined the setpoint used by `servo_cp`.\n\n  This is turned on by default on the dVRK.  For this to work with alternate arms (e.g. ForceDimension for MTM, UR for PSM), you need to make sure the MTM velocities are not too noisy and the PSM can receive setpoints with both positions and velocities (twists).",
+                "use_MTM_linear_velocity": {
+                    "description": "Use the MTM cartesian linear velocity, scale it and send it to the PSM along the position to define the setpoint used by `servo_cp`.\n\n  This is turned on by default on the dVRK.  For this to work with alternate arms (e.g. ForceDimension for MTM, UR for PSM), you need to make sure the MTM velocities are not too noisy and the PSM can receive setpoints with both positions and velocities (twists).",
                     "type": "boolean",
                     "default": true
+                },
+
+                "use_MTM_angular_velocity": {
+                    "description": "Use the MTM cartesian angular velocity and send it to the PSM along the position to define the setpoint used by `servo_cp`.\n\n  This is turned off by default on the dVRK.  For this to work with alternate arms (e.g. ForceDimension for MTM, UR for PSM), you need to make sure the MTM angular velocities are not too noisy and the PSM can receive setpoints with both positions and velocities (twists).",
+                    "type": "boolean",
+                    "default": false
                 }
             }
         }
     }
 }
+

@@ -228,6 +228,7 @@ void mtsTeleOperationPSM::Init(void)
     mPSM.m_jaw_servo_jp.Valid() = true;
 }
 
+
 void mtsTeleOperationPSM::Configure(const std::string & filename)
 {
     std::ifstream jsonStream;
@@ -257,7 +258,7 @@ void mtsTeleOperationPSM::Configure(const std::string & filename)
     mtsComponent::ConfigureJSON(jsonConfig);
 
     // JSON part
-    mtsTeleOperationPSM::Configure(jsonConfig);
+    Configure(jsonConfig);
 }
 
 
@@ -273,27 +274,6 @@ void mtsTeleOperationPSM::Configure(const Json::Value & _json_config)
                                << "------>" << std::endl
                                << cmnDataSerializeTextJSON(m_config) << std::endl
                                << "<------" << std::endl;
-
-    // gripper scaling
-    Json::Value jsonGripper = _json_config["gripper-scaling"];
-    if (!jsonGripper.empty()) {
-        jsonValue = jsonGripper["max"];
-        if (!jsonValue.empty()) {
-            m_gripper.max = jsonValue.asDouble();
-        } else {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                     << ": \"gripper-scaling\": { \"max\": } is missing" << std::endl;
-            exit(EXIT_FAILURE);
-        }
-        jsonValue = jsonGripper["zero"];
-        if (!jsonValue.empty()) {
-            m_gripper.zero = jsonValue.asDouble();
-        } else {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                     << ": \"gripper-scaling\": { \"zero\": } is missing" << std::endl;
-            exit(EXIT_FAILURE);
-        }
-    }
 
     // post config checks
     if (m_config.start_orientation_tolerance < 0.0) {
@@ -331,6 +311,11 @@ void mtsTeleOperationPSM::Configure(const Json::Value & _json_config)
                                      << ": \"jaw_rate_after_clutch\" must be a strictly positive number" << std::endl;
             exit(EXIT_FAILURE);
     }
+    if (m_config.gripper_scaling.max == m_config.gripper_scaling.zero) {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                 << ": \"gripper_scaling\", \"zero\" and \"max\" must be different" << std::endl;
+        exit(EXIT_FAILURE);
+    }
 }
 
 
@@ -353,10 +338,11 @@ void mtsTeleOperationPSM::Startup(void)
     }
 
     // check if MTM has measured_cv as needed
-    if (m_config.use_MTM_velocity &&
+    if ((m_config.use_MTM_linear_velocity || m_config.use_MTM_angular_velocity) &&
         !mMTM.measured_cv.IsValid()) {
-        m_config.use_MTM_velocity = false;
-        mInterface->SendWarning(this->GetName() + ": MTM doesn't provide measured_cv, you can avoid this warning by setting \"use_MTM_velocity\" to false");
+        m_config.use_MTM_linear_velocity = false;
+        m_config.use_MTM_angular_velocity = false;
+        mInterface->SendWarning(this->GetName() + ": MTM doesn't provide measured_cv, you can avoid this warning by setting \"use_MTM_linear_velocity\" and \"use_MTM_angular_velocity\" to false");
     }
 }
 
@@ -594,7 +580,7 @@ void mtsTeleOperationPSM::RunAllStates(void)
         mInterface->SendError(this->GetName() + ": unable to get cartesian position from MTM");
         mTeleopState.SetDesiredState("DISABLED");
     }
-    if (m_config.use_MTM_velocity) {
+    if (m_config.use_MTM_linear_velocity || m_config.use_MTM_angular_velocity) {
         executionResult = mMTM.measured_cv(mMTM.m_measured_cv);
         if (!executionResult.IsOK()) {
             CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTM.measured_cv failed \""
@@ -967,18 +953,22 @@ void mtsTeleOperationPSM::RunCartesianTeleop() {
     mPSM.m_servo_cp.Goal().FromNormalized(psmCartesianGoal);
 
     // Add desired velocity if needed
-    if (m_config.use_MTM_velocity) {
+    if (m_config.use_MTM_linear_velocity) {
         // linear is scaled and re-oriented
         mPSM.m_servo_cp.Velocity() = m_config.scale * mMTM.m_measured_cv.VelocityLinear();
+    } else {
+        mPSM.m_servo_cp.Velocity().Assign(vct3(0.0));
+    }
+    if (m_config.use_MTM_angular_velocity) {
         // angular is not scaled
         mPSM.m_servo_cp.VelocityAngular() = mMTM.m_measured_cv.VelocityAngular();
     } else {
-        mPSM.m_servo_cp.Velocity().Assign(vct3(0));
-        mPSM.m_servo_cp.VelocityAngular().Assign(vct3(0));
+        mPSM.m_servo_cp.VelocityAngular().Assign(vct3(0.0));
     }
 
     mPSM.servo_cp(mPSM.m_servo_cp);
 }
+
 
 void mtsTeleOperationPSM::RunJawGripperTeleop() {
     if (m_config.ignore_jaw) {
@@ -1018,9 +1008,9 @@ void mtsTeleOperationPSM::RunJawGripperTeleop() {
         mPSM.m_jaw_servo_jp.Goal()[0] = m_gripper_to_jaw.position_min;
         m_gripper_ghost = JawToGripper(m_gripper_to_jaw.position_min);
     }
-
     mPSM.jaw_servo_jp(mPSM.m_jaw_servo_jp);
 }
+
 
 double mtsTeleOperationPSM::GripperToJaw(const double & gripperAngle) const
 {
@@ -1032,11 +1022,12 @@ double mtsTeleOperationPSM::JawToGripper(const double & jawAngle) const
     return (jawAngle - m_gripper_to_jaw.offset) / m_gripper_to_jaw.scale;
 }
 
+
 void mtsTeleOperationPSM::UpdateGripperToJawConfiguration(void)
 {
     // default values, assumes jaws match gripper
     double _jaw_min = 0.0;
-    double _jaw_max = m_gripper.max;
+    double _jaw_max = m_config.gripper_scaling.max;
 
     m_gripper_to_jaw.position_min = 0.0;
     // get the PSM jaw configuration if possible to find range
@@ -1052,9 +1043,10 @@ void mtsTeleOperationPSM::UpdateGripperToJawConfiguration(void)
     }
     // if the PSM can close its jaws past 0 (tighter), we map from 0 to qmax
     // negative values just mean tighter jaws
-    m_gripper_to_jaw.scale = (_jaw_max) / (m_gripper.max - m_gripper.zero);
-    m_gripper_to_jaw.offset = -m_gripper.zero / m_gripper_to_jaw.scale;
+    m_gripper_to_jaw.scale = (_jaw_max) / (m_config.gripper_scaling.max - m_config.gripper_scaling.zero);
+    m_gripper_to_jaw.offset = -m_config.gripper_scaling.zero * m_gripper_to_jaw.scale;
 }
+
 
 void mtsTeleOperationPSM::set_following(const bool following)
 {

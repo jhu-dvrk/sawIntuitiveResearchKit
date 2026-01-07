@@ -9,7 +9,7 @@
             "p_gain": 400.0,
             "d_gain": 30.0,
             "i_gain": 0.0,
-            "pid_max_output": 15.0,
+            "pid_max_output": -1.0,
             "p_measured_setpoint_tolerance": 0.6 // ~35 degrees
         },
         {
@@ -19,7 +19,7 @@
             "p_gain": 1000.0,
             "d_gain": 80.0,
             "i_gain": 0.0,
-            "pid_max_output": 15.0,
+            "pid_max_output": -1.0,
             "p_measured_setpoint_tolerance": 0.6 // ~35 degrees
         },
         {
@@ -39,7 +39,7 @@
             "p_gain": 20.0,
             "d_gain": 0.5,
             "i_gain": 0.0,
-            "pid_max_output": 12.0,
+            "pid_max_output": -1.0,
             "p_measured_setpoint_tolerance": 0.25 // ~20 degrees
         }
     ]

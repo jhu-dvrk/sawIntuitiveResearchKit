@@ -45,7 +45,7 @@ ConsoleInputsEditor::ConsoleInputsEditor(ConsoleInputConfig& model, ConfigSource
 
     this->pedals_available_mtms = new QComboBox();
     QHBoxLayout* pedal_mtms = new QHBoxLayout();
-    pedal_mtms->addWidget(new QLabel("Which MTM controller are the foot pedals plugged into?"));
+    pedal_mtms->addWidget(new QLabel("Which arm controller are the foot pedals plugged into?"));
     pedal_mtms->addWidget(pedals_available_mtms);
     pedal_mtms->addStretch();
     foot_pedal_layout->addLayout(pedal_mtms);
@@ -64,7 +64,7 @@ ConsoleInputsEditor::ConsoleInputsEditor(ConsoleInputConfig& model, ConfigSource
     QWidget* head_sensor_mtms = new QWidget();
     QHBoxLayout* head_sensor_mtms_layout = new QHBoxLayout(head_sensor_mtms);
     head_sensor_mtms_layout->setMargin(0);
-    head_sensor_mtms_layout->addWidget(new QLabel("Which MTM controller is your head sensor connected to?"));
+    head_sensor_mtms_layout->addWidget(new QLabel("Which arm controller is your head sensor connected to?"));
     head_sensor_mtms_layout->addWidget(head_sensor_available_mtms);
     head_sensor_mtms_layout->addStretch();
     head_sensor_stack->addWidget(head_sensor_mtms);
@@ -120,29 +120,38 @@ ConsoleInputsEditor::ConsoleInputsEditor(ConsoleInputConfig& model, ConfigSource
 
     QObject::connect(available_forcedimensions, &QComboBox::currentTextChanged, this, [this](QString text) {
         std::string arm_name = text.toStdString();
-        this->model->force_dimension_buttons->source_arm_name = arm_name;
+        std::optional<ArmConfig> arm = this->arms->find([arm_name](const ArmConfig& arm){
+            return arm.name == arm_name;
+        });
+        if (arm && arm->component) {
+            this->model->force_dimension_buttons->source_arm_name = arm->component->interface_name;
+        }
         emit this->model->updated();
     });
 
+    // will also set set model's values as current drop-down selection
     updateAvailableArms();
 
     if (model.head_sensor != nullptr) {
         head_sensor_type->setCurrentIndex(model.head_sensor->type.id());
-        head_sensor_available_mtms->setCurrentText(QString::fromStdString(model.head_sensor->source_arm_name));
     }
 
     if (model.type == ConsoleInputType::Value::FOOT_PEDALS) {
         input_type->setCurrentIndex(1);
         user_input_stack->setCurrentIndex(1);
-        pedals_available_mtms->setCurrentText(QString::fromStdString(model.pedals->source_arm_name));
     } else if (model.type == ConsoleInputType::Value::FORCE_DIMENSION_BUTTONS) {
         input_type->setCurrentIndex(2);
         user_input_stack->setCurrentIndex(2);
-        available_forcedimensions->setCurrentText(QString::fromStdString(model.force_dimension_buttons->source_arm_name));
     }
 }
 
 void ConsoleInputsEditor::updateAvailableArms() {
+    // Don't send updates, we are only "temporarily" modifying the current value of the comboboxes
+    // otherwise, it sets the model values to empty
+    const QSignalBlocker pedals_blocker(pedals_available_mtms);
+    const QSignalBlocker head_sensor_blocker(head_sensor_available_mtms);
+    const QSignalBlocker forcedimension_blocker(available_forcedimensions);
+
     pedals_available_mtms->clear();
     head_sensor_available_mtms->clear();
     available_forcedimensions->clear();

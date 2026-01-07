@@ -221,7 +221,7 @@ TeleopParametersPage::TeleopParametersPage(TeleopConfig& config, const ListModel
     QWidget* scale_wrapper = new QWidget();
     QHBoxLayout* scale_layout = new QHBoxLayout(scale_wrapper);
     scale_layout->setAlignment(Qt::AlignCenter);
-    QLabel* scale_display = new QLabel("0.35");
+    QLabel* scale_display = new QLabel("0.30");
     scale_layout->addWidget(scale_display);
     scale_layout->addWidget(scale_selector);
     scale_layout->setMargin(0);
