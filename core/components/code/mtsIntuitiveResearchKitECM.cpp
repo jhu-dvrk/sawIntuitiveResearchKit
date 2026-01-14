@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2026 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -69,9 +69,12 @@ std::string GravityCompensationECM::error(void)
 
 void GravityCompensationECM::set_endoscope_mass(double mass)
 {
+    // Si vs Classic
     if (physical_model.links.size() == 6) {
+        // Si
         physical_model.links.at(5).MassData().Mass() = mass;
     } else {
+        // Classic
         physical_model.links.at(2).MassData().Mass() = mass;
     }
 }
@@ -526,7 +529,9 @@ void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscop
         break;
     }
 
-    m_gc->set_endoscope_mass(mass);
+    if (!m_skip_gravity_compensation) {
+        m_gc->set_endoscope_mass(mass);
+    }
 
     // set configured flag
     m_endoscope_configured = true;

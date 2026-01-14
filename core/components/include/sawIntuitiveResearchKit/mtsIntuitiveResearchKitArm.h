@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2026 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -526,6 +526,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     bool m_encoders_biased = false; // encoder might have to be biased on joint limits (MTM roll)
     bool m_re_home = true; // force re-biasing encoder even if values are found on FPGA
     bool m_homing_goes_to_zero = false;
+    bool m_skip_gravity_compensation = false;
     bool m_homing_bias_encoder_requested = false;
     double m_homing_timer;
 
