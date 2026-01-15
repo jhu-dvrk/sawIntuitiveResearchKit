@@ -38,7 +38,7 @@ public:
     mtsIntuitiveResearchKitMTM(const mtsTaskPeriodicConstructorArg & arg);
     ~mtsIntuitiveResearchKitMTM();
 
-    void set_simulated(void) override;
+    void set_simulated(bool) override;
 
 protected:
     enum JointName {
