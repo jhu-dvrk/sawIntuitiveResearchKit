@@ -40,6 +40,9 @@ private slots:
     void open_folder();
     void folder_chosen();
 
+protected:
+    void closeEvent(QCloseEvent* event) override;
+
 private:
     void createActions();
     void createMenus();
@@ -55,6 +58,7 @@ private:
     QAction* open_config;
     QAction* save_config;
     QAction* save_config_as;
+    QAction* quit_action;
 };
 
 }

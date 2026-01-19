@@ -50,13 +50,18 @@ protected:
 
         mtsFunctionRead measured_cf;
         prmForceCartesianGet m_measured_cf;
+
+        mtsBilateralTeleOperationPSM* teleop;
+        std::string component_name;
+        std::string provided_interface_name;
+        std::string function_name;
     };
 
     class Arm {
     public:
         Arm(mtsBilateralTeleOperationPSM* teleop) : teleop(teleop) {}
         virtual ~Arm() {};
-        
+
         virtual void populateInterface(mtsInterfaceRequired* interface);
         virtual void add_force_source(std::unique_ptr<ForceSource> source) { force_source = std::move(source); }
 

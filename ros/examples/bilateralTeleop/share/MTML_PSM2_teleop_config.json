@@ -1,0 +1,7 @@
+{
+    "psm_force_source": {
+        "component": "PSM2",
+        "interface": "Arm",
+        "function": "spatial/measured_cf"
+    }
+}

@@ -1,6 +1,56 @@
 Change log
 ==========
 
+2.4.0 (2026-01-07)
+==================
+
+Starting with 2.4.0, we strongly recommend to use ROS2 with Ubuntu 24.04 or higher.
+
+* API changes:
+  * New JSON format for:
+    * Top configuration level (was console.json, now system.json)
+    * PID
+    * IO
+    * snake_case in all configuration files
+    * Si units in all configuration files (radians, meters...)
+  * New CRTK Python syntax, all methods return a tuple (data, timestamp). Timestamps set to zero indicate an error.
+* Deprecated features:
+  * CMake minimum required: 3.16
+  * Ubuntu 18.04 support dropped
+  * Anything referring to "console", now uses "system"
+* New features:
+  * Documentation now on https://dvrk.readthedocs.io, major updates and fixes
+  * Improved configuration file generator for IO (python script)
+  * Improved interface for calibration scripts
+  * System configuration file wizard (C++/Qt GUI), save and/or launch a system configuration
+  * New top level component "system" (was "console")
+    * Support multiple IO components
+    * Multiple surgeon consoles
+    * Multiple ECMs per patient side
+    * Clutch works on MTMs even with no operator present
+  * Gravity compensation for S/Si patient side arms (PSM and ECM)
+  * All arms have mounting_pitch used for gravity compensation
+  * Added support for embedded Python interpreter (aka cisstInteractive or IRE)
+  * Updated cisstMultiTask collectors for reliable data collection of events and state data without ROS
+  * All components (IO and PID) now have their own ROS bridge library
+    * Available in read-only or read-write mode
+    * Added simple ROS nodes with IO or IO and PID without arm and system classes
+  * Added solution for "fixed" SUJ, setups with PSMs and ECM but no SUJ controller
+    * SUJ_fixed class
+    * Hand-eye registration script to find PSM_base to camera or ECM_base  
+  * New example with bilateral teleoperation, python embedded interpreter...
+  * Support for custom endoscopes (DH and GC)
+  * Many more instruments supported
+  * On SUJ Standard, added weights between primary and secondary pots to support faulty systems
+  * PSM teleoperation: flags to enable/disable use of linear/angular velocities
+  * ...
+* Bug fixes:
+  * Fix bug damaging instruments when engaging
+  * Ongoing tuning of PID gains
+  * Fixed gravity compensation for ECM Standard/Classic
+  * Better DH and URDF for PSMs and ECMs, including physical DH for gravity compensation
+  * JSON schemas: fixed references, use markdown (was html), added requirements.txt, integrated in readthedocs
+
 2.3.1 (2025-01-17)
 ==================
 

@@ -89,6 +89,10 @@ public:
             m_voltage_to_position_scales[potArray].SetSize(MUX_ARRAY_SIZE);
             m_voltage_to_position_offsets[potArray].SetSize(MUX_ARRAY_SIZE);
         }
+        m_primary_secondary_weight.SetSize(MUX_ARRAY_SIZE);
+        m_secondary_primary_weight.SetSize(MUX_ARRAY_SIZE);
+        m_primary_secondary_weight.SetAll(0.5);
+        m_secondary_primary_weight.SetAll(0.5);
         m_delta_measured_js.SetSize(MUX_ARRAY_SIZE);
         m_voltages_extra.SetSize(MUX_MAX_INDEX - 2 * MUX_ARRAY_SIZE + 1);
 
@@ -117,6 +121,8 @@ public:
 
         m_state_table.AddData(m_voltages[0], "PrimaryVoltage");
         m_state_table.AddData(m_voltages[1], "SecondaryVoltage");
+        m_state_table.AddData(m_primary_secondary_weight, "primary_secondary_weight");
+        m_state_table.AddData(m_secondary_primary_weight, "secondary_primary_weight");
         m_state_table.AddData(m_voltages_extra, "VoltagesExtra");
         m_state_table.AddData(m_measured_js, "measured_js");
         m_state_table.AddData(m_configuration_js, "configuration_js");
@@ -305,6 +311,7 @@ public:
     // 2 arrays, one for each set of potentiometers
     vctDoubleVec m_voltages[2];
     vctDoubleVec m_positions[2];
+    vctDoubleVec m_primary_secondary_weight, m_secondary_primary_weight;
     vctDoubleVec m_delta_measured_js;
     bool m_pots_agree = false;
     bool m_waiting_for_live = true;
@@ -663,6 +670,14 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_offsets[1], jsonArm["secondary_offsets"]);
         cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_scales[0], jsonArm["primary_scales"]);
         cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_scales[1], jsonArm["secondary_scales"]);
+        if (!jsonArm["primary_secondary_weight"].isNull()) {
+            cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_primary_secondary_weight, jsonArm["primary_secondary_weight"]);
+            // compute "opposite"
+            sarm->m_secondary_primary_weight.SetAll(1.0);
+            sarm->m_secondary_primary_weight.Subtract(sarm->m_primary_secondary_weight);
+            std::cerr << " pri " << sarm->m_primary_secondary_weight << std::endl;
+            std::cerr << " sec " << sarm->m_secondary_primary_weight << std::endl;
+        }
         sarm->m_state_table_configuration.Advance();
 
         // look for DH
@@ -1038,9 +1053,14 @@ void mtsIntuitiveResearchKitSUJ::get_and_convert_potentiometers(void)
                     // at that point we know there has been a full mux cycle with brakes engaged
                     // so we treat this as a fixed transformation until the SUJ move again (user clutch)
                     // use average of positions reported by potentiometers
-                    sarm->m_measured_js.Position().SumOf(sarm->m_positions[0],
-                                                         sarm->m_positions[1]);
-                    sarm->m_measured_js.Position().Divide(2.0);
+                    vctDoubleVec primary(MUX_ARRAY_SIZE);
+                    primary.ElementwiseProductOf(sarm->m_positions[0],
+                                                 sarm->m_primary_secondary_weight);
+                    vctDoubleVec secondary(MUX_ARRAY_SIZE);
+                    secondary.ElementwiseProductOf(sarm->m_positions[1],
+                                                   sarm->m_secondary_primary_weight);
+                    sarm->m_measured_js.Position().SumOf(primary,
+                                                         secondary);
                     sarm->m_measured_js.SetValid(true);
                     if (sarm->m_waiting_for_live) {
                         sarm->m_waiting_for_live = false;

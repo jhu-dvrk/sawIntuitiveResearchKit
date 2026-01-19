@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen, Zerui Wang
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2026 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -675,15 +675,15 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
 
         // optionally disable GC
         const Json::Value jsonSkipGC = jsonConfig["skip_gravity_compensation"];
-        bool skip_GC = false;
+        m_skip_gravity_compensation = false;
         if (jsonSkipGC.isBool()) {
-            skip_GC = jsonSkipGC.asBool();
-            if (skip_GC) {
+            m_skip_gravity_compensation = jsonSkipGC.asBool();
+            if (m_skip_gravity_compensation) {
                 CMN_LOG_CLASS_INIT_WARNING << "Configure " << this->GetName()
                                            << ": ignoring gravity compensation because skip_gravity_compensation is set to True" << std::endl;
             }
         }
-        if (!skip_GC) {
+        if (!m_skip_gravity_compensation) {
             // arm specific configuration for gravity compensation
             ConfigureGC(jsonConfig, configPath, filename);
         }
@@ -2185,7 +2185,7 @@ void mtsIntuitiveResearchKitArm::servo_cp(const prmPositionCartesianSet & cp)
     m_servo_cs.PositionIsValid() = true;
     m_servo_cs.Velocity().Ref<3>(0) = cp.Velocity();
     m_servo_cs.Velocity().Ref<3>(3) = cp.VelocityAngular();
-    m_servo_cs.VelocityIsValid() = cp.Velocity().Any() && cp.VelocityAngular().Any();
+    m_servo_cs.VelocityIsValid() =  m_servo_cs.Velocity().Any();
     m_servo_cs.ForceIsValid() = false;
 
     m_pid_new_goal = true;

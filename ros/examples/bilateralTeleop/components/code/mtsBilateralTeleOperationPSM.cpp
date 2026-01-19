@@ -27,12 +27,9 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsBilateralTeleOperationPSM,
                                       mtsTaskPeriodicConstructorArg);
 
 void mtsBilateralTeleOperationPSM::ForceSource::Configure(mtsBilateralTeleOperationPSM* teleop, const Json::Value & jsonConfig) {
-    std::string component_name;
-    std::string provided_interface_name;
-    std::string function_name;
+    this->teleop = teleop;
 
     Json::Value value;
-
     value = jsonConfig["component"];
     if (!value.empty()) {
         component_name = value.asString();
@@ -48,15 +45,11 @@ void mtsBilateralTeleOperationPSM::ForceSource::Configure(mtsBilateralTeleOperat
         function_name = value.asString();
     }
 
-    std::string required_interface_name = provided_interface_name + "-force-source";
+    std::string required_interface_name = component_name + "_" + provided_interface_name + "_force_source";
     mtsInterfaceRequired* interface = teleop->AddInterfaceRequired(required_interface_name);
     if (interface) {
         interface->AddFunction(function_name, measured_cf);
     }
-
-    mtsManagerLocal* manager = mtsComponentManager::GetInstance();
-    manager->Connect(component_name, provided_interface_name,
-                     teleop->GetName(), required_interface_name);
 }
 
 void mtsBilateralTeleOperationPSM::Arm::populateInterface(mtsInterfaceRequired* interface)
@@ -128,7 +121,7 @@ prmStateCartesian mtsBilateralTeleOperationPSM::ArmMTM::state()
     state.Position() = teleop->mMTM.m_measured_cp.Position();
     state.PositionIsValid() = teleop->mMTM.m_measured_cp.Valid();
 
-    if (teleop->m_config.use_MTM_velocity) {
+    if (teleop->m_config.use_MTM_linear_velocity || teleop->m_config.use_MTM_angular_velocity) {
         auto mtm_velocity = teleop->mMTM.m_measured_cv;
         state.Velocity().Ref<3>(0) = mtm_velocity.VelocityLinear();
         state.Velocity().Ref<3>(3) = mtm_velocity.VelocityAngular();
@@ -137,7 +130,13 @@ prmStateCartesian mtsBilateralTeleOperationPSM::ArmMTM::state()
         state.VelocityIsValid() = false;
     }
 
-    state.ForceIsValid() = false;
+    if (force_source) {
+        force_source->measured_cf(force_source->m_measured_cf);
+        state.Force() = force_source->m_measured_cf.Force();
+        state.ForceIsValid() = force_source->m_measured_cf.Valid();
+    } else {
+        state.ForceIsValid() = false;
+    }
 
     return state;
 }
@@ -184,7 +183,13 @@ prmStateCartesian mtsBilateralTeleOperationPSM::ArmPSM::state()
     state.Velocity().Ref<3>(3) = psm_velocity.VelocityAngular();
     state.VelocityIsValid() = psm_velocity.Valid();
 
-    state.ForceIsValid() = false;
+    if (force_source) {
+        force_source->measured_cf(force_source->m_measured_cf);
+        state.Force() = force_source->m_measured_cf.Force();
+        state.ForceIsValid() = force_source->m_measured_cf.Valid();
+    } else {
+        state.ForceIsValid() = false;
+    }
 
     return state;
 }

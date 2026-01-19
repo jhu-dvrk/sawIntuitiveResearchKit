@@ -139,12 +139,19 @@
                     }
                 },
 
-                "use_MTM_velocity": {
-                    "description": "Use the MTM cartesian velocity, scale it and send it to the PSM along the position to defined the setpoint used by `servo_cp`.\n\n  This is turned on by default on the dVRK.  For this to work with alternate arms (e.g. ForceDimension for MTM, UR for PSM), you need to make sure the MTM velocities are not too noisy and the PSM can receive setpoints with both positions and velocities (twists).",
+                "use_MTM_linear_velocity": {
+                    "description": "Use the MTM cartesian linear velocity, scale it and send it to the PSM along the position to define the setpoint used by `servo_cp`.\n\n  This is turned on by default on the dVRK.  For this to work with alternate arms (e.g. ForceDimension for MTM, UR for PSM), you need to make sure the MTM velocities are not too noisy and the PSM can receive setpoints with both positions and velocities (twists).",
                     "type": "boolean",
                     "default": true
+                },
+
+                "use_MTM_angular_velocity": {
+                    "description": "Use the MTM cartesian angular velocity and send it to the PSM along the position to define the setpoint used by `servo_cp`.\n\n  This is turned off by default on the dVRK.  For this to work with alternate arms (e.g. ForceDimension for MTM, UR for PSM), you need to make sure the MTM angular velocities are not too noisy and the PSM can receive setpoints with both positions and velocities (twists).",
+                    "type": "boolean",
+                    "default": false
                 }
             }
         }
     }
 }
+

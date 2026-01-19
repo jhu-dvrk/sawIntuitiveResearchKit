@@ -639,7 +639,7 @@ public:
         { }
 
     static std::unique_ptr<IOConfig> fromJSON(Json::Value value) {
-        auto config = std::make_unique<IOConfig>("io");
+        auto config = std::make_unique<IOConfig>("IO");
         config->name = value.get("name", "").asString();
 
         auto port = IOPort::deserialize(value["port"].asString());
@@ -810,24 +810,27 @@ public:
         if (arm_file.has_value()) {
             // only save arm config file path if it differs from the default
             std::string default_filename = name + "-" + serial_number.value_or("") + ".json";
-            if (arm_file->filename() != default_filename || arm_file->parent_path() != destination.parent_path()) {
-                value["arm_file"] = arm_file->string();
+            std::string arm_filename = arm_file->lexically_proximate(destination.parent_path());
+            if (arm_filename != default_filename) {
+                value["arm_file"] = arm_filename;
             }
         }
 
-        if (io_file.has_value() && arm_file->parent_path() != destination.parent_path()) {
+        if (io_file.has_value()) {
             // only save IO config file path if it differs from the default
             std::string default_filename = "sawRobotIO1394-" + name +  + "-" + serial_number.value_or("") + ".json";
-            if (io_file->filename() != default_filename || io_file->parent_path() != destination.parent_path()) {
-                value["IO_file"] = io_file->string();
+            std::string io_filename = io_file->lexically_proximate(destination.parent_path());
+            if (io_filename != default_filename) {
+                value["IO_file"] = io_filename;
             }
         }
 
         if (io_gripper_file.has_value()) {
             // only save IO gripper config file path if it differs from the default
             std::string default_filename = "sawRobotIO1394-" + name + "-gripper-" + serial_number.value_or("") + ".json";
-            if (io_gripper_file->filename() != default_filename || io_gripper_file->parent_path() != destination.parent_path()) {
-                value["IO_gripper_file"] = io_gripper_file->string();
+            std::string io_gripper_filename = io_gripper_file->lexically_proximate(destination.parent_path());
+            if (io_gripper_filename != default_filename) {
+                value["IO_gripper_file"] = io_gripper_filename;
             }
         }
 
@@ -963,7 +966,7 @@ public:
 
     std::vector<std::string> arm_names;
 
-    double scale = 0.5;
+    double scale = 0.3;
     bool has_MTM_gripper = false;
     bool has_MTM_wrist_actuation = false;
     std::optional<ComponentInterfaceConfig> PSM_base_frame;
@@ -1144,7 +1147,7 @@ public:
     /* Store source arm name, and prefer retrieving IO name from current arm, so that changes to source arm config are reflected here */
     std::string source_arm_name;
     bool source_is_dqla = false;
-    std::string source_io_name;
+    std::string source_io_name = "IO";
 
 private:
     ListModelT<ArmConfig> const* arms = nullptr;

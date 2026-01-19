@@ -39,6 +39,7 @@ public slots:
     void saveAs();
 
     void closeConfig(int index);
+    bool closeAllConfigs();
 
 private:
     void createTab(std::unique_ptr<ConfigEditor>);

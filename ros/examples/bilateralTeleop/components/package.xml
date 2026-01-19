@@ -1,6 +1,6 @@
 <package format="3">
   <name>saw_intuitive_research_kit_example_bilateral_teleop</name>
-  <version>2.3.0</version>
+  <version>2.4.0</version>
   <description>
   sawIntuitiveResearchKit Example of bilateral PSM teleoperation
   </description>

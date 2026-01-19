@@ -9,7 +9,20 @@
                 "Name": "MTML_PSM2_Bilateral_Bridge",
                 "Period": 0.02
             },
-            "configure-parameter": "MTML-PSM2" // name of teleop component to bridge, make sure this matches
+            "configure-parameter": "MTML_PSM2" // name of teleop component to bridge, make sure this matches
+        }
+    ]
+    ,
+    "connections": [
+        {
+            "provided": {
+                "component": "PSM2",
+                "interface": "Arm"
+            },
+            "required": {
+                "component": "MTML_PSM2",
+                "interface": "PSM2_Arm_force_source"
+            }
         }
     ]
 }

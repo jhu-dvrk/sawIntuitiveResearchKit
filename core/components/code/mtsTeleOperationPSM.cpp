@@ -258,7 +258,7 @@ void mtsTeleOperationPSM::Configure(const std::string & filename)
     mtsComponent::ConfigureJSON(jsonConfig);
 
     // JSON part
-    mtsTeleOperationPSM::Configure(jsonConfig);
+    Configure(jsonConfig);
 }
 
 
@@ -338,10 +338,11 @@ void mtsTeleOperationPSM::Startup(void)
     }
 
     // check if MTM has measured_cv as needed
-    if (m_config.use_MTM_velocity &&
+    if ((m_config.use_MTM_linear_velocity || m_config.use_MTM_angular_velocity) &&
         !mMTM.measured_cv.IsValid()) {
-        m_config.use_MTM_velocity = false;
-        mInterface->SendWarning(this->GetName() + ": MTM doesn't provide measured_cv, you can avoid this warning by setting \"use_MTM_velocity\" to false");
+        m_config.use_MTM_linear_velocity = false;
+        m_config.use_MTM_angular_velocity = false;
+        mInterface->SendWarning(this->GetName() + ": MTM doesn't provide measured_cv, you can avoid this warning by setting \"use_MTM_linear_velocity\" and \"use_MTM_angular_velocity\" to false");
     }
 }
 
@@ -579,7 +580,7 @@ void mtsTeleOperationPSM::RunAllStates(void)
         mInterface->SendError(this->GetName() + ": unable to get cartesian position from MTM");
         mTeleopState.SetDesiredState("DISABLED");
     }
-    if (m_config.use_MTM_velocity) {
+    if (m_config.use_MTM_linear_velocity || m_config.use_MTM_angular_velocity) {
         executionResult = mMTM.measured_cv(mMTM.m_measured_cv);
         if (!executionResult.IsOK()) {
             CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTM.measured_cv failed \""
@@ -952,14 +953,17 @@ void mtsTeleOperationPSM::RunCartesianTeleop() {
     mPSM.m_servo_cp.Goal().FromNormalized(psmCartesianGoal);
 
     // Add desired velocity if needed
-    if (m_config.use_MTM_velocity) {
+    if (m_config.use_MTM_linear_velocity) {
         // linear is scaled and re-oriented
         mPSM.m_servo_cp.Velocity() = m_config.scale * mMTM.m_measured_cv.VelocityLinear();
+    } else {
+        mPSM.m_servo_cp.Velocity().Assign(vct3(0.0));
+    }
+    if (m_config.use_MTM_angular_velocity) {
         // angular is not scaled
         mPSM.m_servo_cp.VelocityAngular() = mMTM.m_measured_cv.VelocityAngular();
     } else {
-        mPSM.m_servo_cp.Velocity().Assign(vct3(0));
-        mPSM.m_servo_cp.VelocityAngular().Assign(vct3(0));
+        mPSM.m_servo_cp.VelocityAngular().Assign(vct3(0.0));
     }
 
     mPSM.servo_cp(mPSM.m_servo_cp);
