@@ -38,7 +38,7 @@
     }
     ,
     "jaw" : {
-        "qmin": -0.00000, //  00 degrees
+        "qmin": -0.20, //  00 degrees
         "qmax":  0.3490,  //  20 degrees
         "ftmax": 0.19
     }
