@@ -11,7 +11,6 @@
 - [ ] Status/tool tips
 - [ ] Make more keyboard friendly/better accessibility
 - [ ] Move edit/delete buttons to base ItemView?
-- [ ] Replace temporary in-line style sheets with custom QStyle
 - [ ] Help buttons e.g. on dialogs
 - [ ] Icons? e.g. delete, edit, add item
 - [ ] Make prettier
@@ -62,7 +61,7 @@
 - [x] File dialogs install *.json filter
 - [x] Mark unsaved when console input config changes
 - [ ] Chatty/path/audio volume config
-- [ ] Intro view when no config is open
+- [ ] Intro/help view when no config is open
 
 ### Config item editors
 
