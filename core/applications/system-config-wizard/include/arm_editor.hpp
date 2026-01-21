@@ -200,6 +200,8 @@ public:
     bool isComplete() const override;
 
 private:
+    static constexpr int default_MTM_x_offset = 180;
+
     ArmConfig* config;
     SystemConfigModel* system_model;
 
@@ -208,6 +210,7 @@ private:
     QSpinBox* ecm_mounting_pitch;
     QSpinBox* hrsv_pitch;
     QComboBox* suj_list;
+    QSpinBox* mtm_offset;
 
     bool block_suj_updates;
 

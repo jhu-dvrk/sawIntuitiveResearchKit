@@ -619,6 +619,14 @@ BaseFramePage::BaseFramePage(ArmConfig& config, SystemConfigModel& system_model,
     hrsv_description->setWordWrap(true);
     hrsv_mounting_layout->addRow(hrsv_description);
     hrsv_mounting_layout->addRow("Stereo display pitch (degrees):", hrsv_pitch);
+    mtm_offset = new QSpinBox();
+    mtm_offset->setRange(-500, 500);
+    mtm_offset->setSingleStep(10);
+    mtm_offset->setValue(0);
+    QLabel* mtm_offset_description = new QLabel("Offsets MTM base-frame sideways - if you have two MTMs they should have the correct width between them (typically each offset by 180 mm), or ECM teleoperation will not work correctly.\nNote: due to direction of HRSV x-axis, left MTMs should have a negatve offset and right MTMs should have a positive offset.");
+    mtm_offset_description->setWordWrap(true);
+    hrsv_mounting_layout->addRow(mtm_offset_description);
+    hrsv_mounting_layout->addRow("MTM x-offset (mm):", mtm_offset);
     details->addWidget(hrsv_mounting_details);
 
     QWidget* suj_details = new QWidget();
@@ -632,6 +640,7 @@ BaseFramePage::BaseFramePage(ArmConfig& config, SystemConfigModel& system_model,
 
     QObject::connect(ecm_mounting_pitch, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int){ updateBaseFrame(); });
     QObject::connect(hrsv_pitch, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int){ updateBaseFrame(); });
+    QObject::connect(mtm_offset, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int){ updateBaseFrame(); });
     QObject::connect(suj_list, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int){
         if (block_suj_updates) { return; }
         updateBaseFrame();
@@ -666,8 +675,14 @@ void BaseFramePage::initializePage() {
 
     block_suj_updates = false;
 
+    // Block signals to prevent them trigging "user edited value" handlers
+    const QSignalBlocker ecm_mounting_blocker(ecm_mounting_pitch);
+    const QSignalBlocker hrsv_pitch_blocker(hrsv_pitch);
+    const QSignalBlocker mtm_offset_blocker(mtm_offset);
+
     ecm_mounting_pitch->setValue(-60.0);
     hrsv_pitch->setValue(-60.0);
+    mtm_offset->setValue(0.0);
 
     if (config->base_frame.has_value()) {
         if (!config->base_frame->use_custom_transform) {
@@ -680,13 +695,17 @@ void BaseFramePage::initializePage() {
             // rotation of Y-Axis around X-axis
             double theta = std::atan2(config->base_frame->transform.at(2, 1), config->base_frame->transform.at(1, 1));
             double pitch = theta + cmnPI_2;
-            base_frame_type->setCurrentIndex(2);
             ecm_mounting_pitch->setValue(std::round(pitch * cmn180_PI));
+            base_frame_type->setCurrentIndex(2);
         } else if (config->base_frame->reference_frame_name == "HRSV") {
             // rotation of Y-Axis around X-axis (but negative to rotation for flip about Y axis)
             double theta = -std::atan2(config->base_frame->transform.at(2, 1), config->base_frame->transform.at(1, 1));
-            base_frame_type->setCurrentIndex(3);
             hrsv_pitch->setValue(std::round(theta * cmn180_PI));
+
+            double x_offset_meters = config->base_frame->transform.at(0, 3);
+            mtm_offset->setValue(std::round(x_offset_meters * 1000.0));
+
+            base_frame_type->setCurrentIndex(3);
         }
     } else {
         // first set to zero so non-zero values will emit currentIndexChanged
@@ -698,6 +717,12 @@ void BaseFramePage::initializePage() {
         } else if (config->type.isPSM()) {
             base_frame_type->setCurrentIndex(2);
         } else if (config->type.isMTM()) {
+            // Default width offset for left/right MTM pair
+            if (config->name.size() >= 4 && config->name.substr(0, 4) == "MTML") {
+                mtm_offset->setValue(default_MTM_x_offset);
+            } else if (config->name.size() >= 4 && config->name.substr(0, 4) == "MTMR") {
+                mtm_offset->setValue(-default_MTM_x_offset);
+            }
             base_frame_type->setCurrentIndex(3);
         }
     }
@@ -738,7 +763,9 @@ void BaseFramePage::setFrameToHRSV() {
     double mounting_pitch = cmnPI_180 * hrsv_pitch->value(); // convert radians to degrees
     // Rotate by display mounting pitch, then do 180 degree rotation to flip X-axis direction to match ECM/stereo display
     vctRot3 rotation = vctRot3(vctAxAnRot3(vct3(0.0, 1.0, 0.0), cmnPI)) * vctRot3(vctAxAnRot3(vct3(1.0, 0.0, 0.0), mounting_pitch));
-    this->config->base_frame->transform = vctFrm4x4(rotation, vct3(0.0, 0.400, 0.475));
+
+    double x_offset = mtm_offset->value() * 1.0e-3;
+    this->config->base_frame->transform = vctFrm4x4(rotation, vct3(x_offset, 0.400, 0.475));
 }
 
 void BaseFramePage::setFrameToHapticMTMUser() {
