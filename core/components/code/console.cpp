@@ -407,7 +407,6 @@ void dvrk::console::update_teleop_state(void)
     for (auto & iter : m_teleop_proxies) {
         auto & teleop_proxy = iter.second;
         if (m_teleop_enabled
-            && !teleop_proxy->m_enabled
             && teleop_proxy->m_selected
             && (((teleop_proxy->type() == teleop_proxy::ECM)
                  && m_camera)
