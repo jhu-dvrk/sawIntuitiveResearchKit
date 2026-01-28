@@ -5,7 +5,7 @@
   Author(s):  Brendan Burkhart
   Created on: 2025-01-23
 
-  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2026 Johns Hopkins University (JHU), All Rights Reserved.
 
   --- begin cisst license - do not edit ---
 
@@ -108,7 +108,7 @@ void mtsBilateralTeleOperationPSM::Arm::servo(prmStateCartesian goal)
     servo_cpvf(goal);
 }
 
-vctFrm4x4& mtsBilateralTeleOperationPSM::ArmMTM::ClutchOrigin() { return teleop->mMTM.CartesianInitial; }
+vctFrm4x4& mtsBilateralTeleOperationPSM::ArmMTM::ClutchOrigin() { return teleop->mMTM.m_pose_initial; }
 
 prmStateCartesian mtsBilateralTeleOperationPSM::ArmMTM::state()
 {
@@ -162,7 +162,7 @@ void mtsBilateralTeleOperationPSM::ArmMTM::servo(prmStateCartesian goal)
     }
 }
 
-vctFrm4x4& mtsBilateralTeleOperationPSM::ArmPSM::ClutchOrigin() { return teleop->mPSM.CartesianInitial; };
+vctFrm4x4& mtsBilateralTeleOperationPSM::ArmPSM::ClutchOrigin() { return teleop->mPSM.m_pose_initial; };
 
 prmStateCartesian mtsBilateralTeleOperationPSM::ArmPSM::state()
 {
