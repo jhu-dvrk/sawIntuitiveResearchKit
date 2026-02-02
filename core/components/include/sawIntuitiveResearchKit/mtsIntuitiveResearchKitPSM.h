@@ -41,9 +41,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicConstructorArg & arg);
     ~mtsIntuitiveResearchKitPSM();
 
-    void set_simulated(void) override;
+    void SetSimulationMode(const prmSimulationType::SimulationType &mode) override;
 
- protected:
+protected:
     void set_generation(const dvrk::generation generation) override;
     void load_tool_list(const cmnPath & path,
                         const std::string & indexFile = "tool/index.json");

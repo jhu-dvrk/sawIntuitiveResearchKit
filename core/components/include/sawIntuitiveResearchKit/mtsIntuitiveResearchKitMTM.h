@@ -38,10 +38,10 @@ public:
     mtsIntuitiveResearchKitMTM(const mtsTaskPeriodicConstructorArg & arg);
     ~mtsIntuitiveResearchKitMTM();
 
-    void set_simulated(void) override;
+    // This is overriding the method in prmSimulationType so we can implement simulation mode for MTM
+    void SetSimulationMode(const prmSimulationType::SimulationType& mode) override;
 
-protected:
-    enum JointName {
+    protected : enum JointName {
         JNT_OUTER_YAW = 0,
         JNT_OUTER_PITCH_1 = 1,
         JNT_OUTER_PITCH_2 = 2,

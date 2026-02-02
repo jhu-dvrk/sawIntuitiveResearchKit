@@ -49,9 +49,11 @@ mtsIntuitiveResearchKitMTM::mtsIntuitiveResearchKitMTM(const mtsTaskPeriodicCons
 
 mtsIntuitiveResearchKitMTM::~mtsIntuitiveResearchKitMTM() = default;
 
-void mtsIntuitiveResearchKitMTM::set_simulated(void)
+void mtsIntuitiveResearchKitMTM::SetSimulationMode(const prmSimulationType::SimulationType &mode)
 {
-    mtsIntuitiveResearchKitArm::set_simulated();
+    // forward to base class implementation
+    mtsIntuitiveResearchKitArm::SetSimulationMode(mode);
+
     // in simulation mode, we don't need IO Gripper
     RemoveInterfaceRequired("GripperIO");
 }
@@ -332,7 +334,7 @@ bool mtsIntuitiveResearchKitMTM::is_cartesian_ready(void) const
 void mtsIntuitiveResearchKitMTM::SetGoalHomingArm(void)
 {
     // if simulated, start at zero but insert tool so it can be used in cartesian mode
-    if (m_simulated || m_homing_goes_to_zero) {
+    if ((GetSimulationMode() == prmSimulationType::KINEMATIC) || m_homing_goes_to_zero) {
         m_trajectory_j.goal.SetAll(0.0);
     } else {
         // stay at current position by default
@@ -352,8 +354,8 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
 
     if (!m_calibration_mode) {
-        if (m_simulated || is_homed()) {
-            if (m_simulated) {
+        if ((GetSimulationMode() == prmSimulationType::KINEMATIC) || is_homed()) {
+            if ((GetSimulationMode() == prmSimulationType::KINEMATIC)) {
                 // all encoders are biased, including roll
                 m_encoders_biased = true;
             }
@@ -390,7 +392,7 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
 void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
 {
     if (!m_calibration_mode) {
-        if (m_simulated || is_homed()) {
+        if ((GetSimulationMode() == prmSimulationType::KINEMATIC) || is_homed()) {
             mArmState.SetCurrentState("ROLL_CALIBRATED");
             return;
         }
@@ -460,7 +462,7 @@ void mtsIntuitiveResearchKitMTM::EnterResettingRollEncoder(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
 
-    if (m_simulated || is_homed()) {
+    if ((GetSimulationMode() == prmSimulationType::KINEMATIC) || is_homed()) {
         mArmState.SetCurrentState("HOMING");
         return;
     }
@@ -512,7 +514,7 @@ void mtsIntuitiveResearchKitMTM::get_robot_data(void)
 {
     mtsIntuitiveResearchKitArm::get_robot_data();
 
-    if (m_simulated) {
+    if ((GetSimulationMode() == prmSimulationType::KINEMATIC)) {
         return;
     }
 

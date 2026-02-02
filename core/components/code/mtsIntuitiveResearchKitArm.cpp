@@ -857,9 +857,11 @@ void mtsIntuitiveResearchKitArm::Cleanup(void)
     CMN_LOG_CLASS_INIT_VERBOSE << GetName() << ": Cleanup" << std::endl;
 }
 
-void mtsIntuitiveResearchKitArm::set_simulated(void)
+void mtsIntuitiveResearchKitArm::SetSimulationMode(const prmSimulationType::SimulationType& mode)
 {
-    m_simulated = true;
+    // forward to the base class
+    prmSimulationType::SetSimulationMode(mode);
+    
     // in simulation mode, we don't need IO
     RemoveInterfaceRequired("RobotIO");
 }
@@ -867,7 +869,7 @@ void mtsIntuitiveResearchKitArm::set_simulated(void)
 void mtsIntuitiveResearchKitArm::get_robot_data(void)
 {
     // check that the robot still has power
-    if (m_powered && !m_simulated) {
+    if (m_powered && !(GetSimulationMode() == prmSimulationType::KINEMATIC)) {
         vctBoolVec actuatorAmplifiersStatus(number_of_joints());
         IO.GetActuatorAmpStatus(actuatorAmplifiersStatus);
         vctBoolVec brakeAmplifiersStatus(number_of_brakes());
@@ -1198,7 +1200,7 @@ void mtsIntuitiveResearchKitArm::EnterPowering(void)
 
     m_powered = false;
 
-    if (m_simulated) {
+    if ((GetSimulationMode() == prmSimulationType::KINEMATIC)) {
         PID.enable_measured_setpoint_check(false);
         PID.enable(true);
         PID.enable_joints(vctBoolVec(number_of_joints(), true));
@@ -1227,7 +1229,7 @@ void mtsIntuitiveResearchKitArm::EnterPowering(void)
 
 void mtsIntuitiveResearchKitArm::TransitionPowering(void)
 {
-    if (m_simulated) {
+    if ((GetSimulationMode() == prmSimulationType::KINEMATIC)) {
         mArmState.SetCurrentState("ENABLED");
         return;
     }
@@ -1256,7 +1258,7 @@ void mtsIntuitiveResearchKitArm::EnterEnabled(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, false);
 
-    if (m_simulated) {
+    if ((GetSimulationMode() == prmSimulationType::KINEMATIC)) {
         m_powered = true;
         return;
     }
@@ -1292,7 +1294,7 @@ void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
 
     // if simulated, no need to bias encoders
-    if (m_simulated) {
+    if ((GetSimulationMode() == prmSimulationType::KINEMATIC)) {
         m_arm_interface->SendStatus(this->GetName() + ": simulated mode, no need to calibrate encoders");
         return;
     }
@@ -1322,7 +1324,7 @@ void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
 
 void mtsIntuitiveResearchKitArm::TransitionCalibratingEncodersFromPots(void)
 {
-    if (m_simulated || m_encoders_biased_from_pots) {
+    if ((GetSimulationMode() == prmSimulationType::KINEMATIC) || m_encoders_biased_from_pots) {
         m_encoders_biased_from_pots = true;
         mArmState.SetCurrentState("ENCODERS_BIASED");
         return;
@@ -1370,7 +1372,7 @@ void mtsIntuitiveResearchKitArm::EnterHoming(void)
     PID.enable_measured_setpoint_check(true);
 
     // release brakes if any
-    if ((has_brakes()) && !m_simulated) {
+    if ((has_brakes()) && !(GetSimulationMode() == prmSimulationType::KINEMATIC)) {
         IO.BrakeRelease();
     }
 
@@ -1456,7 +1458,7 @@ void mtsIntuitiveResearchKitArm::EnterHomed(void)
     SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::UNDEFINED_SPACE,
                            mtsIntuitiveResearchKitControlTypes::UNDEFINED_MODE);
 
-    if (m_simulated) {
+    if ((GetSimulationMode() == prmSimulationType::KINEMATIC)) {
         return;
     }
 

@@ -100,14 +100,17 @@ mtsIntuitiveResearchKitPSM::mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicCons
 // need to define destructor after definition of GravityCompensationPSM is available
 mtsIntuitiveResearchKitPSM::~mtsIntuitiveResearchKitPSM() = default;
 
-void mtsIntuitiveResearchKitPSM::set_simulated(void)
+void mtsIntuitiveResearchKitPSM::SetSimulationMode(const prmSimulationType::SimulationType &mode)
 {
-    mtsIntuitiveResearchKitArm::set_simulated();
+    // forward to base class implementation
+    mtsIntuitiveResearchKitArm::SetSimulationMode(mode);
+
     // in simulation mode, we don't need clutch, adapter, tool IO nor Dallas
     RemoveInterfaceRequired("arm_clutch");
     RemoveInterfaceRequired("adapter");
     RemoveInterfaceRequired("tool");
     RemoveInterfaceRequired("dallas");
+
     // for Si systems, remove a few more interfaces
     if (m_generation == dvrk::generation::Si) {
         RemoveInterfaceRequired("SUJ_clutch");
@@ -121,7 +124,7 @@ void mtsIntuitiveResearchKitPSM::set_generation(const dvrk::generation generatio
     mtsIntuitiveResearchKitArm::set_generation(generation);
     // for S/si, add SUJClutch interface
     if ((generation == dvrk::generation::Si)
-        && !m_simulated) {
+        && !(GetSimulationMode() == prmSimulationType::SimulationType::KINEMATIC)) {
         auto interfaceRequired = AddInterfaceRequired("SUJ_clutch");
         if (interfaceRequired) {
             interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerSUJClutch, this, "Button");
@@ -843,7 +846,7 @@ void mtsIntuitiveResearchKitPSM::SetControlSpaceAndMode(const mtsIntuitiveResear
 void mtsIntuitiveResearchKitPSM::SetGoalHomingArm(void)
 {
     // if simulated, start at zero but insert tool so it can be used in cartesian mode
-    if (m_simulated) {
+    if ((GetSimulationMode() == prmSimulationType::SimulationType::KINEMATIC)) {
         m_trajectory_j.goal.SetAll(0.0);
         m_trajectory_j.goal.at(2) = 12.0 * cmn_cm;
         return;
@@ -867,7 +870,7 @@ void mtsIntuitiveResearchKitPSM::EnterHomed(void)
     mtsIntuitiveResearchKitArm::EnterHomed();
 
     // event to propagate tool type based on configuration file
-    if (m_simulated
+    if ((GetSimulationMode() == prmSimulationType::SimulationType::KINEMATIC)
         && (m_tool_detection == mtsIntuitiveResearchKitToolTypes::FIXED)) {
         prmEventButton fake_event;
         fake_event.SetType(prmEventButton::PRESSED);
@@ -878,25 +881,25 @@ void mtsIntuitiveResearchKitPSM::EnterHomed(void)
 
 void mtsIntuitiveResearchKitPSM::TransitionHomed(void)
 {
-    if (!m_simulated) {
+    if (!(GetSimulationMode() == prmSimulationType::SimulationType::KINEMATIC)) {
         Adapter.GetButton(Adapter.IsPresent);
         if (!(Adapter.IsPresent || Adapter.IsEmulated)) {
             Adapter.IsEngaged = false;
         }
     }
     if (!Adapter.IsEngaged &&
-        (Adapter.IsPresent || Adapter.IsEmulated || m_simulated || Adapter.NeedEngage)) {
+        (Adapter.IsPresent || Adapter.IsEmulated || (GetSimulationMode() == prmSimulationType::SimulationType::KINEMATIC) || Adapter.NeedEngage)) {
         mArmState.SetCurrentState("ENGAGING_ADAPTER");
     }
 
-    if (!m_simulated) {
+    if (!(GetSimulationMode() == prmSimulationType::SimulationType::KINEMATIC)) {
         Tool.GetButton(Tool.IsPresent);
         if (!(Tool.IsPresent || Tool.IsEmulated)) {
             Tool.IsEngaged = false;
         }
     }
     if (Adapter.IsEngaged && !Tool.IsEngaged) {
-        if (!m_simulated) {
+        if (!(GetSimulationMode() == prmSimulationType::SimulationType::KINEMATIC)) {
             if ((Tool.IsPresent || Tool.IsEmulated)) {
                 // tool should be configured if automatic or fixed
                 if (m_tool_configured) {
@@ -986,7 +989,7 @@ void mtsIntuitiveResearchKitPSM::EnterEngagingAdapter(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
     // if simulated, nothing to do
-    if (m_simulated) {
+    if ((GetSimulationMode() == prmSimulationType::SimulationType::KINEMATIC)) {
         return;
     }
 
@@ -1017,7 +1020,7 @@ void mtsIntuitiveResearchKitPSM::EnterEngagingAdapter(void)
 
 void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
 {
-    if (m_simulated) {
+    if ((GetSimulationMode() == prmSimulationType::SimulationType::KINEMATIC)) {
         Adapter.NeedEngage = false;
         Adapter.IsEngaged = true;
         mArmState.SetCurrentState("HOMED");
@@ -1109,7 +1112,7 @@ void mtsIntuitiveResearchKitPSM::EnterEngagingTool(void)
 
     // if for some reason we don't need to engage, basically, tool was
     // found before homing
-    if (!m_simulated && !Tool.NeedEngage) {
+    if (!(GetSimulationMode() == prmSimulationType::SimulationType::KINEMATIC) && !Tool.NeedEngage) {
         mArmState.SetCurrentState("TOOL_ENGAGED");
         return;
     }
@@ -1124,7 +1127,7 @@ void mtsIntuitiveResearchKitPSM::EnterEngagingTool(void)
 
 void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
 {
-    if (m_simulated) {
+    if ((GetSimulationMode() == prmSimulationType::SimulationType::KINEMATIC)) {
         mArmState.SetCurrentState("TOOL_ENGAGED");
         return;
     }
@@ -1599,7 +1602,7 @@ void mtsIntuitiveResearchKitPSM::emulate_tool_present(const bool & present)
 
 void mtsIntuitiveResearchKitPSM::set_tool_type(const std::string & toolType)
 {
-    if (m_tool_type_requested || m_simulated) {
+    if (m_tool_type_requested || (GetSimulationMode() == prmSimulationType::SimulationType::KINEMATIC)) {
         EventHandlerToolType(toolType);
         if (m_tool_configured) {
             m_tool_type_requested = false;
