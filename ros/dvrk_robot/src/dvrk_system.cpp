@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2015-07-18
 
-  (C) Copyright 2015-2025 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2015-2026 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -22,13 +22,10 @@ http://www.cisst.org/cisst/license.txt.
 
 // cisst/saw
 #include <cisstCommon/cmnPath.h>
-#include <cisstCommon/cmnCommandLineOptions.h>
 #include <cisstCommon/cmnGetChar.h>
 #include <cisstCommon/cmnQt.h>
-#include <cisstOSAbstraction/osaSleep.h>
 #include <cisstMultiTask/mtsManagerLocal.h>
-#include <cisstMultiTask/mtsCollectorFactory.h>
-#include <cisstMultiTask/mtsCollectorFactoryQtWidget.h>
+#include <cisstMultiTask/mtsCommandLineOptionsQt.h>
 
 #include <sawIntuitiveResearchKit/system.h>
 #include <sawIntuitiveResearchKit/system_Qt.h>
@@ -72,19 +69,23 @@ int main(int argc, char ** argv)
     auto rosNode = ral.node();
 
     // parse options
-    cmnCommandLineOptions options;
+    mtsCommandLineOptionsQt options;
     std::string jsonMainConfigFile;
     double publishPeriod = 10.0 * cmn_ms;
     double tfPeriod = 20.0 * cmn_ms;
-    std::string jsonCollectionConfigFile;
     std::string _IRE_shell = "";
-    std::list<std::string> managerConfig;
-    std::string qtStyle;
 
     // options show up in order they're added
     options.AddOptionOneValue("j", "json-config",
                               "json configuration file",
                               cmnCommandLineOptions::REQUIRED_OPTION, &jsonMainConfigFile);
+
+    options.AddOptionNoValue("C", "calibration-mode",
+                             "run in calibration mode, doesn't use potentiometers to monitor encoder values and always force re-homing.  This mode should only be used when calibrating your potentiometers");
+
+    options.AddOptionOneValue("e", "embedded-python",
+                              "start an embedded Python shell to access all dVRK software components",
+                              cmnCommandLineOptions::OPTIONAL_OPTION, &_IRE_shell);
 
     options.AddOptionOneValue("p", "ros-period",
                               "period in seconds to read all arms/teleop components and publish (default 0.01, 10 ms, 100Hz).  There is no point to have a period higher than the arm component's period",
@@ -94,9 +95,6 @@ int main(int argc, char ** argv)
                               "period in seconds to read all components and broadcast tf2 (default 0.02, 20 ms, 50Hz).  There is no point to have a period higher than the arm component's period",
                               cmnCommandLineOptions::OPTIONAL_OPTION, &tfPeriod);
 
-    options.AddOptionNoValue("C", "calibration-mode",
-                             "run in calibration mode, doesn't use potentiometers to monitor encoder values and always force re-homing.  This mode should only be used when calibrating your potentiometers");
-    
     options.AddOptionNoValue("I", "pid-topics-read-only",
                              "add some extra publishers to monitor PID state");
 
@@ -109,30 +107,8 @@ int main(int argc, char ** argv)
     options.AddOptionNoValue("L", "io-topics-read-write",
                              "add all IO topics (use with caution!)");
 
-    options.AddOptionOneValue("e", "embedded-python",
-                              "start an embedded Python shell to access all dVRK software components",
-                              cmnCommandLineOptions::OPTIONAL_OPTION, &_IRE_shell);
-
-    options.AddOptionMultipleValues("m", "component-manager",
-                                    "JSON files to configure component manager",
-                                    cmnCommandLineOptions::OPTIONAL_OPTION, &managerConfig);
-
-    options.AddOptionOneValue("S", "qt-style",
-                              "Qt style, use this option with a random name to see available styles",
-                              cmnCommandLineOptions::OPTIONAL_OPTION, &qtStyle);
-
-    options.AddOptionNoValue("D", "dark-mode",
-                             "replaces the default Qt palette with darker colors");
-
-    options.AddOptionNoValue("t", "text-only",
-                             "text only interface, do not create Qt widgets");
-
     options.AddOptionNoValue("s", "suj-voltages",
                              "add ROS topics for SUJ voltages");
-
-    options.AddOptionOneValue("c", "collection-config",
-                              "json configuration file for data collection using cisstMultiTask state table collector",
-                              cmnCommandLineOptions::OPTIONAL_OPTION, &jsonCollectionConfigFile);
 
     // check that all required options have been provided
     if (!options.Parse(ral.stripped_arguments(), std::cerr)) {
@@ -156,47 +132,14 @@ int main(int argc, char ** argv)
     component_manager->AddComponent(system);
     system->Connect();
 
-    QApplication * application;
-    dvrk::system_Qt * system_Qt = nullptr;
-    // add all Qt widgets if needed
-    if (hasQt) {
-        QLocale::setDefault(QLocale::English);
-        application = new QApplication(argc, argv);
-        application->setWindowIcon(QIcon(":/dVRK.png"));
-        cmnQt::QApplicationExitsOnCtrlC();
-        if (options.IsSet("qt-style")) {
-            std::string errorMessage = cmnQt::SetStyle(qtStyle);
-            if (errorMessage != "") {
-                std::cerr << errorMessage << std::endl;
-                return -1;
-            }
-        }
-        if (options.IsSet("dark-mode")) {
-            cmnQt::SetDarkMode();
-        }
-        system_Qt = new dvrk::system_Qt();
-        system_Qt->configure(system);
-        system_Qt->connect();
-    }
+    QLocale::setDefault(QLocale::English);
+    QApplication * application = new QApplication(argc, argv);
+    application->setWindowIcon(QIcon(":/dVRK.png"));
+    dvrk::system_Qt * system_Qt = new dvrk::system_Qt();
+    system_Qt->configure(system);
+    system_Qt->connect();
 
-    // configure data collection if needed
-    if (options.IsSet("collection-config")) {
-        // make sure the json config file exists
-        file_exists("JSON data collection configuration", jsonCollectionConfigFile, system);
-
-        auto * collectors = new mtsCollectorFactory("collectors");
-        collectors->Configure(jsonCollectionConfigFile);
-        component_manager->AddComponent(collectors);
-        collectors->Connect();
-
-        if (hasQt) {
-            auto * collectors_Qt = new mtsCollectorFactoryQtWidget("collectors_Qt");
-            system_Qt->add_tab(collectors_Qt, "Collection");
-            component_manager->AddComponent(collectors_Qt);
-            component_manager->Connect(collectors_Qt->GetName(), "Collector",
-                                       collectors->GetName(), "Control");
-        }
-    }
+    options.Apply();
 
     // create a console with all dVRK ROS topics
     // - publishPeriod is used to control publish rate
@@ -214,7 +157,7 @@ int main(int argc, char ** argv)
         system_ROS->add_topics_SUJ_voltages();
     }
 
-    if (options.IsSet("collection-config")) {
+    if (!options.CollectionConfig.empty()) {
         system_ROS->add_topics_collector_factory("collectors");
     }
 
@@ -232,12 +175,9 @@ int main(int argc, char ** argv)
 
     // connect everything
     system_ROS->Connect();
-    
-    // custom user component
-    if (!component_manager->ConfigureJSON(managerConfig)) {
-        CMN_LOG_INIT_ERROR << "Configure: failed to configure component-manager, check cisstLog for error messages" << std::endl;
-        return -1;
-    }
+
+    // collector factory and component viewer are handled by options.Apply()
+    options.Apply();
 
     //-------------- create the components ------------------
     component_manager->CreateAllAndWait(2.0 * cmn_s);
@@ -261,9 +201,7 @@ int main(int argc, char ** argv)
     cisst_ral::shutdown();
 
     delete system;
-    if (hasQt) {
-        delete system_Qt;
-    }
+    delete system_Qt;
     delete system_ROS;
 
     return 0;

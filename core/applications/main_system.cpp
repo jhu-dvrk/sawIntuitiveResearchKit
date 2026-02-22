@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-07
 
-  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2026 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -22,12 +22,10 @@ http://www.cisst.org/cisst/license.txt.
 
 // cisst/saw
 #include <cisstCommon/cmnPath.h>
-#include <cisstCommon/cmnCommandLineOptions.h>
 #include <cisstCommon/cmnGetChar.h>
 #include <cisstCommon/cmnQt.h>
 #include <cisstMultiTask/mtsManagerLocal.h>
-#include <cisstMultiTask/mtsCollectorFactory.h>
-#include <cisstMultiTask/mtsCollectorFactoryQtWidget.h>
+#include <cisstMultiTask/mtsCommandLineOptionsQt.h>
 
 #include <sawIntuitiveResearchKit/system.h>
 #include <sawIntuitiveResearchKit/system_Qt.h>
@@ -64,21 +62,13 @@ int main(int argc, char ** argv)
     mtsIntuitiveResearchKit::Logger logger;
 
     // parse options
-    cmnCommandLineOptions options;
+    mtsCommandLineOptionsQt options;
     std::string jsonMainConfigFile;
-    std::string jsonCollectionConfigFile;
     std::string _IRE_shell = "";
-    std::list<std::string> managerConfig;
-    std::string qtStyle;
-    std::string dotFile;
 
     options.AddOptionOneValue("j", "json-config",
                               "json configuration file",
                               cmnCommandLineOptions::REQUIRED_OPTION, &jsonMainConfigFile);
-
-    options.AddOptionOneValue("c", "collection-config",
-                              "json configuration file for data collection using cisstMultiTask state table collector",
-                              cmnCommandLineOptions::OPTIONAL_OPTION, &jsonCollectionConfigFile);
 
     options.AddOptionNoValue("C", "calibration-mode",
                              "run in calibration mode, doesn't use potentiometers to monitor encoder values and always force re-homing.  This mode should only be used when calibrating your potentiometers.");
@@ -87,24 +77,6 @@ int main(int argc, char ** argv)
                               "start an embedded Python shell to access all dVRK software components",
                               cmnCommandLineOptions::OPTIONAL_OPTION, &_IRE_shell);
 
-    options.AddOptionMultipleValues("m", "component-manager",
-                                    "JSON files to configure component manager",
-                                    cmnCommandLineOptions::OPTIONAL_OPTION, &managerConfig);
-
-    options.AddOptionOneValue("S", "qt-style",
-                              "Qt style, use this option with a random name to see available styles",
-                              cmnCommandLineOptions::OPTIONAL_OPTION, &qtStyle);
-
-    options.AddOptionNoValue("D", "dark-mode",
-                             "replaces the default Qt palette with darker colors");
-
-    options.AddOptionNoValue("t", "text-only",
-                             "text only interface, do not create Qt widgets");
-
-    options.AddOptionOneValue("d", "dot-file",
-                              "graphviz compatible dot file",
-                              cmnCommandLineOptions::OPTIONAL_OPTION, &dotFile);
-
     // check that all required options have been provided
     if (!options.Parse(argc, argv, std::cerr)) {
         return -1;
@@ -112,8 +84,6 @@ int main(int argc, char ** argv)
     std::string arguments;
     options.PrintParsedArguments(arguments);
     std::cout << "Options provided:" << std::endl << arguments;
-
-    const bool hasQt = !options.IsSet("text-only");
 
     // start creating components
     mtsManagerLocal * component_manager = mtsManagerLocal::GetInstance();
@@ -127,71 +97,22 @@ int main(int argc, char ** argv)
     component_manager->AddComponent(system);
     system->Connect();
 
-    QApplication * application;
-    dvrk::system_Qt * system_Qt = nullptr;
-    // add all Qt widgets if needed
-    if (hasQt) {
-        QLocale::setDefault(QLocale::English);
-        application = new QApplication(argc, argv);
-        application->setWindowIcon(QIcon(":/dVRK.png"));
-        cmnQt::QApplicationExitsOnCtrlC();
-        if (options.IsSet("qt-style")) {
-            std::string errorMessage = cmnQt::SetStyle(qtStyle);
-            if (errorMessage != "") {
-                std::cerr << errorMessage << std::endl;
-                return -1;
-            }
-        }
-        if (options.IsSet("dark-mode")) {
-            cmnQt::SetDarkMode();
-        }
-        system_Qt = new dvrk::system_Qt();
-        system_Qt->configure(system);
-        system_Qt->connect();
-    }
+    QLocale::setDefault(QLocale::English);
+    QApplication * application = new QApplication(argc, argv);
+    application->setWindowIcon(QIcon(":/dVRK.png"));
+    dvrk::system_Qt * system_Qt = new dvrk::system_Qt();
+    system_Qt->configure(system);
+    system_Qt->connect();
+ 
 
-    // configure data collection if needed
-    if (options.IsSet("collection-config")) {
-        // make sure the json config file exists
-        file_exists("JSON data collection configuration", jsonCollectionConfigFile, system);
-
-        auto * collectors = new mtsCollectorFactory("collectors");
-        collectors->Configure(jsonCollectionConfigFile);
-        component_manager->AddComponent(collectors);
-        collectors->Connect();
-
-        if (hasQt) {
-            auto * collectors_Qt = new mtsCollectorFactoryQtWidget("collectors_Qt");
-            system_Qt->add_tab(collectors_Qt, "Collection");
-            component_manager->AddComponent(collectors_Qt);
-            component_manager->Connect(collectors_Qt->GetName(), "Collector",
-                                       collectors->GetName(), "Control");
-        }
-    }
-
-    // custom user component
-    if (!component_manager->ConfigureJSON(managerConfig)) {
-        CMN_LOG_INIT_ERROR << "Configure: failed to configure component-manager, check cisstLog for error messages" << std::endl;
-        return -1;
-    }
+    // collector factory and component viewer are handled by options.Apply()
+    options.Apply();
 
     //-------------- create the components ------------------
     component_manager->CreateAllAndWait(2.0 * cmn_s);
     component_manager->StartAllAndWait(2.0 * cmn_s);
 
-    if (!dotFile.empty()) {
-        std::ofstream dotStream(dotFile, std::ofstream::out);
-        component_manager->ToStreamDot(dotStream);
-        dotStream.close();
-    }
-    
-    if (hasQt) {
-        application->exec();
-    } else {
-        do {
-            std::cout << "Press 'q' to quit" << std::endl;
-        } while (cmnGetChar() != 'q');
-    }
+    application->exec();
 
     component_manager->KillAllAndWait(2.0 * cmn_s);
     component_manager->Cleanup();
@@ -200,9 +121,7 @@ int main(int argc, char ** argv)
     logger.Stop();
 
     delete system;
-    if (hasQt) {
-        delete system_Qt;
-    }
+    delete system_Qt;
 
     return 0;
 }

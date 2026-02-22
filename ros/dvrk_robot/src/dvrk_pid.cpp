@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2025-02-04
 
-  (C) Copyright 2025 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2025-2026 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -20,7 +20,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <iostream>
 // cisst/saw
 #include <cisstCommon/cmnPath.h>
-#include <cisstCommon/cmnCommandLineOptions.h>
+#include <cisstMultiTask/mtsCommandLineOptionsQt.h>
 #include <cisstCommon/cmnQt.h>
 #include <cisstOSAbstraction/osaSleep.h>
 #include <cisstMultiTask/mtsManagerLocal.h>
@@ -54,7 +54,7 @@ int main(int argc, char ** argv)
     auto rosNode = ral.node();
 
     // parse options
-    cmnCommandLineOptions options;
+    mtsCommandLineOptionsQt options;
     std::string portName = mtsRobotIO1394::DefaultPort();
     std::string ioConfigFile, pidConfigFile;
     std::string robotName;
@@ -118,7 +118,6 @@ int main(int argc, char ** argv)
     // create a Qt user interface
     QApplication application(argc, argv);
     application.setWindowIcon(QIcon(":/dVRK.png"));
-    cmnQt::QApplicationExitsOnCtrlC();
 
     // organize all widgets in a tab widget
     QTabWidget * tabWidget = new QTabWidget;
@@ -177,6 +176,8 @@ int main(int argc, char ** argv)
                                           /* rw */ true);
     componentManager->AddComponent(pid_bridge);
     pid_bridge->Connect();
+
+    options.Apply();
 
     //-------------- create the components ------------------
     componentManager->CreateAll();
