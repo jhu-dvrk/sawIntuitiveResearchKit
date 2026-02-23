@@ -139,8 +139,6 @@ int main(int argc, char ** argv)
     system_Qt->configure(system);
     system_Qt->connect();
 
-    options.Apply();
-
     // create a console with all dVRK ROS topics
     // - publishPeriod is used to control publish rate
     // - tfPeriod is used to control tf broadcast rate
