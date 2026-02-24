@@ -119,9 +119,11 @@ mtsIntuitiveResearchKitECM::mtsIntuitiveResearchKitECM(const mtsTaskPeriodicCons
 // need to define destructor after definition of GravityCompensationECM is available
 mtsIntuitiveResearchKitECM::~mtsIntuitiveResearchKitECM() = default;
 
-void mtsIntuitiveResearchKitECM::set_simulated(void)
+void mtsIntuitiveResearchKitECM::SetSimulationMode(const prmSimulationType::SimulationType& mode)
 {
-    mtsIntuitiveResearchKitArm::set_simulated();
+    // forward the simulation mode setup to the base class
+    mtsIntuitiveResearchKitArm::SetSimulationMode(mode);
+    
     // in simulation mode, we don't need clutch IO
     RemoveInterfaceRequired("arm_clutch");
     // for Si systems, remove a few more interfaces
@@ -137,7 +139,7 @@ void mtsIntuitiveResearchKitECM::set_generation(const dvrk::generation generatio
     mtsIntuitiveResearchKitArm::set_generation(generation);
     // for S/si, add SUJClutch interface
     if ((generation == dvrk::generation::Si)
-        && !m_simulated) {
+        && !(GetSimulationMode() == prmSimulationType::KINEMATIC)) {
         auto interfaceRequired = AddInterfaceRequired("SUJ_clutch");
         if (interfaceRequired) {
             interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitECM::EventHandlerSUJClutch, this, "Button");
@@ -341,7 +343,7 @@ bool mtsIntuitiveResearchKitECM::is_cartesian_ready(void) const
 void mtsIntuitiveResearchKitECM::SetGoalHomingArm(void)
 {
     // if simulated, start at zero but insert endoscope so it can be used in cartesian mode
-    if (m_simulated) {
+    if (GetSimulationMode() == prmSimulationType::KINEMATIC) {
         m_trajectory_j.goal.SetAll(0.0);
         m_trajectory_j.goal.at(2) = 12.0 * cmn_cm;
         return;

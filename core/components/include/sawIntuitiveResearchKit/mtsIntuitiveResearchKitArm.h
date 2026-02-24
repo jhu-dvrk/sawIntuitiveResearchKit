@@ -42,6 +42,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmForwardKinematicsResponse.h>
 #include <cisstParameterTypes/prmStateCartesian.h>
 
+#include <cisstParameterTypes/prmSimulationType.h>
+
 #include <cisstRobot/robManipulator.h>
 #include <cisstRobot/robReflexxes.h>
 
@@ -57,7 +59,7 @@ class osaCartesianImpedanceController;
 // Always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
-class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
+class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic, public prmSimulationType
 {
     CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
 
@@ -71,10 +73,13 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     void Run(void) override;
     void Cleanup(void) override;
 
+    // Override from prmSimulationType for handling simulation mode in derived classes
+    virtual void SetSimulationMode(const prmSimulationType::SimulationType& mode) override;
+
     inline void crtk_version(std::string & placeholder) const {
         placeholder = mtsIntuitiveResearchKit::crtk_version;
     }
-    virtual void set_simulated(void);
+    // virtual void set_simulated(void);
     virtual inline void set_calibration_mode(const bool mode) {
         m_calibration_mode = mode;
     }
@@ -533,9 +538,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     // generation
     dvrk::generation m_generation
         = dvrk::generation::GENERATION_UNDEFINED;
-
-    // flag to determine if this is connected to actual IO/hardware or simulated
-    bool m_simulated = false;
 
     // flag to determine if the arm is running in calibration mode, i.e. turn off checks using potentiometers
     bool m_calibration_mode = false;

@@ -163,7 +163,7 @@ void dvrk::arm_proxy::create_arm(void)
         {
             mtsIntuitiveResearchKitSUJ * suj = new mtsIntuitiveResearchKitSUJ(m_name, m_config->period);
             if (m_config->simulation == dvrk::simulation::SIMULATION_KINEMATIC) {
-                suj->set_simulated();
+                suj->SetSimulationMode(prmSimulationType::SimulationType::KINEMATIC);
             } else if (m_config->simulation == dvrk::simulation::SIMULATION_NONE) {
                 m_system->m_connections.Add(m_name, "no_mux_reset",
                                             m_IO_component_name, "no_mux_reset");
@@ -195,7 +195,7 @@ void dvrk::arm_proxy::create_arm(void)
 #if sawIntuitiveResearchKit_HAS_SUJ_Si
             mtsIntuitiveResearchKitSUJSi * suj = new mtsIntuitiveResearchKitSUJSi(m_name, m_config->period);
             if (m_config->simulation == dvrk::simulation::SIMULATION_KINEMATIC) {
-                suj->set_simulated();
+                suj->SetSimulationMode(prmSimulationType::SimulationType::KINEMATIC);
             }
             suj->Configure(m_arm_configuration_file);
             component_manager->AddComponent(suj);
@@ -292,7 +292,7 @@ void dvrk::arm_proxy::create_arm(void)
         && !m_config->SUJ()) {
         CMN_ASSERT(m_arm != nullptr);
         if (m_config->simulation == dvrk::simulation::SIMULATION_KINEMATIC) {
-            m_arm->set_simulated();
+            m_arm->SetSimulationMode(prmSimulationType::SimulationType::KINEMATIC);
         }
         m_arm->set_calibration_mode(m_calibration_mode);
         m_arm->Configure(m_arm_configuration_file);
@@ -444,7 +444,7 @@ void dvrk::arm_proxy::create_PID(void)
     bool hasIO = true;
     pid->Configure(m_PID_configuration_file);
     if (m_config->simulation == dvrk::simulation::SIMULATION_KINEMATIC) {
-        pid->SetSimulated();
+        pid->SetSimulationMode(prmSimulationType::SimulationType::KINEMATIC);
         hasIO = false;
     }
     component_manager->AddComponent(pid);

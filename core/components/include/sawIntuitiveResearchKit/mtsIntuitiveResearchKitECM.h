@@ -40,7 +40,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
     mtsIntuitiveResearchKitECM(const mtsTaskPeriodicConstructorArg & arg);
     ~mtsIntuitiveResearchKitECM();
 
-    void set_simulated(void) override;
+    // This is overriding the method in prmSimulationType so we can implement simulation mode for MTM
+    void SetSimulationMode(const prmSimulationType::SimulationType& mode) override;
 
  protected:
     void set_generation(const dvrk::generation generation) override;

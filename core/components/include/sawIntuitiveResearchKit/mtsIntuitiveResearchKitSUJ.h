@@ -26,12 +26,14 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitControlTypes.h>
 
+#include <cisstParameterTypes/prmSimulationType.h>
+
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
 // forward declaration
 class mtsIntuitiveResearchKitSUJArmData;
 
-class CISST_EXPORT mtsIntuitiveResearchKitSUJ: public mtsTaskPeriodic
+class CISST_EXPORT mtsIntuitiveResearchKitSUJ: public mtsTaskPeriodic, public prmSimulationType
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
@@ -48,7 +50,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJ: public mtsTaskPeriodic
     void Run(void);
     void Cleanup(void);
 
-    void set_simulated(void);
+    // Override from prmSimulationType for handling simulation mode in derived classes
+    virtual void SetSimulationMode(const prmSimulationType::SimulationType& mode) override;
 
  protected:
 
@@ -164,9 +167,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJ: public mtsTaskPeriodic
     vctDoubleVec m_voltages;
     vctFixedSizeVector<mtsIntuitiveResearchKitSUJArmData *, 4> m_sarms;
     size_t m_reference_arm_index; // arm used to provide base frame to all other SUJ arms, traditionally the ECM
-
-    // Flag to determine if this is connected to actual IO/hardware or simulated
-    bool m_simulated = false;
 
     void dispatch_error(const std::string & message);
     void dispatch_warning(const std::string & message);
