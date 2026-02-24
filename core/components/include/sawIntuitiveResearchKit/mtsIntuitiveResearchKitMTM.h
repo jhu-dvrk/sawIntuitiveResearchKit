@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2026 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -38,8 +38,7 @@ public:
     mtsIntuitiveResearchKitMTM(const mtsTaskPeriodicConstructorArg & arg);
     ~mtsIntuitiveResearchKitMTM();
 
-    // This is overriding the method in prmSimulationType so we can implement simulation mode for MTM
-    void SetSimulationMode(const prmSimulationType::SimulationType& mode) override;
+    void set_simulation_mode(const prmSimulationType & mode) override;
 
     protected : enum JointName {
         JNT_OUTER_YAW = 0,

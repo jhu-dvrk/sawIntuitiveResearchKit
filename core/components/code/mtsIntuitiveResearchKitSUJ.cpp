@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Youri Tan
   Created on: 2014-11-07
 
-  (C) Copyright 2014-2025 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2026 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -56,7 +56,7 @@ public:
     inline mtsIntuitiveResearchKitSUJArmData(const std::string & name,
                                              const SujType type,
                                              const unsigned int plugNumber,
-                                             const prmSimulationType::SimulationType simulationMode,
+                                             const prmSimulationType simulationMode,
                                              mtsInterfaceProvided * interfaceProvided,
                                              mtsInterfaceRequired * interfaceRequired):
         m_name(name),
@@ -207,7 +207,7 @@ public:
 
     inline void servo_jp(const prmPositionJointSet & newPosition)
     {
-        if (!(m_simulation_mode == prmSimulationType::SimulationType::KINEMATIC))
+        if (m_simulation_mode != prmSimulationType::KINEMATIC)
         {
             m_interface_provided->SendWarning(m_name + " SUJ: servo_jp can't be used unless the SUJs are in simulated mode");
             return;
@@ -298,7 +298,7 @@ public:
     unsigned int m_plug_number;
 
     // simulated or not
-    prmSimulationType::SimulationType m_simulation_mode;
+    prmSimulationType m_simulation_mode;
 
     // interfaces
     mtsInterfaceProvided * m_interface_provided = nullptr;
@@ -587,7 +587,7 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         // ECM and change base frame on attached arms
         mtsInterfaceProvided * interfaceProvided = this->AddInterfaceProvided(name);
         mtsInterfaceRequired * interfaceRequired = this->AddInterfaceRequired(name, MTS_OPTIONAL);
-        auto sarm = new mtsIntuitiveResearchKitSUJArmData(name, type, plugNumber, GetSimulationMode(),
+        auto sarm = new mtsIntuitiveResearchKitSUJArmData(name, type, plugNumber, m_simulation_mode,
                                                           interfaceProvided, interfaceRequired);
         m_sarms[armIndex] = sarm;
         AddStateTable(&(sarm->m_state_table));
@@ -609,7 +609,7 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         }
 
         // create a required interface for each arm to handle clutch button
-        if (!(GetSimulationMode() == prmSimulationType::SimulationType::KINEMATIC)) {
+        if (m_simulation_mode != prmSimulationType::KINEMATIC) {
             std::stringstream interfaceName;
             interfaceName << "SUJ_clutch_" << plugNumber;
             mtsInterfaceRequired * requiredInterface = this->AddInterfaceRequired(interfaceName.str());
@@ -762,7 +762,7 @@ void mtsIntuitiveResearchKitSUJ::enter_POWERING(void)
     update_operating_state_and_busy(prmOperatingState::DISABLED, true);
     m_powered = false;
 
-    if (GetSimulationMode() == prmSimulationType::SimulationType::KINEMATIC) {
+    if (m_simulation_mode == prmSimulationType::KINEMATIC) {
         m_powered = true;
         return;
     }
@@ -780,7 +780,7 @@ void mtsIntuitiveResearchKitSUJ::enter_POWERING(void)
 
 void mtsIntuitiveResearchKitSUJ::transition_POWERING(void)
 {
-    if (GetSimulationMode() == prmSimulationType::SimulationType::KINEMATIC) {
+    if (m_simulation_mode == prmSimulationType::KINEMATIC) {
         m_state_machine.SetCurrentState("ENABLED");
         return;
     }
@@ -808,7 +808,7 @@ void mtsIntuitiveResearchKitSUJ::enter_ENABLED(void)
 {
     update_operating_state_and_busy(prmOperatingState::ENABLED, false);
 
-    if (GetSimulationMode() == prmSimulationType::SimulationType::KINEMATIC) {
+    if (m_simulation_mode == prmSimulationType::KINEMATIC) {
         set_homed(true);
         return;
     }
@@ -872,11 +872,14 @@ void mtsIntuitiveResearchKitSUJ::Cleanup(void)
 }
 
 
-void mtsIntuitiveResearchKitSUJ::SetSimulationMode(const prmSimulationType::SimulationType& mode)
+void mtsIntuitiveResearchKitSUJ::set_simulation_mode(const prmSimulationType & mode)
 {
-    // forward to the base class
-    prmSimulationType::SetSimulationMode(mode);
-    
+    m_simulation_mode = mode;
+
+    if (mode == prmSimulationType::NONE) {
+        return;
+    }
+
     // set all arms simulated
     for (auto sarm : m_sarms) {
         if (sarm != nullptr) {
@@ -897,7 +900,7 @@ void mtsIntuitiveResearchKitSUJ::SetSimulationMode(const prmSimulationType::Simu
 
 void mtsIntuitiveResearchKitSUJ::get_robot_data(void)
 {
-    if (GetSimulationMode() == prmSimulationType::SimulationType::KINEMATIC) {
+    if (m_simulation_mode == prmSimulationType::KINEMATIC) {
         return;
     }
 

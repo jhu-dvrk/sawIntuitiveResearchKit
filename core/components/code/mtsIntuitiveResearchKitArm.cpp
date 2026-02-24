@@ -857,19 +857,26 @@ void mtsIntuitiveResearchKitArm::Cleanup(void)
     CMN_LOG_CLASS_INIT_VERBOSE << GetName() << ": Cleanup" << std::endl;
 }
 
-void mtsIntuitiveResearchKitArm::SetSimulationMode(const prmSimulationType::SimulationType& mode)
+void mtsIntuitiveResearchKitArm::set_simulation_mode(const prmSimulationType & mode)
 {
-    // forward to the base class
-    prmSimulationType::SetSimulationMode(mode);
-    
-    // in simulation mode, we don't need IO
-    RemoveInterfaceRequired("RobotIO");
+    m_simulation_mode = mode;
+    switch (mode) {
+    case prmSimulationType::NONE:
+        break;
+    case prmSimulationType::KINEMATIC:
+    case prmSimulationType::IO:
+        // in simulation mode, we don't need IO
+        RemoveInterfaceRequired("RobotIO");        
+        break;
+    default:
+        cmnThrow("mtsPID::set_simulation_mode received unsupported mode");
+    }
 }
 
 void mtsIntuitiveResearchKitArm::get_robot_data(void)
 {
     // check that the robot still has power
-    if (m_powered && !(GetSimulationMode() == prmSimulationType::KINEMATIC)) {
+    if (m_powered && !(m_simulation_mode == prmSimulationType::KINEMATIC)) {
         vctBoolVec actuatorAmplifiersStatus(number_of_joints());
         IO.GetActuatorAmpStatus(actuatorAmplifiersStatus);
         vctBoolVec brakeAmplifiersStatus(number_of_brakes());
@@ -1200,7 +1207,7 @@ void mtsIntuitiveResearchKitArm::EnterPowering(void)
 
     m_powered = false;
 
-    if ((GetSimulationMode() == prmSimulationType::KINEMATIC)) {
+    if (m_simulation_mode == prmSimulationType::KINEMATIC) {
         PID.enable_measured_setpoint_check(false);
         PID.enable(true);
         PID.enable_joints(vctBoolVec(number_of_joints(), true));
@@ -1229,7 +1236,7 @@ void mtsIntuitiveResearchKitArm::EnterPowering(void)
 
 void mtsIntuitiveResearchKitArm::TransitionPowering(void)
 {
-    if ((GetSimulationMode() == prmSimulationType::KINEMATIC)) {
+    if (m_simulation_mode == prmSimulationType::KINEMATIC) {
         mArmState.SetCurrentState("ENABLED");
         return;
     }
@@ -1258,7 +1265,7 @@ void mtsIntuitiveResearchKitArm::EnterEnabled(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, false);
 
-    if ((GetSimulationMode() == prmSimulationType::KINEMATIC)) {
+    if (m_simulation_mode == prmSimulationType::KINEMATIC) {
         m_powered = true;
         return;
     }
@@ -1294,7 +1301,7 @@ void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
 
     // if simulated, no need to bias encoders
-    if ((GetSimulationMode() == prmSimulationType::KINEMATIC)) {
+    if (m_simulation_mode == prmSimulationType::KINEMATIC) {
         m_arm_interface->SendStatus(this->GetName() + ": simulated mode, no need to calibrate encoders");
         return;
     }
@@ -1324,7 +1331,7 @@ void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
 
 void mtsIntuitiveResearchKitArm::TransitionCalibratingEncodersFromPots(void)
 {
-    if ((GetSimulationMode() == prmSimulationType::KINEMATIC) || m_encoders_biased_from_pots) {
+    if ((m_simulation_mode == prmSimulationType::KINEMATIC) || m_encoders_biased_from_pots) {
         m_encoders_biased_from_pots = true;
         mArmState.SetCurrentState("ENCODERS_BIASED");
         return;
@@ -1372,7 +1379,7 @@ void mtsIntuitiveResearchKitArm::EnterHoming(void)
     PID.enable_measured_setpoint_check(true);
 
     // release brakes if any
-    if ((has_brakes()) && !(GetSimulationMode() == prmSimulationType::KINEMATIC)) {
+    if ((has_brakes()) && (m_simulation_mode != prmSimulationType::KINEMATIC)) {
         IO.BrakeRelease();
     }
 
@@ -1458,7 +1465,7 @@ void mtsIntuitiveResearchKitArm::EnterHomed(void)
     SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::UNDEFINED_SPACE,
                            mtsIntuitiveResearchKitControlTypes::UNDEFINED_MODE);
 
-    if ((GetSimulationMode() == prmSimulationType::KINEMATIC)) {
+    if (m_simulation_mode == prmSimulationType::KINEMATIC) {
         return;
     }
 

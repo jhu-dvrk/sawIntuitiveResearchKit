@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen, Rishibrata Biswas, Adnan Munawar
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2026 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -49,13 +49,15 @@ mtsIntuitiveResearchKitMTM::mtsIntuitiveResearchKitMTM(const mtsTaskPeriodicCons
 
 mtsIntuitiveResearchKitMTM::~mtsIntuitiveResearchKitMTM() = default;
 
-void mtsIntuitiveResearchKitMTM::SetSimulationMode(const prmSimulationType::SimulationType &mode)
+void mtsIntuitiveResearchKitMTM::set_simulation_mode(const prmSimulationType & mode)
 {
     // forward to base class implementation
-    mtsIntuitiveResearchKitArm::SetSimulationMode(mode);
+    mtsIntuitiveResearchKitArm::set_simulation_mode(mode);
 
     // in simulation mode, we don't need IO Gripper
-    RemoveInterfaceRequired("GripperIO");
+    if (m_simulation_mode == prmSimulationType::KINEMATIC) {
+        RemoveInterfaceRequired("GripperIO");
+    }
 }
 
 void mtsIntuitiveResearchKitMTM::Init(void)
@@ -334,7 +336,7 @@ bool mtsIntuitiveResearchKitMTM::is_cartesian_ready(void) const
 void mtsIntuitiveResearchKitMTM::SetGoalHomingArm(void)
 {
     // if simulated, start at zero but insert tool so it can be used in cartesian mode
-    if ((GetSimulationMode() == prmSimulationType::KINEMATIC) || m_homing_goes_to_zero) {
+    if ((m_simulation_mode == prmSimulationType::KINEMATIC) || m_homing_goes_to_zero) {
         m_trajectory_j.goal.SetAll(0.0);
     } else {
         // stay at current position by default
@@ -354,8 +356,8 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
 
     if (!m_calibration_mode) {
-        if ((GetSimulationMode() == prmSimulationType::KINEMATIC) || is_homed()) {
-            if ((GetSimulationMode() == prmSimulationType::KINEMATIC)) {
+        if ((m_simulation_mode == prmSimulationType::KINEMATIC) || is_homed()) {
+            if (m_simulation_mode == prmSimulationType::KINEMATIC) {
                 // all encoders are biased, including roll
                 m_encoders_biased = true;
             }
@@ -392,7 +394,7 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
 void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
 {
     if (!m_calibration_mode) {
-        if ((GetSimulationMode() == prmSimulationType::KINEMATIC) || is_homed()) {
+        if ((m_simulation_mode == prmSimulationType::KINEMATIC) || is_homed()) {
             mArmState.SetCurrentState("ROLL_CALIBRATED");
             return;
         }
@@ -462,7 +464,7 @@ void mtsIntuitiveResearchKitMTM::EnterResettingRollEncoder(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
 
-    if ((GetSimulationMode() == prmSimulationType::KINEMATIC) || is_homed()) {
+    if ((m_simulation_mode == prmSimulationType::KINEMATIC) || is_homed()) {
         mArmState.SetCurrentState("HOMING");
         return;
     }
@@ -514,7 +516,7 @@ void mtsIntuitiveResearchKitMTM::get_robot_data(void)
 {
     mtsIntuitiveResearchKitArm::get_robot_data();
 
-    if ((GetSimulationMode() == prmSimulationType::KINEMATIC)) {
+    if (m_simulation_mode == prmSimulationType::KINEMATIC) {
         return;
     }
 

@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2026 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -118,7 +118,7 @@ void dvrk::arm_proxy::create_arm(void)
     } else {
         // -2- using serial number
         if ((m_config->type != dvrk::arm_type::FOCUS_CONTROLLER)
-            && (m_config->simulation != dvrk::simulation::SIMULATION_KINEMATIC)) {
+            && (m_config->simulation != prmSimulationType::KINEMATIC)) {
             if (m_config->serial == "") {
                 CMN_LOG_INIT_ERROR << "arm_proxy::create_arm: serial number required for arm "
                                    << m_name << std::endl;
@@ -162,9 +162,8 @@ void dvrk::arm_proxy::create_arm(void)
     case dvrk::arm_type::SUJ_Classic:
         {
             mtsIntuitiveResearchKitSUJ * suj = new mtsIntuitiveResearchKitSUJ(m_name, m_config->period);
-            if (m_config->simulation == dvrk::simulation::SIMULATION_KINEMATIC) {
-                suj->SetSimulationMode(prmSimulationType::SimulationType::KINEMATIC);
-            } else if (m_config->simulation == dvrk::simulation::SIMULATION_NONE) {
+            suj->set_simulation_mode(m_config->simulation);
+            if (m_config->simulation == prmSimulationType::NONE) {
                 m_system->m_connections.Add(m_name, "no_mux_reset",
                                             m_IO_component_name, "no_mux_reset");
                 m_system->m_connections.Add(m_name, "mux_increment",
@@ -194,9 +193,7 @@ void dvrk::arm_proxy::create_arm(void)
         {
 #if sawIntuitiveResearchKit_HAS_SUJ_Si
             mtsIntuitiveResearchKitSUJSi * suj = new mtsIntuitiveResearchKitSUJSi(m_name, m_config->period);
-            if (m_config->simulation == dvrk::simulation::SIMULATION_KINEMATIC) {
-                suj->SetSimulationMode(prmSimulationType::SimulationType::KINEMATIC);
-            }
+            suj->set_simulation_mode(m_config->simulation);
             suj->Configure(m_arm_configuration_file);
             component_manager->AddComponent(suj);
 #else
@@ -291,16 +288,14 @@ void dvrk::arm_proxy::create_arm(void)
     if (m_config->native_or_derived()
         && !m_config->SUJ()) {
         CMN_ASSERT(m_arm != nullptr);
-        if (m_config->simulation == dvrk::simulation::SIMULATION_KINEMATIC) {
-            m_arm->SetSimulationMode(prmSimulationType::SimulationType::KINEMATIC);
-        }
+        m_arm->set_simulation_mode(m_config->simulation);
         m_arm->set_calibration_mode(m_calibration_mode);
         m_arm->Configure(m_arm_configuration_file);
         set_base_frame_if_needed();
         component_manager->AddComponent(m_arm.get());
 
         // for all native arms not simulated, connect a few IOS
-        if (m_config->simulation == dvrk::simulation::SIMULATION_NONE) {
+        if (m_config->simulation == prmSimulationType::NONE) {
 
             if (m_config->PSM()) {
                 std::vector<std::string> itfs = {"adapter", "tool", "arm_clutch", "dallas"};
@@ -443,8 +438,8 @@ void dvrk::arm_proxy::create_PID(void)
                               (m_config->PID_period != 0.0) ? m_config->PID_period : mtsIntuitiveResearchKit::IOPeriod);
     bool hasIO = true;
     pid->Configure(m_PID_configuration_file);
-    if (m_config->simulation == dvrk::simulation::SIMULATION_KINEMATIC) {
-        pid->SetSimulationMode(prmSimulationType::SimulationType::KINEMATIC);
+    pid->set_simulation_mode(m_config->simulation);
+    if (m_config->simulation == prmSimulationType::KINEMATIC) {
         hasIO = false;
     }
     component_manager->AddComponent(pid);

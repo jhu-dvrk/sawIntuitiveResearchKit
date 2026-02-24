@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2026 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -41,7 +41,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicConstructorArg & arg);
     ~mtsIntuitiveResearchKitPSM();
 
-    void SetSimulationMode(const prmSimulationType::SimulationType &mode) override;
+    void set_simulation_mode(const prmSimulationType & mode) override;
 
 protected:
     void set_generation(const dvrk::generation generation) override;

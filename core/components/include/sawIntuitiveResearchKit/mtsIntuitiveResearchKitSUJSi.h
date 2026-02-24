@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2022-07-27
 
-  (C) Copyright 2022-2025 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2022-2026 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -39,7 +39,7 @@ http://www.cisst.org/cisst/license.txt.
 class mtsIntuitiveResearchKitSUJSiArduino;
 class mtsIntuitiveResearchKitSUJSiArmData;
 
-class CISST_EXPORT mtsIntuitiveResearchKitSUJSi: public mtsTaskPeriodic, public prmSimulationType
+class CISST_EXPORT mtsIntuitiveResearchKitSUJSi: public mtsTaskPeriodic
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
@@ -56,8 +56,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJSi: public mtsTaskPeriodic, public 
     void Run(void);
     void Cleanup(void);
 
-    // Override from prmSimulationType for handling simulation mode in derived classes
-    virtual void SetSimulationMode(const prmSimulationType::SimulationType &mode) override;
+    void set_simulation_mode(const prmSimulationType & mode);
 
   protected:
 
@@ -94,6 +93,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJSi: public mtsTaskPeriodic, public 
 
     /*! Change the reference arm, ECM by default */
     void set_reference_arm(const std::string & arm_name);
+
+    prmSimulationType m_simulation_mode;
 
     // state machine
     mtsStateMachine m_state_machine;

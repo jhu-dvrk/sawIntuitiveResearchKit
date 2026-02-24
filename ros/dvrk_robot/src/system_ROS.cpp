@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2015-07-18
 
-  (C) Copyright 2015-2025 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2015-2026 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -82,15 +82,13 @@ dvrk::system_ROS::system_ROS(const std::string & name,
             } else if (config.native_or_derived_ECM()) {
                 bridge_interface_provided_ECM(name, "Arm",
                                               publish_period_in_seconds, tf_period_in_seconds);
-                if (config.simulation
-                    == dvrk::simulation::SIMULATION_NONE) {
+                if (config.simulation == prmSimulationType::NONE) {
                     add_topics_ECM_IO(name, iter.second->m_IO_component_name);
                 }
             } else if (config.native_or_derived_PSM()) {
                 bridge_interface_provided_PSM(name, "Arm",
                                               publish_period_in_seconds, tf_period_in_seconds);
-                if (config.simulation
-                    == dvrk::simulation::SIMULATION_NONE) {
+                if (config.simulation == prmSimulationType::NONE) {
                     add_topics_PSM_IO(name, iter.second->m_IO_component_name);
                 }
             } else if (config.generic()) {

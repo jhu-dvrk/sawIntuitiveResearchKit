@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Youri Tan
   Created on: 2014-11-07
 
-  (C) Copyright 2014-2025 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2026 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -33,7 +33,7 @@ http://www.cisst.org/cisst/license.txt.
 // forward declaration
 class mtsIntuitiveResearchKitSUJArmData;
 
-class CISST_EXPORT mtsIntuitiveResearchKitSUJ: public mtsTaskPeriodic, public prmSimulationType
+class CISST_EXPORT mtsIntuitiveResearchKitSUJ: public mtsTaskPeriodic
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
@@ -50,8 +50,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJ: public mtsTaskPeriodic, public pr
     void Run(void);
     void Cleanup(void);
 
-    // Override from prmSimulationType for handling simulation mode in derived classes
-    virtual void SetSimulationMode(const prmSimulationType::SimulationType& mode) override;
+    void set_simulation_mode(const prmSimulationType & mode);
 
  protected:
 
@@ -90,6 +89,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJ: public mtsTaskPeriodic, public pr
     /*! crtk operating state command.  Currently supports "enable" and
       "disable". */
     virtual void state_command(const std::string & command);
+
+    prmSimulationType m_simulation_mode;
 
     // Arm state machine
     mtsStateMachine m_state_machine;

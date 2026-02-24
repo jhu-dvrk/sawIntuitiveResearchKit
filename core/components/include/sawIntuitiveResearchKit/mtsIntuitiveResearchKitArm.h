@@ -59,7 +59,7 @@ class osaCartesianImpedanceController;
 // Always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
-class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic, public prmSimulationType
+class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 {
     CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
 
@@ -73,8 +73,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic, public pr
     void Run(void) override;
     void Cleanup(void) override;
 
-    // Override from prmSimulationType for handling simulation mode in derived classes
-    virtual void SetSimulationMode(const prmSimulationType::SimulationType& mode) override;
+    virtual void set_simulation_mode(const prmSimulationType & mode);
 
     inline void crtk_version(std::string & placeholder) const {
         placeholder = mtsIntuitiveResearchKit::crtk_version;
@@ -176,6 +175,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic, public pr
 
     void set_LED_pattern(uint32_t color1, uint32_t color2, bool blink1, bool blink2);
     virtual void clip_jp(vctDoubleVec & jp) const;
+
+    prmSimulationType m_simulation_mode;
 
     // Arm state machine
     mtsStateMachine mArmState;

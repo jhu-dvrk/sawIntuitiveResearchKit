@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2022-07-27
 
-  (C) Copyright 2022-2025 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2022-2026 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -145,7 +145,7 @@ public:
 
     inline mtsIntuitiveResearchKitSUJSiArmData(const std::string & name,
                                                const std::string & arduinoMAC,
-                                               const prmSimulationType::SimulationType simulationMode,
+                                               const prmSimulationType simulationMode,
                                                mtsInterfaceProvided * interfaceProvided,
                                                mtsInterfaceRequired * interfaceRequired,
                                                mtsInterfaceProvided * interfaceMessage):
@@ -283,7 +283,7 @@ public:
 
     inline void servo_jp(const prmPositionJointSet & newPosition)
     {
-        if (!(m_simulation_mode == prmSimulationType::SimulationType::KINEMATIC)) {
+        if (m_simulation_mode != prmSimulationType::KINEMATIC) {
             m_interface_message->SendWarning(m_name + " SUJ: servo_jp can't be used unless the SUJs are in simulated mode");
             return;
         }
@@ -361,7 +361,7 @@ public:
     std::string m_serial_number;
 
     // simulated or not
-    prmSimulationType::SimulationType m_simulation_mode;
+    prmSimulationType m_simulation_mode;
 
     // number of joints for this arm
     size_t m_nb_joints;
@@ -528,7 +528,7 @@ void mtsIntuitiveResearchKitSUJSi::Configure(const std::string & filename)
         CMN_LOG_CLASS_INIT_WARNING << "Configure: \"reference_arm\" is user defined.  This should only happen if you are using a PSM to hold a camera.  Most users shouldn't define \"reference_arm\".  If undefined, all arm cartesian positions will be defined with respect to the ECM" << std::endl;
     }
 
-    if (!(GetSimulationMode() == prmSimulationType::SimulationType::KINEMATIC)) {
+    if (m_simulation_mode != prmSimulationType::KINEMATIC) {
         // base arduino used for SUJ prismatic joints
         if (!jsonConfig["base_arduino_mac"]) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure: \"base_arduino_mac\" is missing" << std::endl;
@@ -559,7 +559,7 @@ void mtsIntuitiveResearchKitSUJSi::Configure(const std::string & filename)
         const size_t nb_joints = NB_JOINTS.at(name);
 
         std::string mac = "00:00:00:00:00:00";
-        if (!(GetSimulationMode() == prmSimulationType::SimulationType::KINEMATIC)) {
+        if (m_simulation_mode == prmSimulationType::NONE) {
             if (!jsonArm["arduino_mac"]) {
                 CMN_LOG_CLASS_INIT_ERROR << "Configure: \"arduino_mac\" is missing for SUJ \""
                                          << name << "\"" << std::endl;
@@ -573,7 +573,7 @@ void mtsIntuitiveResearchKitSUJSi::Configure(const std::string & filename)
         // ECM and change base frame on attached arms
         mtsInterfaceProvided * interfaceProvided = this->AddInterfaceProvided(name);
         mtsInterfaceRequired * interfaceRequired = this->AddInterfaceRequired(name, MTS_OPTIONAL);
-        auto sarm = new mtsIntuitiveResearchKitSUJSiArmData(name, mac, GetSimulationMode(),
+        auto sarm = new mtsIntuitiveResearchKitSUJSiArmData(name, mac, m_simulation_mode,
                                                             interfaceProvided,
                                                             interfaceRequired,
                                                             m_interface);
@@ -602,7 +602,7 @@ void mtsIntuitiveResearchKitSUJSi::Configure(const std::string & filename)
             exit(EXIT_FAILURE);
         }
 
-        if (!(GetSimulationMode() == prmSimulationType::SimulationType::KINEMATIC)) {
+        if (m_simulation_mode != prmSimulationType::KINEMATIC) {
             // find serial number
             sarm->m_serial_number = jsonArm["serial_number"].asString();
 
@@ -757,11 +757,18 @@ void mtsIntuitiveResearchKitSUJSi::Cleanup(void)
 }
 
 
-void mtsIntuitiveResearchKitSUJSi::SetSimulationMode(const prmSimulationType::SimulationType& mode)
+void mtsIntuitiveResearchKitSUJSi::set_simulation_mode(const prmSimulationType & mode)
 {
-    // forward to the base class
-    prmSimulationType::SetSimulationMode(mode);
-    
+    m_simulation_mode = mode;
+
+    switch (mode) {
+    case prmSimulationType::NONE:
+    case prmSimulationType::KINEMATIC:
+        break;
+    default:
+        cmnThrow("mtsIntuitiveResearchKitSUJSi::set_simulation_mode received unsupported mode");
+    }
+
     // set all arms simulated
     for (auto sarm : m_sarms) {
         if (sarm != nullptr) {
@@ -773,7 +780,7 @@ void mtsIntuitiveResearchKitSUJSi::SetSimulationMode(const prmSimulationType::Si
 
 void mtsIntuitiveResearchKitSUJSi::get_robot_data(void)
 {
-    if ((GetSimulationMode() == prmSimulationType::SimulationType::KINEMATIC)) {
+    if (m_simulation_mode == prmSimulationType::KINEMATIC) {
         return;
     }
 
