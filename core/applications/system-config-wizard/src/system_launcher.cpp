@@ -2,7 +2,7 @@
   Author(s):  Brendan Burkhart
   Created on: 2025-07-28
 
-  (C) Copyright 2025 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2025-2026 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -123,15 +123,15 @@ void SystemLauncher::onFinished(int exit_code, QProcess::ExitStatus status) {
     }
 
     // dump stdout/stderr to disk so user can review later if desired
-    QFile stdout("dvrk_system_stdout.log");
-    if (stdout.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
-        QTextStream stream(&stdout);
+    QFile qstdout("dvrk_system_stdout.log");
+    if (qstdout.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
+        QTextStream stream(&qstdout);
         stream << process.readAllStandardOutput();
     }
 
-    QFile stderr("dvrk_system_stderr.log");
-    if (stderr.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
-        QTextStream stream(&stderr);
+    QFile qstderr("dvrk_system_stderr.log");
+    if (qstderr.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
+        QTextStream stream(&qstderr);
         stream << process.readAllStandardError();
     }
 }
