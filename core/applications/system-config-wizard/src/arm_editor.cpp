@@ -297,11 +297,11 @@ HapticMTMPage::HapticMTMPage(ArmConfig& config, QWidget *parent) : QWizardPage(p
         if (index == 0) {
             this->config->name = "MTML";
             arm_name->setText("MTML");
-            config_selector->setCurrentFile(share.generic_string() + "/sawForceDimensionSDK-MTML.json");
+            config_selector->setCurrentFile((share / "sawForceDimensionSDK-MTML.json").generic_string());
         } else if (index == 1) {
             this->config->name = "MTMR";
             arm_name->setText("MTMR");
-            config_selector->setCurrentFile(share.generic_string() + "/sawForceDimensionSDK-MTMR.json");
+            config_selector->setCurrentFile((share / "sawForceDimensionSDK-MTMR.json").generic_string());
         }
 
         configure_force_dimension();
