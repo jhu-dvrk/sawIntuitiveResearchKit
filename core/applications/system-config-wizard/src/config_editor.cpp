@@ -2,7 +2,7 @@
   Author(s):  Brendan Burkhart
   Created on: 2025-05-17
 
-  (C) Copyright 2025 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2025-2026 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -197,12 +197,12 @@ bool ConfigEditor::saveAs() {
     QString dir = QString();
     // open file picker in same location as current file
     if (save_path.has_value()) {
-        dir = QString::fromStdString(save_path.value().parent_path());
+        dir = QString::fromStdString(save_path.value().parent_path().generic_string());
     // or in the source directory if config is unsaved
     } else {
         auto source_dir = sources->dir();
         if (source_dir.has_value()) {
-            dir = QString::fromStdString(source_dir.value());
+            dir = QString::fromStdString(source_dir.value().generic_string());
         }
     }
 

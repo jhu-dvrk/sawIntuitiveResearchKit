@@ -2,7 +2,7 @@
   Author(s):  Brendan Burkhart
   Created on: 2025-05-25
 
-  (C) Copyright 2025 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2025-2026 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -297,11 +297,11 @@ HapticMTMPage::HapticMTMPage(ArmConfig& config, QWidget *parent) : QWizardPage(p
         if (index == 0) {
             this->config->name = "MTML";
             arm_name->setText("MTML");
-            config_selector->setCurrentFile(share / "sawForceDimensionSDK-MTML.json");
+            config_selector->setCurrentFile(share.generic_string() + "/sawForceDimensionSDK-MTML.json");
         } else if (index == 1) {
             this->config->name = "MTMR";
             arm_name->setText("MTMR");
-            config_selector->setCurrentFile(share / "sawForceDimensionSDK-MTMR.json");
+            config_selector->setCurrentFile(share.generic_string() + "/sawForceDimensionSDK-MTMR.json");
         }
 
         configure_force_dimension();
@@ -557,7 +557,7 @@ void SimulatedArmPage::showEvent(QShowEvent *CMN_UNUSED(event)) {
 
         arm_name->setText(QString::fromStdString(config->name));
         if (config->arm_file.has_value()) {
-            config_selector->setCurrentFile(config->arm_file.value());
+            config_selector->setCurrentFile(config->arm_file.value().generic_string());
         }
     }
 
