@@ -1,4 +1,4 @@
 {
   "name": "saw_intuitive_research_kit_example_psm_derived",
-  "dependencies": ["cisst_ros_crtk", "sawIntuitiveResearchKitCore"]
+  "dependencies": ["cisst", "cisst_ros_crtk", "sawIntuitiveResearchKitCore"]
 }

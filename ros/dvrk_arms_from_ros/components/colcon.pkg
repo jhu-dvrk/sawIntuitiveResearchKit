@@ -1,0 +1,4 @@
+{
+  "name": "dvrk_arms_from_ros",
+  "dependencies": ["cisst", "cisst_ros_bridge", "cisst_ros_crtk"]
+}
