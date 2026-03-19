@@ -36,6 +36,7 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsDaVinciEndoscopeFocusQtWidget, mtsCompo
 mtsDaVinciEndoscopeFocusQtWidget::mtsDaVinciEndoscopeFocusQtWidget(const std::string & componentName):
     mtsComponent(componentName)
 {
+    this->AddTag("UI");
     // Setup cisst interface
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("Endoscope");
     if (interfaceRequired) {

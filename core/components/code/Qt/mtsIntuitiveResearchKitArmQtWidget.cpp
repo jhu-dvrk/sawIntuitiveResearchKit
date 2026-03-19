@@ -46,6 +46,7 @@ mtsIntuitiveResearchKitArmQtWidget::mtsIntuitiveResearchKitArmQtWidget(const std
     DirectControl(false),
     LogEnabled(false)
 {
+    this->AddTag("UI");
     QMMessage = new mtsMessageQtWidget();
     QPOState = new prmOperatingStateQtWidget();
 

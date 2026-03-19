@@ -50,6 +50,7 @@ CMN_IMPLEMENT_SERVICES(dvrk_system_Qt_widget);
 dvrk::system_Qt_widget::system_Qt_widget(const std::string & _component_name):
     mtsComponent(_component_name)
 {
+    this->AddTag("UI");
     QMMessage = new mtsMessageQtWidget();
 
     mtsInterfaceRequired * interface_required = AddInterfaceRequired("Main");
