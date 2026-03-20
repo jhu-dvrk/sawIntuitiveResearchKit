@@ -361,7 +361,7 @@ void dvrk::arm_proxy::configure_IO(void)
     // forward the isHwSimulated flag to the arm
     if (iter_IO->second->m_IO->IsHardwareSimulated())
     {
-        m_arm->set_simulated(true);
+        m_arm->set_simulation_mode(prmSimulationType::IO);
     }
 
     // search for the gripper config file
