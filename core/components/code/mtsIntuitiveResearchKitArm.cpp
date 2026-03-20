@@ -864,9 +864,9 @@ void mtsIntuitiveResearchKitArm::set_simulation_mode(const prmSimulationType & m
     case prmSimulationType::NONE:
         break;
     case prmSimulationType::KINEMATIC:
-    case prmSimulationType::IO:
         // in simulation mode, we don't need IO
-        RemoveInterfaceRequired("RobotIO");        
+        RemoveInterfaceRequired("RobotIO");
+    case prmSimulationType::IO:
         break;
     default:
         cmnThrow("mtsPID::set_simulation_mode received unsupported mode");

@@ -1,0 +1,8 @@
+{
+    // see https://dvrk.readthedocs.io
+    "$id": "dvrk-mtm.schema.json",
+    "$version": "1",
+    "kinematic": "kinematic/MTMR.json",
+    "generation": "Classic",
+    "skip_gravity_compensation": true
+}
