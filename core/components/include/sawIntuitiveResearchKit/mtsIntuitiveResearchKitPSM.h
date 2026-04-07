@@ -215,6 +215,10 @@ protected:
     /*! 5mm tools with 8 joints */
     bool m_snake_like = false;
 
+    /*! Depth of the cannula, used to determine if tool tip is
+      engaged. */
+    double m_cannula_depth = 0.0;
+
     robManipulator * ToolOffset = nullptr;
     vctFrm4x4 ToolOffsetTransformation;
 

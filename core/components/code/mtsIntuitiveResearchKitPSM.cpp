@@ -223,6 +223,12 @@ void mtsIntuitiveResearchKitPSM::PostConfigure(const Json::Value & jsonConfig,
         m_tool_detection = mtsIntuitiveResearchKitToolTypes::AUTOMATIC;
     }
 
+    // cannula depth
+    const auto jsonCannulaDepth = jsonConfig["cannula_depth"];
+    if (!jsonCannulaDepth.isNull()) {
+        m_cannula_depth = jsonCannulaDepth.asDouble();
+    }
+
     // ask to set pitch if not already defined
     if ((generation() == dvrk::generation::Si)
         && (m_mounting_pitch > std::numeric_limits<double>::max())
@@ -1154,11 +1160,13 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         // but is not perfect for a snake-like instrument since we don't have 8 joint values
         vctFrm4x4 _measured_cp = Manipulator->ForwardKinematics(m_pid_measured_js.Position(), 6);
         const double distanceToRCM = _measured_cp.Translation().Norm();
-        double depth;
-        if (m_snake_like) {
-            depth = mtsIntuitiveResearchKit::PSM::EngageDepthCannulaSnake;
-        } else {
-            depth = mtsIntuitiveResearchKit::PSM::EngageDepthCannula;
+        double depth = m_cannula_depth;
+        if (depth == 0.0) {
+            if (m_snake_like) {
+                depth = mtsIntuitiveResearchKit::PSM::EngageDepthCannulaSnake;
+            } else {
+                depth = mtsIntuitiveResearchKit::PSM::EngageDepthCannula;
+            }
         }
         if (distanceToRCM >= depth) {
             std::string message = this->GetName();
