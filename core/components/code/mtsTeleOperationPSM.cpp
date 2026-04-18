@@ -406,8 +406,7 @@ void mtsTeleOperationPSM::Clutch(const bool & clutch)
             if (mMTM.use_gravity_compensation.IsValid()) {
                 mMTM.use_gravity_compensation(true);
             }
-            if ((mTeleopState.CurrentState() != "DISABLED")
-                && (m_config.align_MTM || m_config.rotation_locked)
+            if ((m_config.align_MTM || m_config.rotation_locked)
                 && mMTM.lock_orientation.IsValid()) {
                 // lock in current position
                 mMTM.lock_orientation(mMTM.m_measured_cp.Position().Rotation());
@@ -423,7 +422,13 @@ void mtsTeleOperationPSM::Clutch(const bool & clutch)
         mPSM.hold();
     } else {
         mInterface->SendStatus(this->GetName() + ": console clutch released");
-        mTeleopState.SetCurrentState("SETTING_ARMS_STATE");
+        if (mTeleopState.DesiredState() != "DISABLED") {
+            mTeleopState.SetCurrentState("SETTING_ARMS_STATE");
+        } else {
+            if (m_config.MTM_is_haptic && mMTM.hold.IsValid()) {
+                mMTM.hold();
+            }
+        }
         m_back_from_clutch = true;
         m_jaw_caught_up_after_clutch = false;
     }
@@ -822,8 +827,11 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
     }
 
     // finally check for transition
+    prmOperatingState mtmState;
+    mMTM.operating_state(mtmState);
     if ((orientationError <= m_config.start_orientation_tolerance)
-        && m_operator.is_active) {
+        && m_operator.is_active
+        && !mtmState.IsBusy()) {
         if (mTeleopState.DesiredState() == "ENABLED") {
             mTeleopState.SetCurrentState("ENABLED");
         }
