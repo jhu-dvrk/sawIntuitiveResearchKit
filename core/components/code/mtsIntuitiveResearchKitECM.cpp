@@ -124,7 +124,7 @@ void mtsIntuitiveResearchKitECM::set_simulation_mode(const prmSimulationType & m
     // forward the simulation mode setup to the base class
     mtsIntuitiveResearchKitArm::set_simulation_mode(mode);
 
-    // for KINEMATIC and maybe IO?
+    // for KINEMATIC simulation mode we don't need IO
     if (m_simulation_mode == prmSimulationType::KINEMATIC) {
         // in simulation mode, we don't need clutch IO
         RemoveInterfaceRequired("arm_clutch");

@@ -100,7 +100,7 @@ void dvrk::arm_proxy::post_configure(void)
 }
 
 
-void dvrk::arm_proxy::create_arm(void)
+void dvrk::arm_proxy::create_arm()
 {
     if (!m_config->native_or_derived()) {
         return;
@@ -358,6 +358,11 @@ void dvrk::arm_proxy::configure_IO(void)
     CMN_ASSERT(iter_IO != m_system->m_IO_proxies.end());
     iter_IO->second->m_IO->Configure(m_IO_configuration_file);
 
+    // forward the isHwSimulated flag to the arm
+    if (iter_IO->second->m_IO->IsHardwareSimulated())
+    {
+        m_arm->set_simulation_mode(prmSimulationType::IO);
+    }
 
     // search for the gripper config file
     if (m_config->MTM()) {
