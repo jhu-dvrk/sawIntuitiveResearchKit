@@ -1,0 +1,21 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "$id": "dvrk-system.schema.json",
+    "$version": "1",
+    "IOs": [
+        {
+            "name": "IO1",
+            "port": "sim",
+            "protocol": "sequential-read-write"
+        }
+    ],
+    "arms": [
+        {
+            "name": "PSM1",
+            "type": "PSM",
+            "IO": "IO1",
+            "serial": "12345",
+            "PID_file": "io_simulation/sawControllersPID-PSM-simulated.json"
+        }
+    ]
+}

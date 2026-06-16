@@ -15,7 +15,7 @@
             "type": "MTM",
             "IO": "IO1",
             "serial": "12345",
-            "PID_file": "sim/sawControllersPID-MTM-simulated.json",
+            "PID_file": "io_simulation/sawControllersPID-MTM-simulated.json",
             "base_frame": {
                 "reference_frame": "HRSV",
                 "transform": [[-1.0, 0.0, 0.0, -0.180],
@@ -29,7 +29,23 @@
             "type": "PSM",
             "IO": "IO1",
             "serial": "12345",
-            "PID_file": "sim/sawControllersPID-PSM-simulated.json"
+            "PID_file": "io_simulation/sawControllersPID-PSM-simulated.json"
+        }
+    ],
+    "consoles": [
+        {
+            "name": "console1",
+            "input_type": "PEDALS_ONLY",
+            "IO_pedals": {
+                "IO": "IO1",
+                "IO_file": "io/sawRobotIO1394-MTMR-foot-pedals-QLA1.json"
+            },
+            "teleop_PSMs": [
+                {
+                    "MTM": "MTMR",
+                    "PSM": "PSM1"
+                }
+            ]
         }
     ]
 }
