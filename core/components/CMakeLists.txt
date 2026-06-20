@@ -14,7 +14,6 @@ project (sawIntuitiveResearchKit VERSION 2.4.0)
 
 set (REQUIRED_CISST_LIBRARIES
   cisstCommon
-  cisstCommonXML
   cisstVector
   cisstOSAbstraction
   cisstMultiTask

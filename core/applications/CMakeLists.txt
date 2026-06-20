@@ -21,23 +21,28 @@ add_subdirectory (io-config-generator)
 add_subdirectory (sd-card-updater)
 add_subdirectory (remove-logs)
 add_subdirectory (suj-bluetooth-reset)
-add_subdirectory (system-config-wizard)
+if (CISST_HAS_QT)
+  add_subdirectory (system-config-wizard)
+endif ()
 
 # create a list of required cisst libraries
 set (REQUIRED_CISST_LIBRARIES
   cisstCommon
-  cisstCommonXML
-  cisstCommonQt
   cisstVector
-  cisstVectorQt
   cisstNumerical
   cisstRobot
   cisstOSAbstraction
   cisstMultiTask
-  cisstMultiTaskQt
-  cisstParameterTypes
-  cisstParameterTypesQt
-  cisstQt)
+  cisstParameterTypes)
+
+if (CISST_HAS_QT)
+  set (REQUIRED_CISST_LIBRARIES ${REQUIRED_CISST_LIBRARIES}
+                                cisstCommonQt
+                                cisstVectorQt
+                                cisstMultiTaskQt
+                                cisstParameterTypesQt
+                                cisstQt)
+endif ()
 
 # find cisst and make sure the required libraries have been compiled
 find_package (cisst 1.4.0 REQUIRED COMPONENTS ${REQUIRED_CISST_LIBRARIES})
