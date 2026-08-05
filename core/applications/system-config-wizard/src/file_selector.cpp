@@ -2,7 +2,7 @@
   Author(s):  Brendan Burkhart
   Created on: 2025-07-27
 
-  (C) Copyright 2025 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2025-2026 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -37,7 +37,7 @@ FileSelector::FileSelector(QWidget* parent) : QWidget(parent){
     QObject::connect(browse_button, &QPushButton::clicked, this, [this]() {
         if (current_file.has_value()) {
             std::filesystem::path p = current_file.value();
-            dialog->setDirectory(QString::fromStdString(p.parent_path()));
+            dialog->setDirectory(QString::fromStdString(p.parent_path().generic_string()));
         } else if (starting_directory.has_value()) {
             dialog->setDirectory(QString::fromStdString(starting_directory->string()));
         }
@@ -71,7 +71,7 @@ void FileSelector::setCurrentFile(std::string file) {
         file_path = reference_directory.value() / file_path;
     }
 
-    current_file = file_path;
+    current_file = file_path.generic_string();
 
     std::string name = currentRelativeFile().value();
     display->setText(QString::fromStdString(name));
@@ -89,7 +89,7 @@ std::optional<std::string> FileSelector::currentRelativeFile() const {
     if (reference_directory.has_value()) {
         bool inside_dir = isChild(current_file.value(), reference_directory.value());
         if (inside_dir) {
-            return std::filesystem::proximate(current_file.value(), reference_directory.value());
+            return std::filesystem::proximate(current_file.value(), reference_directory.value()).generic_string();
         }
     }
 

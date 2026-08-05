@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-03-06
 
-  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2026 Johns Hopkins University (JHU), All Rights Reserved.
 
   --- begin cisst license - do not edit ---
 
@@ -97,6 +97,7 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     void EnterSettingArmsState(void);
     void TransitionSettingArmsState(void);
     void EnterAligningMTM(void);
+    void align_MTM_and_reset_start_thresholds(void);
     void RunAligningMTM(void);
     void TransitionAligningMTM(void);
     void EnterEnabled(void); // called when enabling, save initial positions of master and slave
@@ -126,7 +127,8 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
         prmVelocityCartesianGet m_measured_cv;
         prmPositionCartesianGet m_setpoint_cp;
         prmPositionCartesianSet m_move_cp;
-        vctFrm4x4 CartesianInitial;
+        vctFrm4x4 m_pose_to_follow; // orientation for the MTM to align to PSM
+        vctFrm4x4 m_pose_initial;
     } mMTM;
 
     struct {
@@ -145,13 +147,13 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
         prmPositionCartesianGet m_setpoint_cp;
         prmPositionCartesianSet m_servo_cp;
         prmPositionJointSet     m_jaw_servo_jp;
-        vctFrm4x4 CartesianInitial;
+        vctFrm4x4 m_pose_initial;
     } mPSM;
 
     struct {
         mtsFunctionRead  measured_cp;
         prmPositionCartesianGet m_measured_cp;
-        vctFrm4x4 CartesianInitial;
+        vctFrm4x4 m_pose_initial;
     } mBaseFrame;
 
     vctMatRot3 m_alignment_offset,
@@ -191,7 +193,6 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
 
     mtsStateMachine mTeleopState;
     double mInStateTimer;
-    double mTimeSinceLastAlign;
 
     bool m_following;
     void set_following(const bool following);

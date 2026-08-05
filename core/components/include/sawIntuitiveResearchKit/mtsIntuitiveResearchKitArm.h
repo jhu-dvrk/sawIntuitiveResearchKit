@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2026 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -42,6 +42,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmForwardKinematicsResponse.h>
 #include <cisstParameterTypes/prmStateCartesian.h>
 
+#include <cisstParameterTypes/prmSimulationType.h>
+
 #include <cisstRobot/robManipulator.h>
 #include <cisstRobot/robReflexxes.h>
 
@@ -71,10 +73,12 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     void Run(void) override;
     void Cleanup(void) override;
 
+    virtual void set_simulation_mode(const prmSimulationType & mode);
+
     inline void crtk_version(std::string & placeholder) const {
         placeholder = mtsIntuitiveResearchKit::crtk_version;
     }
-    virtual void set_simulated(void);
+    // virtual void set_simulated(void);
     virtual inline void set_calibration_mode(const bool mode) {
         m_calibration_mode = mode;
     }
@@ -171,6 +175,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     void set_LED_pattern(uint32_t color1, uint32_t color2, bool blink1, bool blink2);
     virtual void clip_jp(vctDoubleVec & jp) const;
+
+    prmSimulationType m_simulation_mode;
 
     // Arm state machine
     mtsStateMachine mArmState;
@@ -526,15 +532,13 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     bool m_encoders_biased = false; // encoder might have to be biased on joint limits (MTM roll)
     bool m_re_home = true; // force re-biasing encoder even if values are found on FPGA
     bool m_homing_goes_to_zero = false;
+    bool m_skip_gravity_compensation = false;
     bool m_homing_bias_encoder_requested = false;
     double m_homing_timer;
 
     // generation
     dvrk::generation m_generation
         = dvrk::generation::GENERATION_UNDEFINED;
-
-    // flag to determine if this is connected to actual IO/hardware or simulated
-    bool m_simulated = false;
 
     // flag to determine if the arm is running in calibration mode, i.e. turn off checks using potentiometers
     bool m_calibration_mode = false;

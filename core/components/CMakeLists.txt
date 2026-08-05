@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2011-2025 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2011-2026 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -218,7 +218,6 @@ if (cisst_FOUND)
       generation.cdg
       IO_configuration.cdg
       IO_proxy_configuration.cdg
-      simulation.cdg
       system_configuration.cdg
       teleop_ECM_configuration.cdg
       teleop_PSM_configuration.cdg

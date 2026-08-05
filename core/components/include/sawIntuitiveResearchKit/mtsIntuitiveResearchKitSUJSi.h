@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2022-07-27
 
-  (C) Copyright 2022-2025 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2022-2026 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -27,6 +27,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmEventButton.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmOperatingState.h>
+
+#include <cisstParameterTypes/prmSimulationType.h>
+
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitControlTypes.h>
 
@@ -53,9 +56,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJSi: public mtsTaskPeriodic
     void Run(void);
     void Cleanup(void);
 
-    void set_simulated(void);
+    void set_simulation_mode(const prmSimulationType & mode);
 
- protected:
+  protected:
 
     void init(void);
 
@@ -91,6 +94,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJSi: public mtsTaskPeriodic
     /*! Change the reference arm, ECM by default */
     void set_reference_arm(const std::string & arm_name);
 
+    prmSimulationType m_simulation_mode;
+
     // state machine
     mtsStateMachine m_state_machine;
     prmOperatingState m_operating_state;
@@ -105,9 +110,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJSi: public mtsTaskPeriodic
     // SUJ arms
     vctFixedSizeVector<mtsIntuitiveResearchKitSUJSiArmData *, 4> m_sarms;
     size_t m_reference_arm_index; // arm used to provide base frame to all other SUJ arms, traditionally the ECM
-
-    // Flag to determine if this is connected to actual IO/hardware or simulated
-    bool m_simulated = false;
 
     void dispatch_error(const std::string & message);
     void dispatch_warning(const std::string & message);

@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2026 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -320,7 +320,7 @@ void dvrk::system::Configure(const std::string & filename)
             if ((arm_proxy->m_config->native_or_derived_PSM()
                  || arm_proxy->m_config->native_or_derived_ECM()
                  )
-                && (arm_proxy->m_config->simulation == dvrk::simulation::SIMULATION_NONE)
+                && (arm_proxy->m_config->simulation == prmSimulationType::NONE)
                 ) {
                 arm_proxy->SUJInterfaceRequiredFromIO = this->AddInterfaceRequired("SUJ_clutch_" + name + "_IO");
                 arm_proxy->SUJInterfaceRequiredFromIO->AddEventHandlerWrite(&dvrk::arm_proxy::SUJ_clutch_event_handler_from_IO,

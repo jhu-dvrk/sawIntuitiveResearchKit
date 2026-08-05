@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2026 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -69,9 +69,12 @@ std::string GravityCompensationECM::error(void)
 
 void GravityCompensationECM::set_endoscope_mass(double mass)
 {
+    // Si vs Classic
     if (physical_model.links.size() == 6) {
+        // Si
         physical_model.links.at(5).MassData().Mass() = mass;
     } else {
+        // Classic
         physical_model.links.at(2).MassData().Mass() = mass;
     }
 }
@@ -116,16 +119,21 @@ mtsIntuitiveResearchKitECM::mtsIntuitiveResearchKitECM(const mtsTaskPeriodicCons
 // need to define destructor after definition of GravityCompensationECM is available
 mtsIntuitiveResearchKitECM::~mtsIntuitiveResearchKitECM() = default;
 
-void mtsIntuitiveResearchKitECM::set_simulated(void)
+void mtsIntuitiveResearchKitECM::set_simulation_mode(const prmSimulationType & mode)
 {
-    mtsIntuitiveResearchKitArm::set_simulated();
-    // in simulation mode, we don't need clutch IO
-    RemoveInterfaceRequired("arm_clutch");
-    // for Si systems, remove a few more interfaces
-    if (m_generation == dvrk::generation::Si) {
-        RemoveInterfaceRequired("SUJ_clutch");
-        RemoveInterfaceRequired("SUJ_clutch_2");
-        RemoveInterfaceRequired("SUJ_brake");
+    // forward the simulation mode setup to the base class
+    mtsIntuitiveResearchKitArm::set_simulation_mode(mode);
+
+    // for KINEMATIC and maybe IO?
+    if (m_simulation_mode == prmSimulationType::KINEMATIC) {
+        // in simulation mode, we don't need clutch IO
+        RemoveInterfaceRequired("arm_clutch");
+        // for Si systems, remove a few more interfaces
+        if (m_generation == dvrk::generation::Si) {
+            RemoveInterfaceRequired("SUJ_clutch");
+            RemoveInterfaceRequired("SUJ_clutch_2");
+            RemoveInterfaceRequired("SUJ_brake");
+        }
     }
 }
 
@@ -134,7 +142,7 @@ void mtsIntuitiveResearchKitECM::set_generation(const dvrk::generation generatio
     mtsIntuitiveResearchKitArm::set_generation(generation);
     // for S/si, add SUJClutch interface
     if ((generation == dvrk::generation::Si)
-        && !m_simulated) {
+        && (m_simulation_mode != prmSimulationType::KINEMATIC)) {
         auto interfaceRequired = AddInterfaceRequired("SUJ_clutch");
         if (interfaceRequired) {
             interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitECM::EventHandlerSUJClutch, this, "Button");
@@ -338,7 +346,7 @@ bool mtsIntuitiveResearchKitECM::is_cartesian_ready(void) const
 void mtsIntuitiveResearchKitECM::SetGoalHomingArm(void)
 {
     // if simulated, start at zero but insert endoscope so it can be used in cartesian mode
-    if (m_simulated) {
+    if (m_simulation_mode == prmSimulationType::KINEMATIC) {
         m_trajectory_j.goal.SetAll(0.0);
         m_trajectory_j.goal.at(2) = 12.0 * cmn_cm;
         return;
@@ -526,7 +534,9 @@ void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscop
         break;
     }
 
-    m_gc->set_endoscope_mass(mass);
+    if (!m_skip_gravity_compensation) {
+        m_gc->set_endoscope_mass(mass);
+    }
 
     // set configured flag
     m_endoscope_configured = true;

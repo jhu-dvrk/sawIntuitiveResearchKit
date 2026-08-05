@@ -52,7 +52,7 @@ class {
 
         inline bool valid(void) const {
             return (// fixed frame
-                    ((reference_frame != "") && (transform != vctFrm4x4::Identity())
+                    ((reference_frame != "")
                      && (interface == "") && (component == ""))
                     // component
                     || ((reference_frame == "") && (transform == vctFrm4x4::Identity())

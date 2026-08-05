@@ -17,4 +17,10 @@ class {
         visibility public;
         default mtsIntuitiveResearchKit::TeleOperationECM::Scale;
     }
+    member {
+        name camera_roll_offset; //configure_parameter via *TeleOp.json & also to be manually added as offset to 4th joint on kinematic/ECM.json to update Tfs
+        type double;
+        visibility public;
+        default 0.0;
+    }
 }

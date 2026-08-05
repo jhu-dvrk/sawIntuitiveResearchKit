@@ -1,7 +1,7 @@
 Change log
 ==========
 
-2.4.0 (2025-12-18)
+2.4.0 (2026-01-07)
 ==================
 
 Starting with 2.4.0, we strongly recommend to use ROS2 with Ubuntu 24.04 or higher.

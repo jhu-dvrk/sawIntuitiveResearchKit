@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2026 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -41,9 +41,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicConstructorArg & arg);
     ~mtsIntuitiveResearchKitPSM();
 
-    void set_simulated(void) override;
+    void set_simulation_mode(const prmSimulationType & mode) override;
 
- protected:
+protected:
     void set_generation(const dvrk::generation generation) override;
     void load_tool_list(const cmnPath & path,
                         const std::string & indexFile = "tool/index.json");
@@ -214,6 +214,10 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 
     /*! 5mm tools with 8 joints */
     bool m_snake_like = false;
+
+    /*! Depth of the cannula, used to determine if tool tip is
+      engaged. */
+    double m_cannula_depth = 0.0;
 
     robManipulator * ToolOffset = nullptr;
     vctFrm4x4 ToolOffsetTransformation;

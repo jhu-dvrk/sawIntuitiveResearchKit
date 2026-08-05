@@ -2,7 +2,7 @@
   Author(s):  Brendan Burkhart
   Created on: 2025-05-17
 
-  (C) Copyright 2025 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2025-2026 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -119,7 +119,7 @@ void MainWindow::open_folder() {
 
     auto source_dir = config_sources->dir();
     if (source_dir.has_value()) {
-        directory_chooser.setDirectory(QString::fromStdString(source_dir.value()));
+        directory_chooser.setDirectory(QString::fromStdString(source_dir.value().generic_string()));
     } else {
         directory_chooser.setDirectory(QDir::current());
     }

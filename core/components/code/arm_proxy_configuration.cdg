@@ -2,8 +2,8 @@
 // ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab:
 
 inline-header {
+#include <cisstParameterTypes/prmSimulationType.h>
 #include <sawIntuitiveResearchKit/arm_type.h>
-#include <sawIntuitiveResearchKit/simulation.h>
 #include <sawIntuitiveResearchKit/base_frame.h>
 // Always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
@@ -58,9 +58,9 @@ class {
 
     member {
         name simulation;
-        type dvrk::simulation;
+        type prmSimulationType;
         visibility public;
-        default dvrk::SIMULATION_NONE;
+        default prmSimulationType::NONE;
     }
 
     member {
@@ -142,7 +142,7 @@ class {
     public:
 
         inline bool simulated(void) const {
-            return this->simulation != SIMULATION_NONE;
+            return this->simulation != prmSimulationType::NONE;
         }
 
         inline bool native(void) const {
@@ -276,7 +276,7 @@ class {
             return (native_or_derived()
                     && (this->type != dvrk::arm_type::SUJ_Si)
                     && (this->type != dvrk::arm_type::SUJ_Fixed)
-                    && (this->simulation == SIMULATION_NONE));
+                    && (this->simulation == prmSimulationType::NONE));
         }
     }
 }

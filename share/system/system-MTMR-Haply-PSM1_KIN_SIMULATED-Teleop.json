@@ -1,0 +1,80 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "$id": "dvrk-system.schema.json",
+    "$version": "1",
+    "component_manager": {
+        "components":
+        [
+            {
+                "shared-library": "sawHaplyService",
+                "class-name": "mtsHaply",
+                "constructor-arg": {
+                    "Name": "Haply"
+                },
+                "configure-parameter": "sawHaplyService-JHU-Imerse-Right.json"
+            }
+        ]
+    }
+    ,
+    "arms":
+    [
+        {
+            "name": "MTMR",  // created previously using custom components
+            "type": "MTM_GENERIC",
+            "component": "Haply",
+            "interface": "MTMR"
+        }
+        ,
+        {
+            "name": "PSM1",
+            "type": "PSM",
+            "simulation": "KINEMATIC",
+            "arm_file": "arm/PSM_KIN_SIMULATED_LARGE_NEEDLE_DRIVER_400006.json",
+            "base_frame":  {
+                "reference_frame": "Haply",
+                "transform": [[ -1.0,  0.0,  0.0,  0.0],
+                              [  0.0,  0.0,  1.0,  0.0 ],
+                              [  0.0,  1.0,  0.0,  0.0 ],
+                              [  0.0,  0.0,  0.0,  1.0 ]]
+            }
+        }
+    ]
+    ,
+    "consoles": [
+        {
+            "name": "console",
+            "input_type": "COMPONENTS",
+            "operator_present" :
+            {
+                "component": "Haply",
+                "interface": "MTMR/A"
+            }
+            ,
+            "clutch" :
+            {
+                "component": "Haply",
+                "interface": "MTMR/B"
+            }
+            ,
+            "camera" :
+            {
+                "component": "Haply",
+                "interface": "MTMR/Home"
+            }
+            ,
+            "teleop_PSMs":
+            [
+                {
+                    "MTM": "MTMR",
+                    "PSM": "PSM1",
+                    "configure_parameter": {
+                        "start_gripper_threshold": 0.0,
+                        "ignore_jaw": true,
+                        "scale": 0.4,
+                        "align_mtm": false
+                    }
+                }
+            ]
+        }
+    ]
+}

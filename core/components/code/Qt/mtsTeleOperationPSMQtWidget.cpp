@@ -49,6 +49,7 @@ mtsTeleOperationPSMQtWidget::mtsTeleOperationPSMQtWidget(const std::string & com
     TimerPeriodInMilliseconds(periodInSeconds * 1000), // Qt timers are in milliseconds
     LogEnabled(false)
 {
+    this->AddTag("UI");
     QMMessage = new mtsMessageQtWidget();
 
     // Setup cisst interface

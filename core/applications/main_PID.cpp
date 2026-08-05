@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-07
 
-  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2026 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -20,7 +20,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <iostream>
 // cisst/saw
 #include <cisstCommon/cmnPath.h>
-#include <cisstCommon/cmnCommandLineOptions.h>
+#include <cisstMultiTask/mtsCommandLineOptionsQt.h>
 #include <cisstOSAbstraction/osaSleep.h>
 #include <cisstMultiTask/mtsManagerLocal.h>
 #include <sawRobotIO1394/mtsRobotIO1394.h>
@@ -46,7 +46,7 @@ int main(int argc, char ** argv)
     cmnLogger::AddChannel(std::cerr, CMN_LOG_ALLOW_ERRORS_AND_WARNINGS);
 
     // parse options
-    cmnCommandLineOptions options;
+    mtsCommandLineOptionsQt options;
     std::string portName = mtsRobotIO1394::DefaultPort();
     std::string ioConfigFile, pidConfigFile;
     std::string robotName;
@@ -140,6 +140,8 @@ int main(int argc, char ** argv)
     componentManager->Connect("pid", "ExecIn", "io", "ExecOut");
     // connect pid to io
     componentManager->Connect("pid", "RobotJointTorqueInterface", "io", robotName);  // see const std::string defined before main()
+
+    options.Apply();
 
     //-------------- create the components ------------------
     componentManager->CreateAll();

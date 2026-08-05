@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Youri Tan
   Created on: 2014-11-07
 
-  (C) Copyright 2014-2025 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2026 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -25,6 +25,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmOperatingState.h>
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitControlTypes.h>
+
+#include <cisstParameterTypes/prmSimulationType.h>
 
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
@@ -48,7 +50,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJ: public mtsTaskPeriodic
     void Run(void);
     void Cleanup(void);
 
-    void set_simulated(void);
+    void set_simulation_mode(const prmSimulationType & mode);
 
  protected:
 
@@ -87,6 +89,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJ: public mtsTaskPeriodic
     /*! crtk operating state command.  Currently supports "enable" and
       "disable". */
     virtual void state_command(const std::string & command);
+
+    prmSimulationType m_simulation_mode;
 
     // Arm state machine
     mtsStateMachine m_state_machine;
@@ -164,9 +168,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJ: public mtsTaskPeriodic
     vctDoubleVec m_voltages;
     vctFixedSizeVector<mtsIntuitiveResearchKitSUJArmData *, 4> m_sarms;
     size_t m_reference_arm_index; // arm used to provide base frame to all other SUJ arms, traditionally the ECM
-
-    // Flag to determine if this is connected to actual IO/hardware or simulated
-    bool m_simulated = false;
 
     void dispatch_error(const std::string & message);
     void dispatch_warning(const std::string & message);

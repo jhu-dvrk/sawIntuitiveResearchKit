@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-20
 
-  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2026 Johns Hopkins University (JHU), All Rights Reserved.
 
   --- begin cisst license - do not edit ---
 
@@ -406,8 +406,7 @@ void mtsTeleOperationPSM::Clutch(const bool & clutch)
             if (mMTM.use_gravity_compensation.IsValid()) {
                 mMTM.use_gravity_compensation(true);
             }
-            if ((mTeleopState.CurrentState() != "DISABLED")
-                && (m_config.align_MTM || m_config.rotation_locked)
+            if ((m_config.align_MTM || m_config.rotation_locked)
                 && mMTM.lock_orientation.IsValid()) {
                 // lock in current position
                 mMTM.lock_orientation(mMTM.m_measured_cp.Position().Rotation());
@@ -423,7 +422,13 @@ void mtsTeleOperationPSM::Clutch(const bool & clutch)
         mPSM.hold();
     } else {
         mInterface->SendStatus(this->GetName() + ": console clutch released");
-        mTeleopState.SetCurrentState("SETTING_ARMS_STATE");
+        if (mTeleopState.DesiredState() != "DISABLED") {
+            mTeleopState.SetCurrentState("SETTING_ARMS_STATE");
+        } else {
+            if (m_config.MTM_is_haptic && mMTM.hold.IsValid()) {
+                mMTM.hold();
+            }
+        }
         m_back_from_clutch = true;
         m_jaw_caught_up_after_clutch = false;
     }
@@ -482,12 +487,12 @@ vctMatRot3 mtsTeleOperationPSM::UpdateAlignOffset(void)
 
 void mtsTeleOperationPSM::UpdateInitialState(void)
 {
-    mMTM.CartesianInitial.From(mMTM.m_measured_cp.Position());
-    mPSM.CartesianInitial.From(mPSM.m_setpoint_cp.Position());
+    mMTM.m_pose_initial.From(mMTM.m_measured_cp.Position());
+    mPSM.m_pose_initial.From(mPSM.m_setpoint_cp.Position());
     UpdateAlignOffset();
     m_alignment_offset_initial = m_alignment_offset;
     if (mBaseFrame.measured_cp.IsValid()) {
-        mBaseFrame.CartesianInitial.From(mBaseFrame.m_measured_cp.Position());
+        mBaseFrame.m_pose_initial.From(mBaseFrame.m_measured_cp.Position());
     }
 }
 
@@ -715,7 +720,6 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
 
     // reset timer
     mInStateTimer = StateTable.GetTic();
-    mTimeSinceLastAlign = 0.0;
 
     // if we don't align MTM, just stay in same position
     if (!m_config.align_MTM && m_config.MTM_is_haptic && mMTM.move_cp.IsValid()) {
@@ -733,11 +737,24 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
         UpdateGripperToJawConfiguration();
     }
 
+    align_MTM_and_reset_start_thresholds();
+}
+
+void mtsTeleOperationPSM::align_MTM_and_reset_start_thresholds(void)
+{
     // set min/max for roll outside bounds
     m_operator.roll_min = cmnPI * 100.0;
     m_operator.roll_max = -cmnPI * 100.0;
     m_operator.gripper_min = cmnPI * 100.0;
     m_operator.gripper_max = -cmnPI * 100.0;
+
+    // Orient MTM with PSM
+    mMTM.m_pose_to_follow.Translation().Assign(mMTM.m_setpoint_cp.Position().Translation());
+    mMTM.m_pose_to_follow.Rotation().FromNormalized(mPSM.m_setpoint_cp.Position().Rotation());
+    // convert to prm type
+    mMTM.m_move_cp.Goal().From(mMTM.m_pose_to_follow);
+    mMTM.move_cp(mMTM.m_move_cp);
+
 }
 
 void mtsTeleOperationPSM::RunAligningMTM(void)
@@ -747,17 +764,12 @@ void mtsTeleOperationPSM::RunAligningMTM(void)
         return;
     }
 
-    // set trajectory goal periodically, this will track PSM motion
-    const double currentTime = StateTable.GetTic();
-    if ((currentTime - mTimeSinceLastAlign) > 10.0 * cmn_ms) {
-        mTimeSinceLastAlign = currentTime;
-        // Orientate MTM with PSM
-        vctFrm4x4 mtmCartesianGoal;
-        mtmCartesianGoal.Translation().Assign(mMTM.m_setpoint_cp.Position().Translation());
-        mtmCartesianGoal.Rotation().FromNormalized(mPSM.m_setpoint_cp.Position().Rotation());
-        // convert to prm type
-        mMTM.m_move_cp.Goal().From(mtmCartesianGoal);
-        mMTM.move_cp(mMTM.m_move_cp);
+    // set trajectory goal if needed, get angle between PSM and MTM pose_to_follow
+    vctMatRot3 change_orientation;
+    mMTM.m_pose_to_follow.Rotation().ApplyTo(mPSM.m_setpoint_cp.Position().Rotation().Inverse(), change_orientation);
+    vctAxAnRot3 change_axis_angle = vctAxAnRot3(change_orientation);
+    if (change_axis_angle.Angle() > m_config.start_orientation_tolerance) {
+        align_MTM_and_reset_start_thresholds();
     }
 }
 
@@ -815,8 +827,11 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
     }
 
     // finally check for transition
+    prmOperatingState mtmState;
+    mMTM.operating_state(mtmState);
     if ((orientationError <= m_config.start_orientation_tolerance)
-        && m_operator.is_active) {
+        && m_operator.is_active
+        && !mtmState.IsBusy()) {
         if (mTeleopState.DesiredState() == "ENABLED") {
             mTeleopState.SetCurrentState("ENABLED");
         }
@@ -920,16 +935,16 @@ void mtsTeleOperationPSM::RunCartesianTeleop() {
     vct3 mtmTranslation;
     vct3 psmTranslation;
     if (m_config.translation_locked) {
-        psmTranslation = mPSM.CartesianInitial.Translation();
+        psmTranslation = mPSM.m_pose_initial.Translation();
     } else {
-        mtmTranslation = (mtmPosition.Translation() - mMTM.CartesianInitial.Translation());
+        mtmTranslation = (mtmPosition.Translation() - mMTM.m_pose_initial.Translation());
         psmTranslation = mtmTranslation * m_config.scale;
-        psmTranslation = psmTranslation + mPSM.CartesianInitial.Translation();
+        psmTranslation = psmTranslation + mPSM.m_pose_initial.Translation();
     }
     // rotation
     vctMatRot3 psmRotation;
     if (m_config.rotation_locked) {
-        psmRotation.From(mPSM.CartesianInitial.Rotation());
+        psmRotation.From(mPSM.m_pose_initial.Rotation());
     } else {
         psmRotation = mtmPosition.Rotation() * m_alignment_offset_initial;
     }
@@ -942,7 +957,7 @@ void mtsTeleOperationPSM::RunCartesianTeleop() {
     // take into account changes in PSM base frame if any
     if (mBaseFrame.measured_cp.IsValid()) {
         vctFrm4x4 baseFrame(mBaseFrame.m_measured_cp.Position());
-        vctFrm4x4 baseFrameChange = baseFrame.Inverse() * mBaseFrame.CartesianInitial;
+        vctFrm4x4 baseFrameChange = baseFrame.Inverse() * mBaseFrame.m_pose_initial;
         // update PSM position goal
         psmCartesianGoal = baseFrameChange * psmCartesianGoal;
         // update alignment offset

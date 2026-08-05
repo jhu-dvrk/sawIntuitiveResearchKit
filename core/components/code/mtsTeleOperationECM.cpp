@@ -99,6 +99,7 @@ void mtsTeleOperationECM::Init(void)
     mConfigurationStateTable->SetAutomaticAdvance(false);
     AddStateTable(mConfigurationStateTable);
     mConfigurationStateTable->AddData(m_config.scale, "scale");
+    mConfigurationStateTable->AddData(m_config.camera_roll_offset, "camera_roll_offset");
 
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("MTML");
     if (interfaceRequired) {
@@ -638,8 +639,8 @@ void mtsTeleOperationECM::RunEnabled(void)
         }
     }
 
-    // adjusting movement for camera orientation
-    double totalChangeJoint3 = changeDir[3] + mInitial.ECMPositionJoint[3];
+    // adjusting movement for camera orientation (plus offset on camera roll if present between ECM and endoscope)
+    double totalChangeJoint3 = changeDir[3] + mInitial.ECMPositionJoint[3] + m_config.camera_roll_offset;
     changeJoints[0] = changeDir[0] * cos(totalChangeJoint3) - changeDir[1] * sin(totalChangeJoint3);
     changeJoints[1] = changeDir[1] * cos(totalChangeJoint3) + changeDir[0] * sin(totalChangeJoint3);
     changeJoints[2] = changeDir[2];

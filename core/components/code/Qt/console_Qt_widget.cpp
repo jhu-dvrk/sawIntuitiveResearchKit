@@ -59,6 +59,7 @@ dvrk::console_Qt_widget::console_Qt_widget(const std::string & _component_name,
     mtsComponent(_component_name),
     m_system_widget(_system_widget)
 {
+    this->AddTag("UI");
     mtsInterfaceRequired * itf = AddInterfaceRequired("Main");
     if (itf) {
         itf->AddFunction("teleop_enable", console.teleop_enable);
