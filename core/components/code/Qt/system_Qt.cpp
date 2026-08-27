@@ -243,6 +243,9 @@ void dvrk::system_Qt::configure(dvrk::system * system)
             switch(teleop.second->type()) {
             case teleop_proxy::PSM:
                 {
+                    console_widget->add_teleop_clutch(name);
+                    m_connections.Add(console_widget->GetName(), "Clutch/" + name,
+                                      system->GetName(), console.first + "/clutch/" + name);
                     auto * teleop_PSM_widget = new mtsTeleOperationPSMQtWidget(name + "_widget");
                     teleop_widget_component = teleop_PSM_widget;
                     teleop_widget = teleop_PSM_widget;

@@ -744,6 +744,22 @@ bool dvrk::system::add_console_interfaces(std::shared_ptr<dvrk::console> _consol
     // inputs
     if (_console->m_config->input_type != console_input_type::SIMULATED) {
         if (!add_pedal_required("clutch",           &console::clutch_event_handler,           _console->m_config->clutch,           MTS_REQUIRED)) return false;
+        for (const auto & proxy_config : _console->m_config->teleop_PSMs) {
+            const std::string teleop_name = proxy_config.MTM + "_" + proxy_config.PSM;
+            const auto handler = _console->m_local_clutch_handlers.find(teleop_name);
+            if (handler == _console->m_local_clutch_handlers.end()) return false;
+            auto * itf = AddInterfaceRequired(_console->m_name + "/required_clutch/" + teleop_name,
+                                              MTS_OPTIONAL);
+            if (!itf) return false;
+            itf->AddEventHandlerWrite(&console::teleop_clutch_input_handler::Handle,
+                                      handler->second.get(), "Button");
+            if (!proxy_config.clutch.component.empty() && !proxy_config.clutch.interface.empty()) {
+                m_connections.Add(this->GetName(),
+                                  _console->m_name + "/required_clutch/" + teleop_name,
+                                  proxy_config.clutch.component,
+                                  proxy_config.clutch.interface);
+            }
+        }
         if (!add_pedal_required("camera",           &console::camera_event_handler,           _console->m_config->camera,           MTS_REQUIRED)) return false;
         // optional foot pedal tray inputs
         if (!add_pedal_required("focus_minus",      &console::focus_minus_event_handler,      _console->m_config->focus_minus,      MTS_OPTIONAL)) return false;
@@ -755,6 +771,15 @@ bool dvrk::system::add_console_interfaces(std::shared_ptr<dvrk::console> _consol
 
     // propagate inputs
     if (!add_pedal_provided("clutch",           _console->events.clutch))           return false;
+    for (auto & clutch : _console->m_clutch_states) {
+        auto * clutch_interface = this->AddInterfaceProvided(_console->m_name + "/clutch/" + clutch.first);
+        if (!clutch_interface) return false;
+        clutch_interface->AddEventWrite(clutch.second.event, "Button", prmEventButton());
+        const auto handler = _console->m_local_clutch_handlers.find(clutch.first);
+        if (handler == _console->m_local_clutch_handlers.end()) return false;
+        clutch_interface->AddCommandWrite(&console::teleop_clutch_input_handler::Handle,
+                                          handler->second.get(), "emulate_clutch", prmEventButton());
+    }
     if (!add_pedal_provided("camera",           _console->events.camera))           return false;
     if (!add_pedal_provided("focus_minus",      _console->events.focus_minus,
                             has_foot_pedal(_console->m_config->focus_minus)))       return false;

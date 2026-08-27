@@ -85,6 +85,11 @@ void dvrk::console::post_configure(void)
             }
             // add to list of teleops using each MTM
             teleops_per_MTM[proxy_config.MTM].push_back(teleop_proxy);
+            m_clutch_states.emplace(name, teleop_clutch_state());
+            auto clutch_handler = std::make_shared<teleop_clutch_input_handler>();
+            clutch_handler->owner = this;
+            clutch_handler->teleop_name = name;
+            m_local_clutch_handlers.emplace(name, clutch_handler);
             m_teleop_proxies[name] = teleop_proxy;
         } else {
             CMN_LOG_INIT_ERROR << "post_configure: failed to configure teleop_PSMs, "
@@ -331,10 +336,12 @@ void dvrk::console::clutch_event_handler(const prmEventButton & _button)
 {
     switch (_button.Type()) {
     case prmEventButton::PRESSED:
+        m_global_clutched = true;
         m_interface_provided->SendStatus(m_name + ": clutch pressed");
         m_system->audio.beep(vct3(0.1, 700.0, m_system->m_audio_volume));
         break;
     case prmEventButton::RELEASED:
+        m_global_clutched = false;
         m_interface_provided->SendStatus(m_name + ": clutch released");
         m_system->audio.beep(vct3(0.1, 700.0, m_system->m_audio_volume));
         break;
@@ -354,6 +361,52 @@ void dvrk::console::clutch_event_handler(const prmEventButton & _button)
         break;
     }
     events.clutch(_button);
+    update_effective_clutch_states();
+}
+
+
+void dvrk::console::local_clutch_event_handler(const std::string & teleop_name,
+                                               const prmEventButton & _button)
+{
+    auto iter = m_clutch_states.find(teleop_name);
+    if (iter == m_clutch_states.end()) {
+        return;
+    }
+    switch (_button.Type()) {
+    case prmEventButton::PRESSED:
+        iter->second.local_clutched = true;
+        break;
+    case prmEventButton::RELEASED:
+        iter->second.local_clutched = false;
+        break;
+    default:
+        return;
+    }
+    update_effective_clutch_states();
+}
+
+
+void dvrk::console::teleop_clutch_input_handler::Handle(const prmEventButton & button)
+{
+    if (owner != nullptr) {
+        owner->local_clutch_event_handler(teleop_name, button);
+    }
+}
+
+
+void dvrk::console::update_effective_clutch_states(void)
+{
+    for (auto & clutch : m_clutch_states) {
+        const bool effective = m_global_clutched || clutch.second.local_clutched;
+        if (effective == clutch.second.effective_clutched) {
+            continue;
+        }
+        prmEventButton event;
+        event.SetType(effective ? prmEventButton::PRESSED
+                                : prmEventButton::RELEASED);
+        clutch.second.event(event);
+        clutch.second.effective_clutched = effective;
+    }
 }
 
 

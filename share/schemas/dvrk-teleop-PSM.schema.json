@@ -19,6 +19,12 @@
             "description": "Name of patient's side PSM arm to be used (`PSM1`, `PSM2`...). The arm must have been declared in the main system configuration file under \"arms\"."
         },
 
+        "clutch": {
+            "type": "object",
+            "description": "Optional CISST component and interface providing a local clutch signal for this teleoperation. The signal is OR'ed with the console's global clutch signal.",
+            "$ref": "cisst-terminal.schema.json"
+        },
+
         "type": {
             "type": "string",
             "enum": ["TELEOP_PSM", "TELEOP_PSM_DERIVED", "TELEOP_PSM_GENERIC"],
@@ -154,4 +160,3 @@
         }
     }
 }
-

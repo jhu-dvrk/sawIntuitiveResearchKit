@@ -25,6 +25,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmEventButton.h>
 #include <cisstParameterTypes/prmKeyValue.h>
 
+#include <memory>
+
 class QPushButton;
 class QRadioButton;
 class QTabWidget;
@@ -54,6 +56,7 @@ namespace dvrk {
         void Configure(const std::string & filename = "");
         void Startup(void);
         void Cleanup(void);
+        void add_teleop_clutch(const std::string & teleop);
 
     signals:
         void signal_teleop_selected(const QString & selected);
@@ -113,6 +116,14 @@ namespace dvrk {
 
         QVBoxLayout * QVBTeleops;
         std::map<QString, std::pair<QPushButton *, QCheckBox *>> m_teleop_buttons;
+        std::map<QString, QCheckBox *> m_teleop_clutches;
+        struct teleop_clutch_handler {
+            console_Qt_widget * owner;
+            QString teleop;
+            void Handle(const prmEventButton & button);
+        };
+        std::map<QString, std::shared_ptr<teleop_clutch_handler>> m_teleop_clutch_handlers;
+        std::map<QString, mtsFunctionWrite> m_teleop_clutch_commands;
 
         QPushButton * QPBTeleopEnable;
         QCheckBox * QCBTeleopEnable;

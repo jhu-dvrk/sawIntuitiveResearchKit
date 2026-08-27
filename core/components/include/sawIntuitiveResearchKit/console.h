@@ -111,12 +111,31 @@ namespace dvrk {
         // internal methods to manage active teleops
         void update_teleop_state(void);
         void emit_teleop_state_events(void);
+        struct teleop_clutch_state {
+            bool local_clutched = false;
+            bool effective_clutched = false;
+            mtsFunctionWrite event;
+        };
+
+        struct teleop_clutch_input_handler {
+            console * owner;
+            std::string teleop_name;
+            void Handle(const prmEventButton & button);
+        };
+
+        void local_clutch_event_handler(const std::string & teleop_name,
+                                        const prmEventButton & button);
+        void update_effective_clutch_states(void);
 
         // status
         bool m_operator_present = false;
         bool m_camera = false;
+        bool m_global_clutched = false;
         bool m_teleop_enabled = false;
         bool m_teleop_wanted = false;
+
+        std::map<std::string, teleop_clutch_state> m_clutch_states;
+        std::map<std::string, std::shared_ptr<teleop_clutch_input_handler>> m_local_clutch_handlers;
 
         // teleops PSM used for quick-tap
         std::shared_ptr<teleop_PSM_proxy> m_teleop_PSM_cycle_1 = nullptr;

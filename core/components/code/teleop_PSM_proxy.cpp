@@ -117,7 +117,7 @@ void dvrk::teleop_PSM_proxy::create_teleop(void)
     m_system->m_connections.Add(m_name, "PSM",
                                 m_PSM_component_name, m_PSM_interface_name);
     m_system->m_connections.Add(m_name, "clutch",
-                                m_system->GetName(), m_console->m_name + "/clutch"); // clutch from console
+                                m_system->GetName(), m_console->m_name + "/clutch/" + m_name);
     m_system->m_connections.Add(m_system->GetName(), m_name,
                                 m_name, "Setting");
     if ((m_config->PSM_base_frame.component != "")

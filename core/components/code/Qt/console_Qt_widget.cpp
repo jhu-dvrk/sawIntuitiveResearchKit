@@ -177,6 +177,11 @@ void dvrk::console_Qt_widget::get_teleop_button_check(const QString & teleop,
         buttonsLayout->addStretch();
         check = new QCheckBox("");
         buttonsLayout->addWidget(check);
+        auto * clutch = new QCheckBox("Clutch");
+        clutch->setCheckable(true);
+        clutch->setEnabled(false);
+        buttonsLayout->addWidget(clutch);
+        m_teleop_clutches[teleop] = clutch;
         QVBTeleops->addLayout(buttonsLayout);
         m_teleop_buttons[teleop] = std::pair<QPushButton *, QCheckBox *>(button, check);
         QString tabName = this->GetName().c_str();
@@ -193,6 +198,47 @@ void dvrk::console_Qt_widget::get_teleop_button_check(const QString & teleop,
     } else {
         button = iter->second.first;
         check = iter->second.second;
+    }
+}
+
+void dvrk::console_Qt_widget::add_teleop_clutch(const std::string & teleop)
+{
+    QPushButton * button;
+    QCheckBox * check;
+    get_teleop_button_check(QString(teleop.c_str()), button, check);
+    const QString name = QString(teleop.c_str());
+    if (m_teleop_clutch_handlers.find(name) != m_teleop_clutch_handlers.end()) {
+        return;
+    }
+    auto handler = std::make_shared<teleop_clutch_handler>();
+    handler->owner = this;
+    handler->teleop = name;
+    auto * interfaceRequired = AddInterfaceRequired("Clutch/" + teleop);
+    if (interfaceRequired) {
+        interfaceRequired->AddFunction("emulate_clutch", m_teleop_clutch_commands[name]);
+        interfaceRequired->AddEventHandlerWrite(&teleop_clutch_handler::Handle,
+                                                handler.get(), "Button");
+    }
+    m_teleop_clutch_handlers[name] = handler;
+    connect(m_teleop_clutches[name], &QCheckBox::toggled,
+            [this, name](bool checked) {
+                prmEventButton event;
+                event.SetType(checked ? prmEventButton::PRESSED : prmEventButton::RELEASED);
+                m_teleop_clutch_commands[name](event);
+            });
+}
+
+void dvrk::console_Qt_widget::teleop_clutch_handler::Handle(const prmEventButton & button)
+{
+    if (owner == nullptr) return;
+    if (button.Type() == prmEventButton::PRESSED) {
+        owner->m_teleop_clutches[teleop]->blockSignals(true);
+        owner->m_teleop_clutches[teleop]->setChecked(true);
+        owner->m_teleop_clutches[teleop]->blockSignals(false);
+    } else if (button.Type() == prmEventButton::RELEASED) {
+        owner->m_teleop_clutches[teleop]->blockSignals(true);
+        owner->m_teleop_clutches[teleop]->setChecked(false);
+        owner->m_teleop_clutches[teleop]->blockSignals(false);
     }
 }
 
@@ -402,6 +448,9 @@ void dvrk::console_Qt_widget::slot_enable_direct_control(bool _toggle)
     QRBOperatorPresent->setEnabled(_toggle);
     QRBClutch->setEnabled(_toggle);
     QRBCamera->setEnabled(_toggle);
+    for (auto & clutch : m_teleop_clutches) {
+        clutch.second->setEnabled(_toggle);
+    }
 }
 
 

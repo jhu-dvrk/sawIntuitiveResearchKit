@@ -33,6 +33,13 @@ class {
     }
 
     member {
+        name clutch;
+        type dvrk::terminal;
+        visibility public;
+        default dvrk::terminal();
+    }
+
+    member {
         name configure_parameter;
         type Json::Value;
         visibility public;
