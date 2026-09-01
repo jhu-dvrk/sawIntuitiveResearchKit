@@ -56,6 +56,11 @@
                     "type": "boolean",
                     "default": true
                 },
+                "MTM_is_haptic": {
+                    "description": "Set false for non-motorized alternate MTMs.  This disables MTM effort, gravity-compensation, and orientation-lock commands.",
+                    "type": "boolean",
+                    "default": true
+                },
                 "haptic_feedback_ratio": {
                     "description": "Scale factor applied to the ECM teleoperation wrench sent to MTML and MTMR.",
                     "type": "number",

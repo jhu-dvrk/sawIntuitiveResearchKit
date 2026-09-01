@@ -753,7 +753,9 @@ void mtsTeleOperationPSM::align_MTM_and_reset_start_thresholds(void)
     mMTM.m_pose_to_follow.Rotation().FromNormalized(mPSM.m_setpoint_cp.Position().Rotation());
     // convert to prm type
     mMTM.m_move_cp.Goal().From(mMTM.m_pose_to_follow);
-    mMTM.move_cp(mMTM.m_move_cp);
+    if (m_config.MTM_is_haptic && mMTM.move_cp.IsValid()) {
+        mMTM.move_cp(mMTM.m_move_cp);
+    }
 
 }
 

@@ -100,21 +100,22 @@ void mtsTeleOperationECM::Init(void)
     AddStateTable(mConfigurationStateTable);
     mConfigurationStateTable->AddData(m_config.scale, "scale");
     mConfigurationStateTable->AddData(m_config.camera_roll_offset, "camera_roll_offset");
+    mConfigurationStateTable->AddData(m_config.MTM_is_haptic, "MTM_is_haptic");
 
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("MTML");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("measured_cp",
                                        mMTML.measured_cp);
         interfaceRequired->AddFunction("measured_cv",
-                                       mMTML.measured_cv);
+                                       mMTML.measured_cv, MTS_OPTIONAL);
         interfaceRequired->AddFunction("lock_orientation",
-                                       mMTML.lock_orientation);
+                                       mMTML.lock_orientation, MTS_OPTIONAL);
         interfaceRequired->AddFunction("body/servo_cf",
-                                       mMTML.body_servo_cf);
+                                       mMTML.body_servo_cf, MTS_OPTIONAL);
         interfaceRequired->AddFunction("body/set_cf_orientation_absolute",
-                                       mMTML.body_set_cf_orientation_absolute);
+                                       mMTML.body_set_cf_orientation_absolute, MTS_OPTIONAL);
         interfaceRequired->AddFunction("use_gravity_compensation",
-                                       mMTML.use_gravity_compensation);
+                                       mMTML.use_gravity_compensation, MTS_OPTIONAL);
         interfaceRequired->AddFunction("operating_state",
                                        mMTML.operating_state);
         interfaceRequired->AddFunction("state_command",
@@ -128,15 +129,15 @@ void mtsTeleOperationECM::Init(void)
         interfaceRequired->AddFunction("measured_cp",
                                        mMTMR.measured_cp);
         interfaceRequired->AddFunction("measured_cv",
-                                       mMTMR.measured_cv);
+                                       mMTMR.measured_cv, MTS_OPTIONAL);
         interfaceRequired->AddFunction("lock_orientation",
-                                       mMTMR.lock_orientation);
+                                       mMTMR.lock_orientation, MTS_OPTIONAL);
         interfaceRequired->AddFunction("body/servo_cf",
-                                       mMTMR.body_servo_cf);
+                                       mMTMR.body_servo_cf, MTS_OPTIONAL);
         interfaceRequired->AddFunction("body/set_cf_orientation_absolute",
-                                       mMTMR.body_set_cf_orientation_absolute);
+                                       mMTMR.body_set_cf_orientation_absolute, MTS_OPTIONAL);
         interfaceRequired->AddFunction("use_gravity_compensation",
-                                       mMTMR.use_gravity_compensation);
+                                       mMTMR.use_gravity_compensation, MTS_OPTIONAL);
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::arm_error_event_handler,
                                                 this, "error");
         interfaceRequired->AddFunction("operating_state",
@@ -302,12 +303,14 @@ void mtsTeleOperationECM::RunAllStates(void)
         mInterface->SendError(this->GetName() + ": unable to get cartesian position from MTML");
         mTeleopState.SetDesiredState("DISABLED");
     }
-    executionResult = mMTML.measured_cv(mMTML.m_measured_cv);
-    if (!executionResult.IsOK()) {
-        CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTML.measured_cv failed \""
-                                << executionResult << "\"" << std::endl;
-        mInterface->SendError(this->GetName() + ": unable to get cartesian velocity from MTML");
-        mTeleopState.SetDesiredState("DISABLED");
+    if (mMTML.measured_cv.IsValid()) {
+        executionResult = mMTML.measured_cv(mMTML.m_measured_cv);
+        if (!executionResult.IsOK()) {
+            CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTML.measured_cv failed \""
+                                    << executionResult << "\"" << std::endl;
+            mInterface->SendError(this->GetName() + ": unable to get cartesian velocity from MTML");
+            mTeleopState.SetDesiredState("DISABLED");
+        }
     }
 
     // get MTMR Cartesian position
@@ -318,12 +321,14 @@ void mtsTeleOperationECM::RunAllStates(void)
         mInterface->SendError(this->GetName() + ": unable to get cartesian position from MTMR");
         mTeleopState.SetDesiredState("DISABLED");
     }
-    executionResult = mMTMR.measured_cv(mMTMR.m_measured_cv);
-    if (!executionResult.IsOK()) {
-        CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTMR.measured_cv failed \""
-                                << executionResult << "\"" << std::endl;
-        mInterface->SendError(this->GetName() + ": unable to get cartesian velocity from MTMR");
-        mTeleopState.SetDesiredState("DISABLED");
+    if (mMTMR.measured_cv.IsValid()) {
+        executionResult = mMTMR.measured_cv(mMTMR.m_measured_cv);
+        if (!executionResult.IsOK()) {
+            CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTMR.measured_cv failed \""
+                                    << executionResult << "\"" << std::endl;
+            mInterface->SendError(this->GetName() + ": unable to get cartesian velocity from MTMR");
+            mTeleopState.SetDesiredState("DISABLED");
+        }
     }
 
     // get ECM Cartesian position for GUI
@@ -361,17 +366,19 @@ void mtsTeleOperationECM::RunAllStates(void)
             mTeleopState.SetDesiredState("DISABLED");
             mInterface->SendError(this->GetName() + ": ECM is not in state \"READY\" anymore");
         }
-        mMTML.operating_state(state);
-        if ((state.State() != prmOperatingState::ENABLED)
-            || !state.IsHomed()) {
-            mTeleopState.SetDesiredState("DISABLED");
-            mInterface->SendError(this->GetName() + ": MTML is not in state \"READY\" anymore");
-        }
-        mMTMR.operating_state(state);
-        if ((state.State() != prmOperatingState::ENABLED)
-            || !state.IsHomed()) {
-            mTeleopState.SetDesiredState("DISABLED");
-            mInterface->SendError(this->GetName() + ": MTMR is not in state \"READY\" anymore");
+        if (m_config.MTM_is_haptic) {
+            mMTML.operating_state(state);
+            if ((state.State() != prmOperatingState::ENABLED)
+                || !state.IsHomed()) {
+                mTeleopState.SetDesiredState("DISABLED");
+                mInterface->SendError(this->GetName() + ": MTML is not in state \"READY\" anymore");
+            }
+            mMTMR.operating_state(state);
+            if ((state.State() != prmOperatingState::ENABLED)
+                || !state.IsHomed()) {
+                mTeleopState.SetDesiredState("DISABLED");
+                mInterface->SendError(this->GetName() + ": MTMR is not in state \"READY\" anymore");
+            }
         }
     }
 }
@@ -400,20 +407,22 @@ void mtsTeleOperationECM::EnterSettingArmsState(void)
         mECM.state_command(std::string("home"));
     }
 
-    mMTML.operating_state(state);
-    if (state.State() != prmOperatingState::ENABLED) {
-        mMTML.state_command(std::string("enable"));
-    }
-    if (!state.IsHomed()) {
-        mMTML.state_command(std::string("home"));
-    }
+    if (m_config.MTM_is_haptic) {
+        mMTML.operating_state(state);
+        if (state.State() != prmOperatingState::ENABLED) {
+            mMTML.state_command(std::string("enable"));
+        }
+        if (!state.IsHomed()) {
+            mMTML.state_command(std::string("home"));
+        }
 
-    mMTMR.operating_state(state);
-    if (state.State() != prmOperatingState::ENABLED) {
-        mMTMR.state_command(std::string("enable"));
-    }
-    if (!state.IsHomed()) {
-        mMTMR.state_command(std::string("home"));
+        mMTMR.operating_state(state);
+        if (state.State() != prmOperatingState::ENABLED) {
+            mMTMR.state_command(std::string("enable"));
+        }
+        if (!state.IsHomed()) {
+            mMTMR.state_command(std::string("home"));
+        }
     }
 }
 
@@ -423,11 +432,14 @@ void mtsTeleOperationECM::TransitionSettingArmsState(void)
     // check state
     prmOperatingState ecmState, mtmlState, mtmrState;
     mECM.operating_state(ecmState);
-    mMTML.operating_state(mtmlState);
-    mMTMR.operating_state(mtmrState);
+    if (m_config.MTM_is_haptic) {
+        mMTML.operating_state(mtmlState);
+        mMTMR.operating_state(mtmrState);
+    }
     if ((ecmState.State() == prmOperatingState::ENABLED) && ecmState.IsHomed()
-        && (mtmlState.State() == prmOperatingState::ENABLED) && mtmlState.IsHomed()
-        && (mtmrState.State() == prmOperatingState::ENABLED) && mtmrState.IsHomed()) {
+        && (!m_config.MTM_is_haptic
+            || ((mtmlState.State() == prmOperatingState::ENABLED) && mtmlState.IsHomed()
+                && (mtmrState.State() == prmOperatingState::ENABLED) && mtmrState.IsHomed()))) {
         if (m_config.check_MTMs_workspace) {
             // Make sure the coordinate systems match the ISI console side.
             vctBoundingBox3 workArea(vct3(-400.0 * cmn_mm,
@@ -460,13 +472,15 @@ void mtsTeleOperationECM::TransitionSettingArmsState(void)
 
 void mtsTeleOperationECM::EnterEnabled(void)
 {
-    // set cartesian effort parameters
-    mMTML.use_gravity_compensation(true);
-    mMTML.body_set_cf_orientation_absolute(true);
-    mMTML.lock_orientation(mMTML.m_measured_cp.Position().Rotation());
-    mMTMR.use_gravity_compensation(true);
-    mMTMR.body_set_cf_orientation_absolute(true);
-    mMTMR.lock_orientation(mMTMR.m_measured_cp.Position().Rotation());
+    if (m_config.MTM_is_haptic) {
+        // Set cartesian effort parameters only on motorized MTMs.
+        mMTML.use_gravity_compensation(true);
+        mMTML.body_set_cf_orientation_absolute(true);
+        mMTML.lock_orientation(mMTML.m_measured_cp.Position().Rotation());
+        mMTMR.use_gravity_compensation(true);
+        mMTMR.body_set_cf_orientation_absolute(true);
+        mMTMR.lock_orientation(mMTMR.m_measured_cp.Position().Rotation());
+    }
 
     // initial state for MTM force feedback
     // -1- initial distance between MTMs
@@ -573,12 +587,16 @@ void mtsTeleOperationECM::RunEnabled(void)
     force.Multiply(distanceForceCoeff);
     wrenchR.Force().Ref<3>(0).Assign(force);
     // add friction force
-    forceFriction.ElementwiseProductOf(frictionForceCoeff,
-                                       mMTMR.m_measured_cv.VelocityLinear());
-    wrenchR.Force().Ref<3>(0).Add(forceFriction);
+    if (mMTMR.measured_cv.IsValid()) {
+        forceFriction.ElementwiseProductOf(frictionForceCoeff,
+                                           mMTMR.m_measured_cv.VelocityLinear());
+        wrenchR.Force().Ref<3>(0).Add(forceFriction);
+    }
     wrenchR.Force().Ref<3>(0).Multiply(m_config.haptic_feedback_ratio);
     // apply
-    mMTMR.body_servo_cf(wrenchR);
+    if (m_config.MTM_is_haptic) {
+        mMTMR.body_servo_cf(wrenchR);
+    }
 
     // MTML
     // apply force
@@ -587,12 +605,16 @@ void mtsTeleOperationECM::RunEnabled(void)
     force.Multiply(distanceForceCoeff);
     wrenchL.Force().Ref<3>(0).Assign(force);
     // add friction force
-    forceFriction.ElementwiseProductOf(frictionForceCoeff,
-                                       mMTML.m_measured_cv.VelocityLinear());
-    wrenchL.Force().Ref<3>(0).Add(forceFriction);
+    if (mMTML.measured_cv.IsValid()) {
+        forceFriction.ElementwiseProductOf(frictionForceCoeff,
+                                           mMTML.m_measured_cv.VelocityLinear());
+        wrenchL.Force().Ref<3>(0).Add(forceFriction);
+    }
     wrenchL.Force().Ref<3>(0).Multiply(m_config.haptic_feedback_ratio);
     // apply
-    mMTML.body_servo_cf(wrenchL);
+    if (m_config.MTM_is_haptic) {
+        mMTML.body_servo_cf(wrenchL);
+    }
 
     /* --- Joint Control --- */
     static const vct3 normXZ(0.0, 1.0, 0.0);
@@ -676,11 +698,13 @@ void mtsTeleOperationECM::RunEnabled(void)
     currMTMLRot = currECMRot.Inverse() * mInitial.MTMLRot;
     currMTMRRot = currECMRot.Inverse() * mInitial.MTMRRot;
 
-    // set cartesian effort parameters
-    mMTML.body_set_cf_orientation_absolute(true);
-    mMTML.lock_orientation(currMTMLRot);
-    mMTMR.body_set_cf_orientation_absolute(true);
-    mMTMR.lock_orientation(currMTMRRot);
+    if (m_config.MTM_is_haptic) {
+        // set cartesian effort parameters
+        mMTML.body_set_cf_orientation_absolute(true);
+        mMTML.lock_orientation(currMTMLRot);
+        mMTMR.body_set_cf_orientation_absolute(true);
+        mMTMR.lock_orientation(currMTMRRot);
+    }
 }
 
 void mtsTeleOperationECM::TransitionEnabled(void)
@@ -729,14 +753,16 @@ void mtsTeleOperationECM::Clutch(const bool & clutch)
         set_following(false);
         mInterface->SendStatus(this->GetName() + ": console clutch pressed");
 
-        // set MTMs in effort mode, no force applied but gravity and locked orientation
-        prmForceCartesianSet wrench;
-        mMTML.body_servo_cf(wrench);
-        mMTML.use_gravity_compensation(true);
-        mMTML.lock_orientation(mMTML.m_measured_cp.Position().Rotation());
-        mMTMR.body_servo_cf(wrench);
-        mMTMR.use_gravity_compensation(true);
-        mMTMR.lock_orientation(mMTMR.m_measured_cp.Position().Rotation());
+        if (m_config.MTM_is_haptic) {
+            // Set MTMs in effort mode, no force applied but gravity and locked orientation.
+            prmForceCartesianSet wrench;
+            mMTML.body_servo_cf(wrench);
+            mMTML.use_gravity_compensation(true);
+            mMTML.lock_orientation(mMTML.m_measured_cp.Position().Rotation());
+            mMTMR.body_servo_cf(wrench);
+            mMTMR.use_gravity_compensation(true);
+            mMTMR.lock_orientation(mMTMR.m_measured_cp.Position().Rotation());
+        }
     } else {
         m_clutched = false;
         mInterface->SendStatus(this->GetName() + ": console clutch released");
