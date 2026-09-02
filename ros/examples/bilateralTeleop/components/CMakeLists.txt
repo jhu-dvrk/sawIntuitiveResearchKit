@@ -110,10 +110,9 @@ if (sawIntuitiveResearchKit_FOUND)
                          ${sawIntuitiveResearchKitBilateralTeleop_LINK_LIBRARIES})
 
   if (ROS_VERSION EQUAL 2)
-    ament_target_dependencies (
-      sawIntuitiveResearchKitBilateralTeleop
-      ${ROS2_depends}
-      )
+    foreach (_dep ${ROS2_depends})
+      target_link_libraries (sawIntuitiveResearchKitBilateralTeleop ${${_dep}_TARGETS})
+    endforeach ()
     ament_package ()
   endif ()
 

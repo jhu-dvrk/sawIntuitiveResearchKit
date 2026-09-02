@@ -128,13 +128,9 @@ install (TARGETS dvrk_utilities dvrk_pid dvrk_system
   INCLUDES DESTINATION include)
 
 if (ROS_VERSION EQUAL 2)
-  ament_target_dependencies (
-    dvrk_utilities
-    ${ROS2_depends}
-    )
-  ament_target_dependencies (
-    dvrk_pid
-    ${ROS2_depends}
-    )
+  foreach (_dep ${ROS2_depends})
+    target_link_libraries (dvrk_utilities ${${_dep}_TARGETS})
+    target_link_libraries (dvrk_pid ${${_dep}_TARGETS})
+  endforeach ()
   ament_package ()
 endif ()

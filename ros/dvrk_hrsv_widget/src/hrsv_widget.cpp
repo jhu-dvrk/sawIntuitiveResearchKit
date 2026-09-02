@@ -27,6 +27,9 @@ http://www.cisst.org/cisst/license.txt.
 hrsv_widget::hrsv_widget(node_ptr_t nodeHandle):
     mNodeHandle(nodeHandle)
 {
+#if ROS2
+    mExecutor.add_node(mNodeHandle);
+#endif
     setupUi();
     startTimer(50); // 50 ms
     setupROS();
@@ -147,7 +150,7 @@ void hrsv_widget::timerEvent(QTimerEvent *)
 #if ROS1
     ros::spinOnce();
 #elif ROS2
-    rclcpp::spin_some(mNodeHandle);
+    mExecutor.spin_some();
 #endif
 }
 

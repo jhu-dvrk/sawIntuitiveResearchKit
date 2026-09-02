@@ -89,9 +89,8 @@ install (TARGETS dvrk_arm_from_ros
   INCLUDES DESTINATION include)
 
 if (ROS_VERSION EQUAL 2)
-  ament_target_dependencies (
-    dvrk_arm_from_ros
-    ${ROS2_depends}
-    )
+  foreach (_dep ${ROS2_depends})
+    target_link_libraries (dvrk_arm_from_ros ${${_dep}_TARGETS})
+  endforeach ()
   ament_package ()
 endif ()

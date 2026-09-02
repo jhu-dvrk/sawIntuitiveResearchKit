@@ -111,10 +111,9 @@ if (sawIntuitiveResearchKit_FOUND)
     ${catkin_LIBRARIES})
 
   if (ROS_VERSION EQUAL 2)
-    ament_target_dependencies (
-      sawIntuitiveResearchKitDerivedPSM
-      ${ROS2_depends}
-      )
+    foreach (_dep ${ROS2_depends})
+      target_link_libraries (sawIntuitiveResearchKitDerivedPSM ${${_dep}_TARGETS})
+    endforeach ()
     ament_package ()
   endif ()
 

@@ -39,7 +39,7 @@ typedef ros::NodeHandle * node_ptr_t;
 #include <sensor_msgs/msg/joy.hpp>
 #include <diagnostic_msgs/msg/key_value.hpp>
 
-typedef std::shared_ptr<rclcpp::Node> node_ptr_t;
+    typedef std::shared_ptr<rclcpp::Node> node_ptr_t;
 #define ROS_MSG(package, message) package::msg::message
 #define ROS_SUBSCRIBER(package, message) typename rclcpp::Subscription<package::msg::message>::SharedPtr
 
@@ -63,6 +63,9 @@ private slots:
 
 protected:
     node_ptr_t mNodeHandle;
+#if ROS2
+    rclcpp::executors::SingleThreadedExecutor mExecutor;
+#endif
 
     QLabel * mLeftLabel;
     QLabel * mRightLabel;
