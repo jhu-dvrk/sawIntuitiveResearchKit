@@ -10,6 +10,10 @@
 # --- end cisst license ---
 
 cmake_minimum_required(VERSION 3.16)
+if (POLICY CMP0144)
+  cmake_policy (SET CMP0144 NEW)
+  set (CMAKE_POLICY_DEFAULT_CMP0144 NEW)
+endif ()
 project (sawIntuitiveResearchKitCore VERSION 2.5.0)
 
 find_package (cisst 1.5 REQUIRED)
