@@ -71,8 +71,13 @@ void mtsIntuitiveResearchKitECMQtWidget::setupUiDerived(void)
     // setup Qt Connection
     connect(this, SIGNAL(SignalEndoscopeType(QString)),
             this, SLOT(SlotEndoscopeTypeEventHandler(QString)));
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    connect(QCBEndoscopeOptions, &QComboBox::textActivated,
+            this, &mtsIntuitiveResearchKitECMQtWidget::SlotEndoscopeTypeSelected);
+#else
     connect(QCBEndoscopeOptions, SIGNAL(activated(QString)),
             this, SLOT(SlotEndoscopeTypeSelected(QString)));
+#endif
 }
 
 void mtsIntuitiveResearchKitECMQtWidget::SlotEndoscopeTypeEventHandler(QString endoscopeType)

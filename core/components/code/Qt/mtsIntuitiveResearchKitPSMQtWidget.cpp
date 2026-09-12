@@ -135,8 +135,13 @@ void mtsIntuitiveResearchKitPSMQtWidget::setupUiDerived(void)
             this, SLOT(SlotToolTypeEventHandler(QString)));
     connect(this, SIGNAL(SignalToolTypeRequest(void)),
             this, SLOT(SlotToolTypeRequestEventHandler(void)));
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    connect(QCBToolOptions, &QComboBox::textActivated,
+            this, &mtsIntuitiveResearchKitPSMQtWidget::SlotToolTypeSelected);
+#else
     connect(QCBToolOptions, SIGNAL(activated(QString)),
             this, SLOT(SlotToolTypeSelected(QString)));
+#endif
 }
 
 void mtsIntuitiveResearchKitPSMQtWidget::timerEventDerived(void)
