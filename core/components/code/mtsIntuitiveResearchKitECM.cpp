@@ -312,6 +312,11 @@ void mtsIntuitiveResearchKitECM::Init(void)
     CMN_ASSERT(m_arm_interface);
     m_arm_interface->AddEventWrite(ClutchEvents.ManipClutch, "arm_clutch", prmEventButton());
 
+    // Unit gravity direction at the lenses; zero when unavailable.
+    m_gravity_direction.Zeros();
+    StateTable.AddData(m_gravity_direction, "gravity_direction");
+    m_arm_interface->AddCommandReadState(StateTable, m_gravity_direction, "gravity_direction");
+
     // endoscope commands and events
     m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitECM::set_endoscope_type, this, "set_endoscope_type");
     m_arm_interface->AddEventWrite(EndoscopeEvents.endoscope_type, "endoscope_type", std::string());
@@ -442,10 +447,27 @@ void mtsIntuitiveResearchKitECM::EventHandlerSUJClutch(const prmEventButton & bu
     }
 }
 
+void mtsIntuitiveResearchKitECM::get_robot_data(void)
+{
+    mtsIntuitiveResearchKitArm::get_robot_data();
+    m_gravity_direction.Zeros();
+    if (!m_local_measured_cp.Valid() || !m_endoscope_configured
+        || !std::isfinite(m_mounting_pitch)) {
+        return;
+    }
+    // RNE gravity compensation uses the upward base acceleration.  Negate
+    // it to report physical down, independently of gravity compensation.
+    const vct3 down_in_base(0.0, -sin(m_mounting_pitch), -cos(m_mounting_pitch));
+    // Local FK already includes the configured endoscope's lens rotation.
+    const vct3 down_in_lens = m_local_measured_cp.Position().Rotation().Inverse() * down_in_base;
+    m_gravity_direction.Assign(down_in_lens);
+}
+
 void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscopeType)
 {
     // initialize configured flag
     m_endoscope_configured = false;
+    m_gravity_direction.Zeros();
 
     m_arm_interface->SendStatus(this->GetName() + ": setting up for endoscope type \"" + endoscopeType + "\"");
     // check if the endoscope is in the supported list

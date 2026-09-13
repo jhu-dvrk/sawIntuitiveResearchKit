@@ -196,6 +196,15 @@ void dvrk::system_ROS::bridge_interface_provided_ECM(const std::string & _arm_na
         (_required_interface_name, "set_endoscope_type",
          _arm_name + "/set_endoscope_type");
 
+    // vct3 is stamped at publication; the lens frame is fixed per arm.
+    CISST_RAL_MSG(geometry_msgs, Vector3Stamped) gravity_message;
+    gravity_message.header.frame_id = _arm_name;
+    m_pub_bridge->AddPublisherFromCommandRead<vct3, CISST_RAL_MSG(geometry_msgs, Vector3Stamped)>
+        (_required_interface_name, "gravity_direction",
+         _arm_name + "/gravity_direction", 5, false, gravity_message);
+    m_connections.Add(m_pub_bridge->GetName(), _required_interface_name,
+                      _arm_name, _interface_name);
+
     events_bridge().AddPublisherFromEventWrite<std::string, CISST_RAL_MSG(std_msgs, String)>
         (_required_interface_name, "endoscope_type",
          _arm_name + "/endoscope_type");

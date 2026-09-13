@@ -74,6 +74,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
 
     void CreateManipulator(void) override;
     void Init(void) override;
+    void get_robot_data(void) override;
+
+    vct3 m_gravity_direction;
 
     bool is_homed(void) const override;
     void unhome(void) override;
