@@ -96,6 +96,8 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     void TransitionDisabled(void); // checks for desired state
     void EnterSettingArmsState(void);
     void TransitionSettingArmsState(void);
+    void EnterCheckingData(void);
+    void TransitionCheckingData(void);
     void EnterAligningMTM(void);
     void align_MTM_and_reset_start_thresholds(void);
     void RunAligningMTM(void);
@@ -195,6 +197,7 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     double mInStateTimer;
 
     bool m_following;
+    bool m_data_check_warning_sent = false;
     void set_following(const bool following);
 };
 

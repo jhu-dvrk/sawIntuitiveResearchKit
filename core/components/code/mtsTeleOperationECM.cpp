@@ -54,6 +54,7 @@ void mtsTeleOperationECM::Init(void)
 {
     // configure state machine
     mTeleopState.AddState("SETTING_ARMS_STATE");
+    mTeleopState.AddState("CHECKING_DATA");
     mTeleopState.AddState("ENABLED");
     mTeleopState.AddAllowedDesiredState("DISABLED");
     mTeleopState.AddAllowedDesiredState("ENABLED");
@@ -76,6 +77,14 @@ void mtsTeleOperationECM::Init(void)
                                   this);
     mTeleopState.SetTransitionCallback("SETTING_ARMS_STATE",
                                        &mtsTeleOperationECM::TransitionSettingArmsState,
+                                       this);
+
+    // checking Cartesian and joint data
+    mTeleopState.SetEnterCallback("CHECKING_DATA",
+                                  &mtsTeleOperationECM::EnterCheckingData,
+                                  this);
+    mTeleopState.SetTransitionCallback("CHECKING_DATA",
+                                       &mtsTeleOperationECM::TransitionCheckingData,
                                        this);
 
     // enabled
@@ -262,6 +271,50 @@ void mtsTeleOperationECM::Configure(const Json::Value & _json_config)
 void mtsTeleOperationECM::Startup(void)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "Startup" << std::endl;
+
+    bool valid = true;
+    if (!mMTML.measured_cp.IsValid()) {
+        mInterface->SendError(this->GetName() + ": required MTML function \"measured_cp\" is not connected");
+        valid = false;
+    }
+    if (!mMTMR.measured_cp.IsValid()) {
+        mInterface->SendError(this->GetName() + ": required MTMR function \"measured_cp\" is not connected");
+        valid = false;
+    }
+    if (!mECM.measured_cp.IsValid()) {
+        mInterface->SendError(this->GetName() + ": required ECM function \"measured_cp\" is not connected");
+        valid = false;
+    }
+    if (!mECM.setpoint_js.IsValid()) {
+        mInterface->SendError(this->GetName() + ": required ECM function \"setpoint_js\" is not connected");
+        valid = false;
+    }
+    if (!mECM.servo_jp.IsValid()
+        || !mECM.operating_state.IsValid()
+        || !mECM.state_command.IsValid()) {
+        mInterface->SendError(this->GetName() + ": required ECM command/state functions are not connected");
+        valid = false;
+    }
+    if (!mMTML.operating_state.IsValid() || !mMTML.state_command.IsValid()
+        || !mMTMR.operating_state.IsValid() || !mMTMR.state_command.IsValid()) {
+        mInterface->SendError(this->GetName() + ": required MTM command/state functions are not connected");
+        valid = false;
+    }
+    if (m_config.MTM_is_haptic) {
+        m_mtml_measured_cv_available = mMTML.measured_cv.IsValid();
+        m_mtmr_measured_cv_available = mMTMR.measured_cv.IsValid();
+        if (!m_mtml_measured_cv_available) {
+            mInterface->SendWarning(this->GetName() + ": MTML doesn't provide measured_cv");
+        }
+        if (!m_mtmr_measured_cv_available) {
+            mInterface->SendWarning(this->GetName() + ": MTMR doesn't provide measured_cv");
+        }
+    }
+    if (!valid) {
+        mTeleopState.SetDesiredState("DISABLED");
+        return;
+    }
+
     set_scale(m_config.scale);
     set_following(false);
 }
@@ -303,7 +356,7 @@ void mtsTeleOperationECM::RunAllStates(void)
         mInterface->SendError(this->GetName() + ": unable to get cartesian position from MTML");
         mTeleopState.SetDesiredState("DISABLED");
     }
-    if (mMTML.measured_cv.IsValid()) {
+    if (m_mtml_measured_cv_available) {
         executionResult = mMTML.measured_cv(mMTML.m_measured_cv);
         if (!executionResult.IsOK()) {
             CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTML.measured_cv failed \""
@@ -321,7 +374,7 @@ void mtsTeleOperationECM::RunAllStates(void)
         mInterface->SendError(this->GetName() + ": unable to get cartesian position from MTMR");
         mTeleopState.SetDesiredState("DISABLED");
     }
-    if (mMTMR.measured_cv.IsValid()) {
+    if (m_mtmr_measured_cv_available) {
         executionResult = mMTMR.measured_cv(mMTMR.m_measured_cv);
         if (!executionResult.IsOK()) {
             CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTMR.measured_cv failed \""
@@ -346,6 +399,21 @@ void mtsTeleOperationECM::RunAllStates(void)
                                 << executionResult << "\"" << std::endl;
         mInterface->SendError(this->GetName() + ": unable to get joint state from ECM");
         mTeleopState.SetDesiredState("DISABLED");
+    }
+
+    if (mTeleopState.CurrentState() == "ENABLED") {
+        const bool dataValid = mECM.m_measured_cp.Valid()
+            && mECM.m_setpoint_js.Valid()
+            && (!m_config.MTM_is_haptic
+                || (mMTML.m_measured_cp.Valid() && mMTMR.m_measured_cp.Valid()));
+        if (!dataValid) {
+            if (!m_data_check_warning_sent) {
+                mInterface->SendWarning(this->GetName()
+                                         + ": MTM or ECM Cartesian data became invalid, disabling teleoperation");
+                m_data_check_warning_sent = true;
+            }
+            mTeleopState.SetDesiredState("DISABLED");
+        }
     }
 
     // check if anyone wanted to disable anyway
@@ -440,6 +508,33 @@ void mtsTeleOperationECM::TransitionSettingArmsState(void)
         && (!m_config.MTM_is_haptic
             || ((mtmlState.State() == prmOperatingState::ENABLED) && mtmlState.IsHomed()
                 && (mtmrState.State() == prmOperatingState::ENABLED) && mtmrState.IsHomed()))) {
+        // we should be good to go
+        mTeleopState.SetCurrentState("CHECKING_DATA");
+        return;
+    }
+    // check timer
+    if ((StateTable.GetTic() - mInStateTimer) > 60.0 * cmn_s) {
+        mInterface->SendError(this->GetName() + ": timed out while setting up arms state");
+        mTeleopState.SetDesiredState("DISABLED");
+    }
+}
+
+void mtsTeleOperationECM::EnterCheckingData(void)
+{
+    m_data_check_warning_sent = false;
+}
+
+void mtsTeleOperationECM::TransitionCheckingData(void)
+{
+    const bool dataValid = mECM.m_measured_cp.Valid()
+        && mECM.m_setpoint_js.Valid()
+        && (!m_config.MTM_is_haptic
+            || (mMTML.m_measured_cp.Valid() && mMTMR.m_measured_cp.Valid()));
+
+    if (dataValid) {
+        if (m_data_check_warning_sent) {
+            mInterface->SendStatus(this->GetName() + ": MTM and ECM Cartesian data is valid");
+        }
         if (m_config.check_MTMs_workspace) {
             // Make sure the coordinate systems match the ISI console side.
             vctBoundingBox3 workArea(vct3(-400.0 * cmn_mm,
@@ -459,14 +554,14 @@ void mtsTeleOperationECM::TransitionSettingArmsState(void)
                 return;
             }
         }
-        // we should be good to go
         mTeleopState.SetCurrentState("ENABLED");
         return;
     }
-    // check timer
-    if ((StateTable.GetTic() - mInStateTimer) > 60.0 * cmn_s) {
-        mInterface->SendError(this->GetName() + ": timed out while setting up arms state");
-        mTeleopState.SetDesiredState("DISABLED");
+
+    if (!m_data_check_warning_sent) {
+        mInterface->SendWarning(this->GetName()
+                                + ": waiting for valid MTM and ECM Cartesian data");
+        m_data_check_warning_sent = true;
     }
 }
 
@@ -587,7 +682,7 @@ void mtsTeleOperationECM::RunEnabled(void)
     force.Multiply(distanceForceCoeff);
     wrenchR.Force().Ref<3>(0).Assign(force);
     // add friction force
-    if (mMTMR.measured_cv.IsValid()) {
+    if (m_mtmr_measured_cv_available) {
         forceFriction.ElementwiseProductOf(frictionForceCoeff,
                                            mMTMR.m_measured_cv.VelocityLinear());
         wrenchR.Force().Ref<3>(0).Add(forceFriction);
@@ -605,7 +700,7 @@ void mtsTeleOperationECM::RunEnabled(void)
     force.Multiply(distanceForceCoeff);
     wrenchL.Force().Ref<3>(0).Assign(force);
     // add friction force
-    if (mMTML.measured_cv.IsValid()) {
+    if (m_mtml_measured_cv_available) {
         forceFriction.ElementwiseProductOf(frictionForceCoeff,
                                            mMTML.m_measured_cv.VelocityLinear());
         wrenchL.Force().Ref<3>(0).Add(forceFriction);

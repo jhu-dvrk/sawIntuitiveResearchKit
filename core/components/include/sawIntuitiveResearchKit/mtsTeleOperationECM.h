@@ -81,6 +81,8 @@ protected:
     void TransitionDisabled(void); // checks for desired state
     void EnterSettingArmsState(void);
     void TransitionSettingArmsState(void);
+    void EnterCheckingData(void);
+    void TransitionCheckingData(void);
     void EnterEnabled(void);
     void RunEnabled(void); // performs actual teleoperation
     void TransitionEnabled(void); // performs actual teleoperation
@@ -117,6 +119,9 @@ protected:
     mtsStateTable * mConfigurationStateTable;
 
     bool m_clutched;
+    bool m_mtml_measured_cv_available = false;
+    bool m_mtmr_measured_cv_available = false;
+    bool m_data_check_warning_sent = false;
 
     mtsStateMachine mTeleopState;
     double mInStateTimer;

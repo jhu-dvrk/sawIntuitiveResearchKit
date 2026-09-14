@@ -50,6 +50,7 @@ void mtsTeleOperationPSM::Init(void)
 {
     // configure state machine
     mTeleopState.AddState("SETTING_ARMS_STATE");
+    mTeleopState.AddState("CHECKING_DATA");
     mTeleopState.AddState("ALIGNING_MTM");
     mTeleopState.AddState("ENABLED");
     mTeleopState.AddAllowedDesiredState("ENABLED");
@@ -78,6 +79,14 @@ void mtsTeleOperationPSM::Init(void)
                                   this);
     mTeleopState.SetTransitionCallback("SETTING_ARMS_STATE",
                                        &mtsTeleOperationPSM::TransitionSettingArmsState,
+                                       this);
+
+    // checking Cartesian data
+    mTeleopState.SetEnterCallback("CHECKING_DATA",
+                                  &mtsTeleOperationPSM::EnterCheckingData,
+                                  this);
+    mTeleopState.SetTransitionCallback("CHECKING_DATA",
+                                       &mtsTeleOperationPSM::TransitionCheckingData,
                                        this);
 
     // aligning MTM
@@ -322,6 +331,41 @@ void mtsTeleOperationPSM::Configure(const Json::Value & _json_config)
 void mtsTeleOperationPSM::Startup(void)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "Startup" << std::endl;
+    bool valid = true;
+
+    if (!mMTM.measured_cp.IsValid()) {
+        mInterface->SendError(this->GetName() + ": required MTM function \"measured_cp\" is not connected");
+        valid = false;
+    }
+    if (m_config.MTM_is_haptic && !mMTM.setpoint_cp.IsValid()) {
+        mInterface->SendError(this->GetName() + ": required MTM function \"setpoint_cp\" is not connected for haptic operation");
+        valid = false;
+    }
+    if (!mPSM.setpoint_cp.IsValid()) {
+        mInterface->SendError(this->GetName() + ": required PSM function \"setpoint_cp\" is not connected");
+        valid = false;
+    }
+    if (!mPSM.servo_cp.IsValid()) {
+        mInterface->SendError(this->GetName() + ": required PSM function \"servo_cp\" is not connected");
+        valid = false;
+    }
+    if (!mPSM.hold.IsValid()) {
+        mInterface->SendError(this->GetName() + ": required PSM function \"hold\" is not connected");
+        valid = false;
+    }
+    if (!mMTM.operating_state.IsValid() || !mMTM.state_command.IsValid()) {
+        mInterface->SendError(this->GetName() + ": required MTM operating-state functions are not connected");
+        valid = false;
+    }
+    if (!mPSM.operating_state.IsValid() || !mPSM.state_command.IsValid()) {
+        mInterface->SendError(this->GetName() + ": required PSM operating-state functions are not connected");
+        valid = false;
+    }
+    if (!valid) {
+        mTeleopState.SetDesiredState("DISABLED");
+        return;
+    }
+
     set_scale(m_config.scale);
     set_following(false);
     lock_rotation(m_config.rotation_locked);
@@ -625,6 +669,24 @@ void mtsTeleOperationPSM::RunAllStates(void)
         }
     }
 
+    // Cartesian data must remain valid while aligning or teleoperating.
+    if ((mTeleopState.CurrentState() == "ALIGNING_MTM")
+        || (mTeleopState.CurrentState() == "ENABLED")) {
+        const bool mtmSetpointValid = !m_config.MTM_is_haptic
+            || !mMTM.setpoint_cp.IsValid()
+                || mMTM.m_setpoint_cp.Valid();
+        if (!mMTM.m_measured_cp.Valid()
+            || !mPSM.m_setpoint_cp.Valid()
+            || !mtmSetpointValid) {
+            if (!m_data_check_warning_sent) {
+                mInterface->SendWarning(this->GetName()
+                                         + ": MTM or PSM Cartesian data became invalid, disabling teleoperation");
+                m_data_check_warning_sent = true;
+            }
+            mTeleopState.SetDesiredState("DISABLED");
+        }
+    }
+
     // check if anyone wanted to disable anyway
     if ((mTeleopState.DesiredState() == "DISABLED")
         && (mTeleopState.CurrentState() != "DISABLED")) {
@@ -698,7 +760,7 @@ void mtsTeleOperationPSM::TransitionSettingArmsState(void)
     mMTM.operating_state(mtmState);
     if ((psmState.State() == prmOperatingState::ENABLED) && psmState.IsHomed()
         && (mtmState.State() == prmOperatingState::ENABLED) && mtmState.IsHomed()) {
-        mTeleopState.SetCurrentState("ALIGNING_MTM");
+        mTeleopState.SetCurrentState("CHECKING_DATA");
         return;
     }
     // check timer
@@ -710,6 +772,34 @@ void mtsTeleOperationPSM::TransitionSettingArmsState(void)
             mInterface->SendError(this->GetName() + ": timed out while setting up MTM state");
         }
         mTeleopState.SetDesiredState("DISABLED");
+    }
+}
+
+void mtsTeleOperationPSM::EnterCheckingData(void)
+{
+    m_data_check_warning_sent = false;
+}
+
+void mtsTeleOperationPSM::TransitionCheckingData(void)
+{
+    const bool mtmMeasuredValid = mMTM.m_measured_cp.Valid();
+    const bool psmSetpointValid = mPSM.m_setpoint_cp.Valid();
+    const bool mtmSetpointValid = !m_config.MTM_is_haptic
+        || !mMTM.setpoint_cp.IsValid()
+            || mMTM.m_setpoint_cp.Valid();
+
+    if (mtmMeasuredValid && psmSetpointValid && mtmSetpointValid) {
+        if (m_data_check_warning_sent) {
+            mInterface->SendStatus(this->GetName() + ": MTM and PSM Cartesian data is valid");
+        }
+        mTeleopState.SetCurrentState("ALIGNING_MTM");
+        return;
+    }
+
+    if (!m_data_check_warning_sent) {
+        mInterface->SendWarning(this->GetName()
+                                + ": waiting for valid MTM measured_cp and PSM setpoint_cp data");
+        m_data_check_warning_sent = true;
     }
 }
 
