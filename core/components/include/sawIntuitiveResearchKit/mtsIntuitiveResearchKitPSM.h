@@ -84,11 +84,10 @@ protected:
     }
 
     void UpdateStateJointKinematics(void) override;
-    void ToJointsPID(const vctDoubleVec &jointsKinematics, vctDoubleVec &jointsPID) override;
+    void ToJointsPID(const Eigen::VectorXd& jointsKinematics, Eigen::VectorXd& jointsPID) override;
 
-
-    robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
-                                            const vctFrm4x4 & cartesianGoal) const override;
+    robManipulator::Errno InverseKinematics(Eigen::VectorXd& jointSet,
+                                            const Eigen::Isometry3d& cartesianGoal) const override;
 
     bool is_safe_for_cartesian_control(void) const override;
 
@@ -106,7 +105,7 @@ protected:
 
     // state related methods
     void SetGoalHomingArm(void) override;
-    void EnterHomed(void);
+    void EnterHomed(void) override;
     void TransitionHomed(void); // for adapter/tool detection
 
     // methods used in change coupling/engaging
@@ -152,10 +151,10 @@ protected:
     void jaw_move_jp(const prmPositionJointSet & jp);
     void jaw_servo_jf(const prmForceTorqueJointSet & jf);
 
-    void servo_jp_internal(const vctDoubleVec & jp,
-                           const vctDoubleVec & jv) override;
-    void servo_jf_internal(const vctDoubleVec & jf) override;
-    void feed_forward_jf_internal(const vctDoubleVec & jf) override;
+    void servo_jp_internal(const Eigen::VectorXd& jp,
+                           const Eigen::VectorXd& jv) override;
+    void servo_jf_internal(const Eigen::VectorXd& jf) override;
+    void feed_forward_jf_internal(const Eigen::VectorXd& jf) override;
 
     void control_move_jp_on_stop(const bool reached) override;
 
@@ -220,7 +219,7 @@ protected:
     double m_cannula_depth = 0.0;
 
     robManipulator * ToolOffset = nullptr;
-    vctFrm4x4 ToolOffsetTransformation;
+    Eigen::Isometry3d ToolOffsetTransformation;
 
     prmStateJoint m_jaw_measured_js, m_jaw_setpoint_js;
     prmConfigurationJoint m_jaw_configuration_js;
@@ -231,7 +230,7 @@ protected:
     unsigned int EngagingStage; // 0 requested
     unsigned int LastEngagingStage;
 
-    vctDoubleVec m_tool_engage_lower_position,
+    Eigen::VectorXd m_tool_engage_lower_position,
         m_tool_engage_upper_position;
 
     std::unique_ptr<GravityCompensationPSM> m_gc;

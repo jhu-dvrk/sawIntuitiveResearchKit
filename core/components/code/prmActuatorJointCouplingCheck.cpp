@@ -16,59 +16,53 @@
   --- end cisst license ---
 */
 
+#include <Eigen/QR>
 #include <sawIntuitiveResearchKit/prmActuatorJointCouplingCheck.h>
-#include <cisstNumerical/nmrInverse.h>
 
 void prmActuatorJointCouplingCheck(const size_t nbJoints,
                                    const size_t nbActuators,
                                    const prmActuatorJointCoupling & input,
                                    prmActuatorJointCoupling & result)
 {
-  if ((input.ActuatorToJointPosition().rows() != nbJoints) ||
-        (input.ActuatorToJointPosition().cols() != nbActuators)) {
+    if ((input.ActuatorToJointPosition().rows() != (Eigen::Index)nbJoints) ||
+        (input.ActuatorToJointPosition().cols() != (Eigen::Index)nbActuators)) {
         cmnThrow("prmActuatorJointCouplingCheck: invalid size for ActuatorToJointPosition");
     }
-    result.ActuatorToJointPosition()
-        .ForceAssign(input.ActuatorToJointPosition());
+
+    result.ActuatorToJointPosition() = input.ActuatorToJointPosition();
 
     // if we get an empty matrix, compute the inverse
     if (input.JointToActuatorPosition().size() == 0) {
-        result.JointToActuatorPosition()
-            .ForceAssign(input.ActuatorToJointPosition());
-        nmrInverse(result.JointToActuatorPosition());
+        Eigen::CompleteOrthogonalDecomposition<Eigen::MatrixXd> cod(input.ActuatorToJointPosition());
+        result.JointToActuatorPosition() = cod.pseudoInverse();
     } else {
-        if ((input.JointToActuatorPosition().rows() != nbActuators) ||
-            (input.JointToActuatorPosition().cols() != nbJoints)) {
+        if ((input.JointToActuatorPosition().rows() != (Eigen::Index)nbActuators) ||
+            (input.JointToActuatorPosition().cols() != (Eigen::Index)nbJoints)) {
             cmnThrow("prmActuatorJointCouplingCheck: invalid size for JointToActuatorPosition");
         }
-        result.JointToActuatorPosition()
-            .ForceAssign(input.JointToActuatorPosition());
+        result.JointToActuatorPosition() = input.JointToActuatorPosition();
     }
 
     // if we get an empty matrix, compute the transpose
     if (input.ActuatorToJointEffort().size() == 0) {
-        result.ActuatorToJointEffort()
-            .ForceAssign(result.JointToActuatorPosition().Transpose());
+        result.ActuatorToJointEffort() = result.JointToActuatorPosition().transpose();
     } else {
-        if ((input.ActuatorToJointEffort().rows() != nbJoints) ||
-            (input.ActuatorToJointEffort().cols() != nbActuators)) {
+        if ((input.ActuatorToJointEffort().rows() != (Eigen::Index)nbJoints) ||
+            (input.ActuatorToJointEffort().cols() != (Eigen::Index)nbActuators)) {
             cmnThrow("prmActuatorJointCouplingCheck: invalid size for ActuatorToJointEffort");
         }
-        result.ActuatorToJointEffort()
-            .ForceAssign(input.ActuatorToJointEffort());
+        result.ActuatorToJointEffort() = input.ActuatorToJointEffort();
     }
 
-    // if we get an empty matrix, compute the transpose
+    // if we get an empty matrix, compute the inverse
     if (input.JointToActuatorEffort().size() == 0) {
-        result.JointToActuatorEffort()
-            .ForceAssign(result.ActuatorToJointEffort());
-        nmrInverse(result.JointToActuatorEffort());
+        Eigen::CompleteOrthogonalDecomposition<Eigen::MatrixXd> cod(result.ActuatorToJointEffort());
+        result.JointToActuatorEffort() = cod.pseudoInverse();
     } else {
-        if ((input.JointToActuatorEffort().rows() != nbActuators) ||
-            (input.JointToActuatorEffort().cols() != nbJoints)) {
+        if ((input.JointToActuatorEffort().rows() != (Eigen::Index)nbActuators) ||
+            (input.JointToActuatorEffort().cols() != (Eigen::Index)nbJoints)) {
             cmnThrow("prmActuatorJointCouplingCheck: invalid size for JointToActuatorEffort");
         }
-        result.JointToActuatorEffort()
-            .ForceAssign(input.JointToActuatorEffort());
+        result.JointToActuatorEffort() = input.JointToActuatorEffort();
     }
 }

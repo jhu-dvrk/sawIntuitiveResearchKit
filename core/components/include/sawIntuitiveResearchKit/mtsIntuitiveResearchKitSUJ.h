@@ -45,10 +45,10 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJ: public mtsTaskPeriodic
     mtsIntuitiveResearchKitSUJ(const mtsTaskPeriodicConstructorArg & arg);
     inline ~mtsIntuitiveResearchKitSUJ() {}
 
-    void Configure(const std::string & filename);
-    void Startup(void);
-    void Run(void);
-    void Cleanup(void);
+    void Configure(const std::string & filename) override;
+    void Startup(void) override;
+    void Run(void) override;
+    void Cleanup(void) override;
 
     void set_simulation_mode(const prmSimulationType & mode);
 
@@ -144,7 +144,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJ: public mtsTaskPeriodic
 
     void reset_mux(void);
     double m_mux_timer;
-    vctBoolVec m_mux_state;
+    Eigen::ArrayX<bool> m_mux_state;
     size_t m_mux_index, m_mux_index_expected;
 
     // Functions to control motor on SUJ3
@@ -160,13 +160,13 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJ: public mtsTaskPeriodic
 
     // Clutch / brake timer
     double m_previous_tic;
-    vctDoubleVec m_brake_currents;
+    Eigen::VectorXd m_brake_currents;
 
-    vctDynamicVector<vctDoubleVec> m_voltage_samples;
+    std::vector<Eigen::VectorXd> m_voltage_samples;
     const size_t m_voltage_samples_number;
     size_t m_voltage_samples_counter;
-    vctDoubleVec m_voltages;
-    vctFixedSizeVector<mtsIntuitiveResearchKitSUJArmData *, 4> m_sarms;
+    Eigen::VectorXd m_voltages;
+    std::array<mtsIntuitiveResearchKitSUJArmData*, 4> m_sarms;
     size_t m_reference_arm_index; // arm used to provide base frame to all other SUJ arms, traditionally the ECM
 
     void dispatch_error(const std::string & message);

@@ -36,7 +36,8 @@ public:
     std::string error(void);
 
     void set_endoscope_mass(double mass);
-    vctVec compute(const prmStateJoint& state, vct3 gravity) override;
+    Eigen::VectorXd compute(const prmStateJoint& state, Eigen::Vector3d& gravity) override;
+
 private:
     robManipulator physical_model;
     std::string error_message;
@@ -79,23 +80,23 @@ void GravityCompensationECM::set_endoscope_mass(double mass)
     }
 }
 
-vctVec GravityCompensationECM::compute(const prmStateJoint& state, vct3 gravity)
+Eigen::VectorXd GravityCompensationECM::compute(const prmStateJoint& state, Eigen::Vector3d& gravity)
 {
     size_t n_joints = physical_model.links.size();
     auto j = state.Position();
 
-    vctDoubleVec qd(n_joints, 0.0);
-    vctDoubleVec efforts(state.Position().size(), 0.0);
+    Eigen::VectorXd qd = Eigen::VectorXd::Zero(n_joints);
+    Eigen::VectorXd efforts = Eigen::VectorXd::Zero(state.Position().size());
 
     if (n_joints == 6) {
         // convert virtual joint positions to physical
-        vctDoubleVec q(6, j[0], 0.0, j[1], -j[1], j[1], j[2]);
-        vctDoubleVec predicted_efforts = physical_model.CCG_MDH(q, qd, gravity);
+        Eigen::VectorXd q(6, j[0], 0.0, j[1], -j[1], j[1], j[2]);
+        Eigen::VectorXd predicted_efforts = physical_model.CCG_MDH(q, qd, gravity);
         efforts[0] = predicted_efforts[0];
         efforts[1] = predicted_efforts[2] - predicted_efforts[3] + predicted_efforts[4];
         efforts[2] = predicted_efforts[5];
     } else if (n_joints == 4) {
-        vctDoubleVec q(4, j[0], j[1], j[2], 0.0);
+        Eigen::VectorXd q(4, j[0], j[1], j[2], 0.0);
         efforts = physical_model.CCG_MDH(j, qd, gravity);
     }
 
@@ -296,15 +297,15 @@ void mtsIntuitiveResearchKitECM::Init(void)
                                this);
 
     // initialize trajectory data
-    m_trajectory_j.v_max.Assign(30.0 * cmnPI_180, // degrees per second
+    m_trajectory_j.v_max = Eigen::VectorXd(30.0 * cmnPI_180, // degrees per second
                                 30.0 * cmnPI_180,
                                 60.0 * cmn_mm,    // mm per second
                                 30.0 * cmnPI_180);
-    m_trajectory_j.a_max.Assign(90.0 * cmnPI_180,
+    m_trajectory_j.a_max = Eigen::VectorXd(90.0 * cmnPI_180,
                                 90.0 * cmnPI_180,
                                 60.0 * cmn_mm,
                                 90.0 * cmnPI_180);
-    m_trajectory_j.goal_tolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
+    m_trajectory_j.goal_tolerance.setConstant(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
 
     mtsInterfaceRequired * interfaceRequired;
 
@@ -352,8 +353,8 @@ void mtsIntuitiveResearchKitECM::SetGoalHomingArm(void)
 {
     // if simulated, start at zero but insert endoscope so it can be used in cartesian mode
     if (m_simulation_mode == prmSimulationType::KINEMATIC) {
-        m_trajectory_j.goal.SetAll(0.0);
-        m_trajectory_j.goal.at(2) = 12.0 * cmn_cm;
+        m_trajectory_j.goal.setZero();
+        m_trajectory_j.goal(2) = 12.0 * cmn_cm;
         return;
     }
 
@@ -361,13 +362,13 @@ void mtsIntuitiveResearchKitECM::SetGoalHomingArm(void)
     PID.enable_measured_setpoint_check(true);
 
     // compute joint goal position
-    m_trajectory_j.goal.SetSize(number_of_joints());
+    m_trajectory_j.goal = Eigen::VectorXd(number_of_joints());
     if (m_homing_goes_to_zero) {
         // move to zero position
-        m_trajectory_j.goal.SetAll(0.0);
+        m_trajectory_j.goal.setZero();
     } else {
         // stay at current position by default
-        m_trajectory_j.goal.Assign(m_pid_setpoint_js.Position(), number_of_joints());
+        m_trajectory_j.goal = m_pid_setpoint_js.Position().head(number_of_joints());
     }
 }
 

@@ -19,6 +19,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisst_ros_crtk/mtsCISSTToROS.h>
 #include <cisst_ros_crtk/mtsROSToCISST.h>
 
+#include <Eigen/Geometry>
+
 #include <dvrk_mtm_from_ros.h>
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(dvrk_mtm_from_ros,
@@ -41,7 +43,6 @@ dvrk_mtm_from_ros::dvrk_mtm_from_ros(const mtsTaskPeriodicConstructorArg & arg)
 
 void dvrk_mtm_from_ros::InitMTM(void)
 {
-
     const auto ros_namespace = this->GetName();
     const auto interface_provided = this->GetName();
 
@@ -57,7 +58,7 @@ void dvrk_mtm_from_ros::InitMTM(void)
                                 // write events
                                 Commands());
     // non CRTK commands
-    this->AddPublisherFromCommandWrite<vctMatRot3, CISST_RAL_MSG(geometry_msgs, Quaternion)>
+    this->AddPublisherFromCommandWrite<Eigen::Quaterniond, CISST_RAL_MSG(geometry_msgs, Quaternion)>
         (interface_provided, "lock_orientation",
          ros_namespace + "/lock_orientation");
 }

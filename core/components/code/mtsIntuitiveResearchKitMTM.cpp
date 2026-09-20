@@ -266,8 +266,8 @@ void mtsIntuitiveResearchKitMTM::ConfigureGC(const Json::Value & armConfig,
     }
 }
 
-robManipulator::Errno mtsIntuitiveResearchKitMTM::InverseKinematics(vctDoubleVec & jointSet,
-                                                                    const vctFrm4x4 & cartesianGoal) const
+robManipulator::Errno mtsIntuitiveResearchKitMTM::InverseKinematics(Eigen::VectorXd& jointSet,
+                                                                    const Eigen::Isometry3d& cartesianGoal) const
 {
     if (mKinematicType == MTM_ITERATIVE) {
         // projection of roll axis on platform tells us how the platform
@@ -337,10 +337,10 @@ void mtsIntuitiveResearchKitMTM::SetGoalHomingArm(void)
 {
     // if simulated, start at zero but insert tool so it can be used in cartesian mode
     if ((m_simulation_mode == prmSimulationType::KINEMATIC) || m_homing_goes_to_zero) {
-        m_trajectory_j.goal.SetAll(0.0);
+        m_trajectory_j.goal.setZero();
     } else {
         // stay at current position by default
-        m_trajectory_j.goal.Assign(m_pid_setpoint_js.Position());
+        m_trajectory_j.goal = m_pid_setpoint_js.Position();
     }
 }
 
@@ -370,10 +370,10 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
 
     // compute joint goal position, we assume PID is on from previous state
     PID.setpoint_js(m_pid_setpoint_js);
-    m_trajectory_j.goal.Assign(m_pid_setpoint_js.Position());
-    const double currentRoll = m_pid_setpoint_js.Position().at(JNT_WRIST_ROLL);
-    m_trajectory_j.goal.at(JNT_WRIST_ROLL) = currentRoll - maxRollRange;
-    m_trajectory_j.goal_v.SetAll(0.0);
+    m_trajectory_j.goal = m_pid_setpoint_js.Position();
+    const double currentRoll = m_pid_setpoint_js.Position()(JNT_WRIST_ROLL);
+    m_trajectory_j.goal(JNT_WRIST_ROLL) = currentRoll - maxRollRange;
+    m_trajectory_j.goal_v.setZero();
     m_trajectory_j.end_time = 0.0;
     SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::JOINT_SPACE,
                            mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE);
@@ -424,7 +424,7 @@ void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
 
         // detect tracking error and set lower limit
         PID.measured_js(m_pid_measured_js);
-        trackingError = std::abs(m_pid_measured_js.Position().at(JNT_WRIST_ROLL) - m_servo_jp.at(JNT_WRIST_ROLL));
+        trackingError = std::abs(m_pid_measured_js.Position()(JNT_WRIST_ROLL) - m_servo_jp(JNT_WRIST_ROLL));
         if (trackingError > maxTrackingError) {
             // disable PID
             PID.enable(false);
@@ -471,10 +471,10 @@ void mtsIntuitiveResearchKitMTM::EnterResettingRollEncoder(void)
 
     // reset encoder on last joint as well as PID target position to reflect new roll position = 0
     prmMaskedDoubleVec values(number_of_joints());
-    values.Mask().SetAll(false);
-    values.Data().SetAll(0.0); // this shouldn't be used but safe to zero
-    values.Mask().at(JNT_WRIST_ROLL) = true;
-    values.Data().at(JNT_WRIST_ROLL) = -480.0 * cmnPI_180;
+    values.Mask().setConstant(false);
+    values.Data().setZero(); // this shouldn't be used but safe to zero
+    values.Mask()(JNT_WRIST_ROLL) = true;
+    values.Data()(JNT_WRIST_ROLL) = -480.0 * cmnPI_180;
     IO.SetSomeEncoderPosition(values);
 
     // start timer
@@ -492,7 +492,7 @@ void mtsIntuitiveResearchKitMTM::RunResettingRollEncoder(void)
     }
 
     // check current roll position, it should be -480 degrees
-    double positionError = std::abs(m_pid_measured_js.Position().at(JNT_WRIST_ROLL) - -480.0 * cmnPI_180);
+    double positionError = std::abs(m_pid_measured_js.Position()(JNT_WRIST_ROLL) - -480.0 * cmnPI_180);
     if (positionError > 5.0 * cmn180_PI) {
         m_arm_interface->SendError(this->GetName() + ": roll encoder not properly reset to -480 degrees");
         SetDesiredState("FAULT");
@@ -531,7 +531,7 @@ void mtsIntuitiveResearchKitMTM::get_robot_data(void)
     m_gripper_measured_js.Timestamp() = m_pid_measured_js.Timestamp();
     m_gripper_measured_js.Valid() = m_pid_measured_js.Valid();
 
-    const bool gripper_closed = m_gripper_measured_js.Position().at(0) <= gripper_events.zero_angle;
+    const bool gripper_closed = m_gripper_measured_js.Position()(0) <= gripper_events.zero_angle;
     // begin debounce wait before transition
     if (gripper_closed != gripper_events.is_closed) {
         gripper_events.is_closed = gripper_closed;
@@ -557,10 +557,10 @@ void mtsIntuitiveResearchKitMTM::control_servo_cf_orientation_locked(void)
 {
     // don't get current joint values!
     // always initialize IK from position when locked
-    vctDoubleVec jointSet(mEffortOrientationJoint);
+    Eigen::VectorXd jointSet = mEffortOrientationJoint;
     // compute desired position from current position and locked orientation
-    CartesianPositionFrm.Translation().Assign(m_local_measured_cp_frame.Translation());
-    CartesianPositionFrm.Rotation().From(mEffortOrientation);
+    CartesianPositionFrm.translation() = m_local_measured_cp_frame.translation();
+    CartesianPositionFrm.linear() = mEffortOrientation;
     // important note, lock uses numerical IK as it finds a solution close to current position
     if (Manipulator->InverseKinematics(jointSet, CartesianPositionFrm) == robManipulator::ESUCCESS) {
         // find closest solution mod 2 pi
@@ -568,7 +568,7 @@ void mtsIntuitiveResearchKitMTM::control_servo_cf_orientation_locked(void)
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
         jointSet[JNT_WRIST_ROLL] = jointSet[JNT_WRIST_ROLL] + differenceInTurns * 2.0 * cmnPI;
         // initialize trajectory
-        m_trajectory_j.goal.Ref(number_of_joints_kinematics()).Assign(jointSet);
+        m_trajectory_j.goal.head(number_of_joints_kinematics()) = jointSet;
         m_trajectory_j.Reflexxes.Evaluate(m_servo_jp,
                                           m_servo_jv,
                                           m_trajectory_j.goal,
@@ -581,22 +581,22 @@ void mtsIntuitiveResearchKitMTM::control_servo_cf_orientation_locked(void)
 
 void mtsIntuitiveResearchKitMTM::SetControlEffortActiveJoints(void)
 {
-    vctBoolVec torqueMode(number_of_joints());
+    Eigen::ArrayX<bool> torqueMode(number_of_joints());
     // if orientation is locked
     if (m_effort_orientation_locked) {
         // first 3 joints in torque mode
-        torqueMode.Ref(3, 0).SetAll(true);
+        torqueMode.segment(0, 3).setConstant(true);
         // last 4 in PID mode
-        torqueMode.Ref(4, 3).SetAll(false);
+        torqueMode.segment(3, 4).setConstant(false);
     } else {
         // all joints in effort mode
-        torqueMode.SetAll(true);
+        torqueMode.setConstant(true);
     }
     PID.EnableTorqueMode(torqueMode);
 }
 
-void mtsIntuitiveResearchKitMTM::control_servo_cf_preload(vctDoubleVec & effortPreload,
-                                                          vctDoubleVec & wrenchPreload)
+void mtsIntuitiveResearchKitMTM::control_servo_cf_preload(Eigen::VectorXd& effortPreload,
+                                                          Eigen::Vector<double, 6>& wrenchPreload)
 {
     // if the hardware is simulated, we don't do preload
     if (m_simulation_mode == prmSimulationType::IO) {
@@ -607,16 +607,16 @@ void mtsIntuitiveResearchKitMTM::control_servo_cf_preload(vctDoubleVec & effortP
 
     // not handling this yet
     if (m_servo_cf_type == WRENCH_SPATIAL) {
-        effortPreload.SetAll(0.0);
-        wrenchPreload.SetAll(0.0);
+        effortPreload.setZero();
+        wrenchPreload.setZero();
         return;
     }
 
     // most efforts will be 0
-    effortPreload.Zeros();
+    effortPreload.setZero();
 
     // create a vector reference make code more readable
-    vctDynamicConstVectorRef<double> q(m_kin_measured_js.Position());
+    const auto& q = m_kin_measured_js.Position();
 
     // projection of roll axis on platform tells us how the platform
     // should move.  the projection angle is +/- q5 based on q4.  we
@@ -656,18 +656,18 @@ void mtsIntuitiveResearchKitMTM::control_servo_cf_preload(vctDoubleVec & effortP
     // find equivalent wrench but don't apply all (too much torque on roll)
     // wrenchPreload.ProductOf(mJacobianPInverseData.PInverse(), effortPreload);
     // wrenchPreload.Multiply(0.2);
-    wrenchPreload.SetAll(0.0);
+    wrenchPreload.setZero();
 }
 
-void mtsIntuitiveResearchKitMTM::lock_orientation(const vctMatRot3 & orientation)
+void mtsIntuitiveResearchKitMTM::lock_orientation(const Eigen::Matrix3d& orientation)
 {
     // if we just started lock
     if (!m_effort_orientation_locked) {
         m_effort_orientation_locked = true;
         SetControlEffortActiveJoints();
         // initialize trajectory
-        m_servo_jp.Assign(m_pid_measured_js.Position(), number_of_joints());
-        m_servo_jv.Assign(m_pid_measured_js.Velocity(), number_of_joints());
+        m_servo_jp = m_pid_measured_js.Position().head(number_of_joints());
+        m_servo_jv = m_pid_measured_js.Velocity().head(number_of_joints());
         m_trajectory_j.Reflexxes.Set(m_trajectory_j.v,
                                      m_trajectory_j.a,
                                      StateTable.PeriodStats.PeriodAvg(),
@@ -675,8 +675,8 @@ void mtsIntuitiveResearchKitMTM::lock_orientation(const vctMatRot3 & orientation
     }
     // in any case, update desired orientation in local coordinate system
     // mEffortOrientation.Assign(m_base_frame.Rotation().Inverse() * orientation);
-    m_base_frame.Rotation().ApplyInverseTo(orientation, mEffortOrientation);
-    mEffortOrientationJoint.Assign(m_pid_measured_js.Position());
+    mEffortOrientation = m_base_frame.rotation().transpose() * orientation;
+    mEffortOrientationJoint = m_pid_measured_js.Position();
     // emit event
     mtm_events.orientation_locked(m_effort_orientation_locked);
 }

@@ -25,7 +25,7 @@
 class robGravityCompensation {
 public:
     virtual ~robGravityCompensation() {}
-    virtual vctVec compute(const prmStateJoint& state, vct3 gravity) = 0;
+    virtual Eigen::VectorXd compute(const prmStateJoint& state, Eigen::Vector3d& gravity) = 0;
 };
 
 #endif // _robGravityCompensation_h
