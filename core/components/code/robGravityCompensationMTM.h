@@ -19,8 +19,7 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _robGravityCompensationMTM_h
 #define _robGravityCompensationMTM_h
 
-#include <cisstVector/vctDynamicMatrixTypes.h>
-#include <cisstVector/vctDynamicVectorTypes.h>
+#include <Eigen/Dense>
 #include <json/json.h>
 
 #include <sawIntuitiveResearchKit/robGravityCompensation.h>
@@ -40,15 +39,14 @@ public:
     };
 
     struct Parameters {
-
-        vctVec Pos;
-        vctVec Neg;
-        vctVec BetaVelAmp;
-        vctVec UpperEffortsLimit;
-        vctVec LowerEffortsLimit;
-        vctVec DBVel;
-        vctVec SatVel;
-        vctVec FricCompRatio;
+        Eigen::VectorXd Pos;
+        Eigen::VectorXd Neg;
+        Eigen::VectorXd BetaVelAmp;
+        Eigen::VectorXd UpperEffortsLimit;
+        Eigen::VectorXd LowerEffortsLimit;
+        Eigen::VectorXd DBVel;
+        Eigen::VectorXd SatVel;
+        Eigen::VectorXd FricCompRatio;
 
         size_t JointCount(void) const {
             return UpperEffortsLimit.size();
@@ -60,24 +58,24 @@ public:
 
     static CreationResult Create(const Json::Value & jsonConfig);
     robGravityCompensationMTM(const Parameters & parameters,int version);
-    vctVec compute(const prmStateJoint& state, vct3 CMN_UNUSED(gravity)) override;
+    Eigen::VectorXd compute(const prmStateJoint& state, Eigen::Vector3d& CMN_UNUSED(gravity)) override;
 
 private:
-    static void AssignRegressor(const vctVec & q, vctMat & regressor);
-    void LimitEfforts(vctVec & efforts) const;
-    void ComputeAlphaVel(const vctVec & q_dot);
-    void ComputeBetaVel(const vctVec & q_dot);
+    static void AssignRegressor(const Eigen::VectorXd& q, Eigen::MatrixXd& regressor);
+    void LimitEfforts(Eigen::VectorXd& efforts) const;
+    void ComputeAlphaVel(const Eigen::VectorXd& q_dot);
+    void ComputeBetaVel(const Eigen::VectorXd& q_dot);
 
     const Parameters mParameters;
-    vctMat mRegressor;
-    vctVec mOnes;
-    vctVec mGravityEfforts;
-    vctVec mTauPos;
-    vctVec mTauNeg;
-    vctVec mBeta;
-    vctVec mOneMinusBeta;
-    vctVec mAlpha;
-    vctVec mOneMinusAlpha;
+    Eigen::MatrixXd mRegressor;
+    Eigen::VectorXd mOnes;
+    Eigen::VectorXd mGravityEfforts;
+    Eigen::VectorXd mTauPos;
+    Eigen::VectorXd mTauNeg;
+    Eigen::VectorXd mBeta;
+    Eigen::VectorXd mOneMinusBeta;
+    Eigen::VectorXd mAlpha;
+    Eigen::VectorXd mOneMinusAlpha;
     const int mVersion = 0;
 };
 

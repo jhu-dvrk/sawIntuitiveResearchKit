@@ -21,7 +21,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstCommon/cmnLogger.h>
 #include <cisstCommon/cmnConstants.h>
 #include <cmath>
-#include <iostream>
 
 robGravityCompensationMTM::robGravityCompensationMTM(const robGravityCompensationMTM::Parameters & parameters, int version)
     : mParameters(parameters)
@@ -37,7 +36,7 @@ robGravityCompensationMTM::robGravityCompensationMTM(const robGravityCompensatio
     , mVersion(version)
 {}
 
-void robGravityCompensationMTM::AssignRegressor(const vctVec & q, vctMat & regressor)
+void robGravityCompensationMTM::AssignRegressor(const Eigen::VectorXd& q, Eigen::MatrixXd& regressor)
 {
     constexpr double g = 9.81;
     const double q1 = q[0];
@@ -58,158 +57,156 @@ void robGravityCompensationMTM::AssignRegressor(const vctVec & q, vctMat & regre
     const double cq6 = cos(q6);
     const double sq2pq3 = sin(q2 + q3);
 
-    regressor.Element(0, 10) = 1.0;
-    regressor.Element(0, 11) = q1;
-    regressor.Element(0, 12) = q1 * q1;
-    regressor.Element(0, 13) = q1 * q1 * q1;
-    regressor.Element(0, 14) = q1 * q1 * q1 * q1;
-    regressor.Element(1, 0) = g * sq2;
-    regressor.Element(1, 1) = g * cq2;
-    regressor.Element(1, 2) = g * cq2 * cq3 - g * sq2 * sq3;
-    regressor.Element(1, 3) = -g * cq2 * sq3 - g * cq3 * sq2;
-    regressor.Element(1, 4) =
+    regressor(0, 10) = 1.0;
+    regressor(0, 11) = q1;
+    regressor(0, 12) = q1 * q1;
+    regressor(0, 13) = q1 * q1 * q1;
+    regressor(0, 14) = q1 * q1 * q1 * q1;
+    regressor(1, 0) = g * sq2;
+    regressor(1, 1) = g * cq2;
+    regressor(1, 2) = g * cq2 * cq3 - g * sq2 * sq3;
+    regressor(1, 3) = -g * cq2 * sq3 - g * cq3 * sq2;
+    regressor(1, 4) =
         g * cq2 * cq3 * cq4 - g * cq4 * sq2 * sq3;
-    regressor.Element(1, 5) =
+    regressor(1, 5) =
         g * sq2 * sq3 * sq4 - g * cq2 * cq3 * sq4;
-    regressor.Element(1, 6) = g * cq4 * sq2 * sq3 * sq5 -
+    regressor(1, 6) = g * cq4 * sq2 * sq3 * sq5 -
         g * cq3 * cq5 * sq2 -
         g * cq2 * cq3 * cq4 * sq5 -
         g * cq2 * cq5 * sq3;
-    regressor.Element(1, 7) = g * cq2 * cq3 * cq4 * cq5 -
+    regressor(1, 7) = g * cq2 * cq3 * cq4 * cq5 -
         g * cq3 * sq2 * sq5 -
         g * cq2 * sq3 * sq5 -
         g * cq4 * cq5 * sq2 * sq3;
-    regressor.Element(1, 8) = g * cq2 * cq3 * sq4 * sq6 +
+    regressor(1, 8) = g * cq2 * cq3 * sq4 * sq6 +
         g * cq2 * cq6 * sq3 * sq5 +
         g * cq3 * cq6 * sq2 * sq5 -
         g * sq2 * sq3 * sq4 * sq6 +
         g * cq4 * cq5 * cq6 * sq2 * sq3 -
         g * cq2 * cq3 * cq4 * cq5 * cq6;
-    regressor.Element(1, 9) = g * cq2 * cq3 * cq6 * sq4 -
+    regressor(1, 9) = g * cq2 * cq3 * cq6 * sq4 -
         g * cq6 * sq2 * sq3 * sq4 -
         g * cq2 * sq3 * sq5 * sq6 -
         g * cq3 * sq2 * sq5 * sq6 -
         g * cq4 * cq5 * sq2 * sq3 * sq6 +
         g * cq2 * cq3 * cq4 * cq5 * sq6;
-    regressor.Element(1, 15) = 1.0;
-    regressor.Element(1, 16) = q2;
-    regressor.Element(1, 17) = q2 * q2;
-    regressor.Element(1, 18) = q2 * q2 * q2;
-    regressor.Element(1, 19) = q2 * q2 * q2 * q2;
-    regressor.Element(2, 2) = g * cq2 * cq3 - g * sq2 * sq3;
-    regressor.Element(2, 3) = -g * cq2 * sq3 - g * cq3 * sq2;
-    regressor.Element(2, 4) =
+    regressor(1, 15) = 1.0;
+    regressor(1, 16) = q2;
+    regressor(1, 17) = q2 * q2;
+    regressor(1, 18) = q2 * q2 * q2;
+    regressor(1, 19) = q2 * q2 * q2 * q2;
+    regressor(2, 2) = g * cq2 * cq3 - g * sq2 * sq3;
+    regressor(2, 3) = -g * cq2 * sq3 - g * cq3 * sq2;
+    regressor(2, 4) =
         g * cq2 * cq3 * cq4 - g * cq4 * sq2 * sq3;
-    regressor.Element(2, 5) =
+    regressor(2, 5) =
         g * sq2 * sq3 * sq4 - g * cq2 * cq3 * sq4;
-    regressor.Element(2, 6) = g * cq4 * sq2 * sq3 * sq5 -
+    regressor(2, 6) = g * cq4 * sq2 * sq3 * sq5 -
         g * cq3 * cq5 * sq2 -
         g * cq2 * cq3 * cq4 * sq5 -
         g * cq2 * cq5 * sq3;
-    regressor.Element(2, 7) = g * cq2 * cq3 * cq4 * cq5 -
+    regressor(2, 7) = g * cq2 * cq3 * cq4 * cq5 -
         g * cq3 * sq2 * sq5 -
         g * cq2 * sq3 * sq5 -
         g * cq4 * cq5 * sq2 * sq3;
-    regressor.Element(2, 8) = g * cq2 * cq3 * sq4 * sq6 +
+    regressor(2, 8) = g * cq2 * cq3 * sq4 * sq6 +
         g * cq2 * cq6 * sq3 * sq5 +
         g * cq3 * cq6 * sq2 * sq5 -
         g * sq2 * sq3 * sq4 * sq6 +
         g * cq4 * cq5 * cq6 * sq2 * sq3 -
         g * cq2 * cq3 * cq4 * cq5 * cq6;
-    regressor.Element(2, 9) = g * cq2 * cq3 * cq6 * sq4 -
+    regressor(2, 9) = g * cq2 * cq3 * cq6 * sq4 -
         g * cq6 * sq2 * sq3 * sq4 -
         g * cq2 * sq3 * sq5 * sq6 -
         g * cq3 * sq2 * sq5 * sq6 -
         g * cq4 * cq5 * sq2 * sq3 * sq6 +
         g * cq2 * cq3 * cq4 * cq5 * sq6;
-    regressor.Element(2, 20) = 1.0;
-    regressor.Element(2, 21) = q3;
-    regressor.Element(2, 22) = q3 * q3;
-    regressor.Element(2, 23) = q3 * q3 * q3;
-    regressor.Element(2, 24) = q3 * q3 * q3 * q3;
-    regressor.Element(3, 4) = -g * sq2pq3 * sq4;
-    regressor.Element(3, 5) = -g * sq2pq3 * cq4;
-    regressor.Element(3, 6) = g * sq2pq3 * sq4 * sq5;
-    regressor.Element(3, 7) = -g * sq2pq3 * cq5 * sq4;
-    regressor.Element(3, 8) =
+    regressor(2, 20) = 1.0;
+    regressor(2, 21) = q3;
+    regressor(2, 22) = q3 * q3;
+    regressor(2, 23) = q3 * q3 * q3;
+    regressor(2, 24) = q3 * q3 * q3 * q3;
+    regressor(3, 4) = -g * sq2pq3 * sq4;
+    regressor(3, 5) = -g * sq2pq3 * cq4;
+    regressor(3, 6) = g * sq2pq3 * sq4 * sq5;
+    regressor(3, 7) = -g * sq2pq3 * cq5 * sq4;
+    regressor(3, 8) =
         g * sq2pq3 * (cq4 * sq6 + cq5 * cq6 * sq4);
-    regressor.Element(3, 9) =
+    regressor(3, 9) =
         g * sq2pq3 * (cq4 * cq6 - cq5 * sq4 * sq6);
-    regressor.Element(3, 25) = 1.0;
-    regressor.Element(3, 26) = q4;
-    regressor.Element(3, 27) = q4 * q4;
-    regressor.Element(3, 28) = q4 * q4 * q4;
-    regressor.Element(3, 29) = q4 * q4 * q4 * q4;
-    regressor.Element(4, 6) =
+    regressor(3, 25) = 1.0;
+    regressor(3, 26) = q4;
+    regressor(3, 27) = q4 * q4;
+    regressor(3, 28) = q4 * q4 * q4;
+    regressor(3, 29) = q4 * q4 * q4 * q4;
+    regressor(4, 6) =
         -g * (cq2 * cq3 * sq5 - sq2 * sq3 * sq5 +
               cq2 * cq4 * cq5 * sq3 +
               cq3 * cq4 * cq5 * sq2);
-    regressor.Element(4, 7) =
+    regressor(4, 7) =
         -g * (cq5 * sq2 * sq3 - cq2 * cq3 * cq5 +
               cq2 * cq4 * sq3 * sq5 +
               cq3 * cq4 * sq2 * sq5);
-    regressor.Element(4, 8) = g * (cq5 * cq6 * sq2 * sq3 -
+    regressor(4, 8) = g * (cq5 * cq6 * sq2 * sq3 -
                                   cq2 * cq3 * cq5 * cq6 +
                                   cq2 * cq4 * cq6 * sq3 * sq5 +
                                   cq3 * cq4 * cq6 * sq2 * sq5);
-    regressor.Element(4, 9) = -g * (cq5 * sq2 * sq3 * sq6 -
+    regressor(4, 9) = -g * (cq5 * sq2 * sq3 * sq6 -
                                    cq2 * cq3 * cq5 * sq6 +
                                    cq2 * cq4 * sq3 * sq5 * sq6 +
                                    cq3 * cq4 * sq2 * sq5 * sq6);
-    regressor.Element(4, 30) = 1.0;
-    regressor.Element(4, 31) = q5;
-    regressor.Element(4, 32) = q5 * q5;
-    regressor.Element(4, 33) = q5 * q5 * q5;
-    regressor.Element(4, 34) = q5 * q5 * q5 * q5;
-    regressor.Element(5, 8) = g * (cq2 * cq6 * sq3 * sq4 +
+    regressor(4, 30) = 1.0;
+    regressor(4, 31) = q5;
+    regressor(4, 32) = q5 * q5;
+    regressor(4, 33) = q5 * q5 * q5;
+    regressor(4, 34) = q5 * q5 * q5 * q5;
+    regressor(5, 8) = g * (cq2 * cq6 * sq3 * sq4 +
                                   cq3 * cq6 * sq2 * sq4 +
                                   cq2 * cq3 * sq5 * sq6 -
                                   sq2 * sq3 * sq5 * sq6 +
                                   cq2 * cq4 * cq5 * sq3 * sq6 +
                                   cq3 * cq4 * cq5 * sq2 * sq6);
-    regressor.Element(5, 9) = g * (cq2 * cq3 * cq6 * sq5 -
+    regressor(5, 9) = g * (cq2 * cq3 * cq6 * sq5 -
                                   cq2 * sq3 * sq4 * sq6 -
                                   cq3 * sq2 * sq4 * sq6 -
                                   cq6 * sq2 * sq3 * sq5 +
                                   cq2 * cq4 * cq5 * cq6 * sq3 +
                                   cq3 * cq4 * cq5 * cq6 * sq2);
-    regressor.Element(5, 35) = 1.0;
-    regressor.Element(5, 36) = q6;
-    regressor.Element(5, 37) = q6 * q6;
-    regressor.Element(5, 38) = q6 * q6 * q6;
-    regressor.Element(5, 39) = q6 * q6 * q6 * q6;
+    regressor(5, 35) = 1.0;
+    regressor(5, 36) = q6;
+    regressor(5, 37) = q6 * q6;
+    regressor(5, 38) = q6 * q6 * q6;
+    regressor(5, 39) = q6 * q6 * q6 * q6;
 }
 
-vctVec robGravityCompensationMTM::compute(const prmStateJoint& state, vct3 CMN_UNUSED(gravity))
+Eigen::VectorXd robGravityCompensationMTM::compute(const prmStateJoint& state, Eigen::Vector3d& CMN_UNUSED(gravity))
 {
     AssignRegressor(state.Position(), mRegressor);
     if ( 1 == mVersion ) {
         ComputeBetaVel(state.Velocity());
-        mOnes.SetAll(1.0);
-        mOneMinusBeta = mOnes.Subtract(mBeta);
-        mTauPos.ProductOf(mRegressor, mParameters.Pos).ElementwiseMultiply(mBeta);
-        mTauNeg.ProductOf(mRegressor, mParameters.Neg).ElementwiseMultiply(mOneMinusBeta);
+        mOnes.fill(1.0);
+        mOneMinusBeta = mOnes - mBeta;
+        mTauPos = (mRegressor * mParameters.Pos).cwiseProduct(mBeta);
+        mTauNeg = (mRegressor * mParameters.Neg).cwiseProduct(mOneMinusBeta);
     } else if ( 2 == mVersion ) {
         ComputeAlphaVel(state.Velocity());
-        mOnes.SetAll(1.0);
-        mOneMinusAlpha = mOnes.Subtract(mAlpha);
-        mTauPos.ProductOf(mRegressor, mParameters.Pos).ElementwiseMultiply(mAlpha);
-        mTauNeg.ProductOf(mRegressor, mParameters.Neg).ElementwiseMultiply(mOneMinusAlpha);
-
+        mOnes.fill(1.0);
+        mOneMinusAlpha = mOnes - mAlpha;
+        mTauPos = (mRegressor * mParameters.Pos).cwiseProduct(mAlpha);
+        mTauNeg = (mRegressor * mParameters.Neg).cwiseProduct(mOneMinusAlpha);
     } else {
-        mTauPos.SetAll(0.0);
-        mTauNeg.SetAll(0.0);
+        mTauPos.fill(0.0);
+        mTauNeg.fill(0.0);
     }
 
-    mGravityEfforts.SetAll(0.0);
-    mGravityEfforts.Add(mTauPos);
-    mGravityEfforts.Add(mTauNeg);
+    mGravityEfforts.fill(0.0);
+    mGravityEfforts += mTauPos + mTauNeg;
     LimitEfforts(mGravityEfforts);
 
     return mGravityEfforts;
 }
 
-void robGravityCompensationMTM::LimitEfforts(vctVec & efforts) const
+void robGravityCompensationMTM::LimitEfforts(Eigen::VectorXd& efforts) const
 {
     auto end = efforts.end();
     auto effort = efforts.begin();
@@ -228,7 +225,7 @@ void robGravityCompensationMTM::LimitEfforts(vctVec & efforts) const
     }
 }
 
-void robGravityCompensationMTM::ComputeAlphaVel(const vctVec & q_dot)
+void robGravityCompensationMTM::ComputeAlphaVel(const Eigen::VectorXd& q_dot)
 {
     auto end = q_dot.end();
     auto qd = q_dot.begin();
@@ -259,7 +256,7 @@ void robGravityCompensationMTM::ComputeAlphaVel(const vctVec & q_dot)
     }
 }
 
-void robGravityCompensationMTM::ComputeBetaVel(const vctVec & q_dot)
+void robGravityCompensationMTM::ComputeBetaVel(const Eigen::VectorXd& q_dot)
 {
     auto end = q_dot.end();
     auto qd = q_dot.begin();
@@ -309,7 +306,7 @@ robGravityCompensationMTM::Create(const Json::Value & jsonConfig)
         auto paramTuple = getTuple(fieldname);                      \
         if (isEmpty(paramTuple))                                    \
             return createReturnValue(paramTuple);                   \
-        cmnDataJSON<vctVec>::DeSerializeText(param, std::get<0>(paramTuple)); \
+        cmnDataJSON<Eigen::VectorXd>::DeSerializeText(param, std::get<0>(paramTuple)); \
     }
 
     robGravityCompensationMTM::Parameters params;
