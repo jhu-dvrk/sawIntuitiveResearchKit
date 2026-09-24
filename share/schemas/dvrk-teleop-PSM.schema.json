@@ -73,6 +73,12 @@
                     "maximum": 1.0
                 },
 
+                "MTM_is_haptic": {
+                    "description": "Set false for non-motorized alternate MTMs.  This disables MTM effort, gravity-compensation, and orientation-lock commands.",
+                    "type": "boolean",
+                    "default": true
+                },
+
                 "ignore_jaw": {
                     "description": "Ignore PSM jaws and incidentally the MTM gripper.\n This can be used for PSM tools (or generic PSM arms) without jaws and/or MTM arms without a gripper.",
                     "type": "boolean",
