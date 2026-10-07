@@ -38,8 +38,8 @@
     }
     ,
     "jaw" : {
-        "qmin": -0.20, //  00 degrees
-        "qmax":  0.3490,  //  20 degrees
+        "qmin":  0.0,        //  0 degrees
+        "qmax":  0.2617990,  // 12 degrees
         "ftmax": 0.19
     }
     ,
@@ -51,10 +51,7 @@
     ,
     // WARNING: if we change these, also change tool_engage_position
     "coupling" : {
-        // "ActuatorToJointPosition" : [[ -1.529411,  0.000000,  0.000000,  0.000000],  // from ISI
-        //                              [  0.000000,  0.000000,  0.300000,  0.000000],  // JHU guess
-        //                              [  0.000000,  0.000000,  0.000000,  0.300000],  // JHU guess
-        //                              [  0.000000,  0.157832, -0.035139, -0.035139]]  // from ISI
+        // from ISI
         "ActuatorToJointPosition" : [[ -1.529411,  0.000000,  0.000000,  0.000000],
                                      [  0.000000,  0.000000,  0.284979,  0.284979],
                                      [  0.000000,  0.000000, -0.415594,  0.415594],
