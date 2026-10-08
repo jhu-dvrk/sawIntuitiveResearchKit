@@ -162,6 +162,7 @@ int main(int argc, char * argv[])
     if (collectData) {
         std::cout << "Loading config file ..." << std::endl;
         mtsRobotIO1394 * port = new mtsRobotIO1394("io", 1.0 * cmn_ms, portName);
+        port->SetProtocol("sequential-read-write");
         // to support cases when user doesn't have an existing lookup table
         port->set_calibration_mode(true);
         std::cout << "Configuring ..." << std::endl
