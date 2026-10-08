@@ -207,6 +207,7 @@ protected:
     bool m_tool_present = false;
     bool m_tool_configured = false;
     bool m_tool_type_requested = false;
+    bool m_return_disks_to_zero = false;
     struct {
         mtsFunctionWrite tool_type;
         mtsFunctionVoid tool_type_request;

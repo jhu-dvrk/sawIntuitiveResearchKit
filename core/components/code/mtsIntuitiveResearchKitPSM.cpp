@@ -875,6 +875,7 @@ void mtsIntuitiveResearchKitPSM::SetGoalHomingArm(void)
 
 void mtsIntuitiveResearchKitPSM::EnterHomed(void)
 {
+    m_return_disks_to_zero = false;
     mtsIntuitiveResearchKitArm::EnterHomed();
 
     // event to propagate tool type based on configuration file
@@ -1001,6 +1002,16 @@ void mtsIntuitiveResearchKitPSM::EnterEngagingAdapter(void)
         return;
     }
 
+    if (m_return_disks_to_zero) {
+        // The instrument was removed.  Use only the final adapter motion.
+        LastEngagingStage = 5;
+        EngagingStage = LastEngagingStage;
+        set_LED_pattern(mtsIntuitiveResearchKit::Blue200,
+                        mtsIntuitiveResearchKit::Green200,
+                        false, true);
+        return;
+    }
+
     // after coupling is loaded, is it safe to engage?  If a tool is
     // present, the adapter is already engaged
     Tool.GetButton(Tool.IsPresent);
@@ -1037,7 +1048,9 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
 
     const double currentTime = this->StateTable.GetTic();
 
-    if (EngagingStage == 1) {
+    if ((EngagingStage == 1)
+        || (m_return_disks_to_zero && (EngagingStage == LastEngagingStage))) {
+        const bool return_disks_to_zero = m_return_disks_to_zero;
         // configure PID to fail in case of tracking error
         PID.enforce_position_limits(false);
         servo_jp_internal(m_pid_setpoint_js.Position(), vctDoubleVec());
@@ -1049,17 +1062,23 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         m_servo_jp.Assign(m_pid_setpoint_js.Position());
         m_servo_jv.Assign(m_pid_setpoint_js.Velocity());
 
-        // keep first two joint values as is
-        m_trajectory_j.goal.Ref(2, 0).Assign(m_pid_setpoint_js.Position().Ref(2, 0));
-        // sterile adapter should be raised up
-        m_trajectory_j.goal[2] = 0.0;
-        // set last 4 to -170.0
-        m_trajectory_j.goal.Ref(4, 3).SetAll(-mtsIntuitiveResearchKit::PSM::AdapterEngageRange);
+        if (return_disks_to_zero) {
+            // Hold the arm while returning the four adapter disks to zero.
+            m_trajectory_j.goal.Ref(3, 0).Assign(m_pid_setpoint_js.Position().Ref(3, 0));
+            m_trajectory_j.goal.Ref(4, 3).SetAll(0.0);
+        } else {
+            // keep first two joint values as is
+            m_trajectory_j.goal.Ref(2, 0).Assign(m_pid_setpoint_js.Position().Ref(2, 0));
+            // sterile adapter should be raised up
+            m_trajectory_j.goal[2] = 0.0;
+            // set last 4 to -170.0
+            m_trajectory_j.goal.Ref(4, 3).SetAll(-mtsIntuitiveResearchKit::PSM::AdapterEngageRange);
+        }
         m_trajectory_j.goal_v.SetAll(0.0);
         SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::JOINT_SPACE,
                                mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE);
         control_move_jp_on_start();
-        EngagingStage = 2;
+        EngagingStage = return_disks_to_zero ? LastEngagingStage + 1 : 2;
         return;
     }
 
@@ -1087,6 +1106,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
             if (EngagingStage > LastEngagingStage) {
                 Adapter.NeedEngage = false;
                 Adapter.IsEngaged = true;
+                m_return_disks_to_zero = false;
                 set_LED_pattern(mtsIntuitiveResearchKit::Green200,
                                 mtsIntuitiveResearchKit::Green200,
                                 false, false);
@@ -1383,6 +1403,18 @@ void mtsIntuitiveResearchKitPSM::jaw_move_jp(const prmPositionJointSet & jawPosi
 void mtsIntuitiveResearchKitPSM::servo_jp_internal(const vctDoubleVec & jp,
                                                    const vctDoubleVec & jv)
 {
+    if (m_return_disks_to_zero && (mArmState.CurrentState() == "ENGAGING_ADAPTER")) {
+        // The adapter is still engaged, but its disks may be outside the
+        // no-tool limits.  Avoid clipping the starting actuator positions.
+        CMN_ASSERT(!m_has_coupling);
+        m_servo_jp_param.Goal().Assign(jp);
+        m_servo_jp_param.Velocity().ForceAssign(jv);
+        m_servo_jp_param.SetTimestamp(StateTable.GetTic());
+        PID.servo_jp(m_servo_jp_param);
+        apply_feed_forward();
+        return;
+    }
+
     if (!is_cartesian_ready()) {
         mtsIntuitiveResearchKitArm::servo_jp_internal(jp, jv);
         return;
@@ -1585,6 +1617,9 @@ void mtsIntuitiveResearchKitPSM::set_tool_present_and_configured(const bool & pr
             m_has_coupling = false;
         }
     }
+    if (!m_tool_present) {
+        m_has_coupling = false;
+    }
     // update for users
     update_configuration_js();
     // refresh data to take coupling into account
@@ -1626,6 +1661,11 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
 {
     switch (button.Type()) {
     case prmEventButton::PRESSED:
+        Tool.IsPresent = true;
+        if (m_return_disks_to_zero && (mArmState.CurrentState() == "MANUAL")) {
+            m_return_disks_to_zero = false;
+            ClutchEvents.ManipClutchPreviousState = "HOMED";
+        }
         // if the adapter was engaging, make sure it stops immediately
         if (mArmState.CurrentState() == "ENGAGING_ADAPTER") {
             mArmState.SetCurrentState("HOMED");
@@ -1662,19 +1702,42 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
         }
         break;
     case prmEventButton::RELEASED:
-        switch (m_tool_detection) {
-        case mtsIntuitiveResearchKitToolTypes::AUTOMATIC:
-        case mtsIntuitiveResearchKitToolTypes::MANUAL:
-        case mtsIntuitiveResearchKitToolTypes::FIXED:
-            Manipulator->Truncate(3);
-            set_tool_present_and_configured(false, false);
-            break;
-        default:
-            break;
-        }
-        // detect if tool is removed while engaging
-        if (mArmState.CurrentState() == "ENGAGING_TOOL") {
-            mArmState.SetCurrentState("HOMED");
+        {
+            const std::string & current_state = mArmState.CurrentState();
+            const bool return_disks_to_zero = m_tool_present && is_joint_ready()
+                && Adapter.IsEngaged && (m_simulation_mode != prmSimulationType::KINEMATIC)
+                && ((current_state == "TOOL_ENGAGED") || (current_state == "ENGAGING_TOOL")
+                    || (current_state == "HOMED") || (current_state == "MANUAL")
+                    || (current_state == "ENGAGING_ADAPTER"));
+            if (m_tool_present && m_trajectory_j.is_active) {
+                control_move_jp_on_stop(false);
+            }
+            Tool.IsPresent = false;
+            Tool.IsEngaged = false;
+            Tool.NeedEngage = false;
+            m_tool_type_requested = false;
+            switch (m_tool_detection) {
+            case mtsIntuitiveResearchKitToolTypes::AUTOMATIC:
+            case mtsIntuitiveResearchKitToolTypes::MANUAL:
+            case mtsIntuitiveResearchKitToolTypes::FIXED:
+                Manipulator->Truncate(3);
+                set_tool_present_and_configured(false, false);
+                break;
+            default:
+                break;
+            }
+            if (return_disks_to_zero) {
+                m_return_disks_to_zero = true;
+                if (mArmState.CurrentState() == "MANUAL") {
+                    // Wait for the manipulator clutch to be released before moving.
+                    ClutchEvents.ManipClutchPreviousState = "ENGAGING_ADAPTER";
+                } else {
+                    mArmState.SetCurrentState("ENGAGING_ADAPTER");
+                }
+            } else if ((mArmState.CurrentState() == "ENGAGING_TOOL")
+                       || (mArmState.CurrentState() == "TOOL_ENGAGED")) {
+                mArmState.SetCurrentState("HOMED");
+            }
         }
         break;
     default:
