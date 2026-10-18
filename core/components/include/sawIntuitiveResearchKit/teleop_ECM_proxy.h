@@ -57,7 +57,8 @@ namespace dvrk {
         void create_teleop(void) override;
 
      protected:
-        std::string m_MTML_component_name, m_MTML_interface_name,
+        std::string m_MTM_component_name, m_MTM_interface_name,
+        m_MTML_component_name, m_MTML_interface_name,
         m_MTMR_component_name, m_MTMR_interface_name,
         m_ECM_component_name, m_ECM_interface_name;
 

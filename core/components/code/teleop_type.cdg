@@ -41,15 +41,27 @@ enum {
         value 0;
     }
     enum-value {
-        name TELEOP_ECM;
-        description Native ECM teleoperation component;
+        name TELEOP_ECM_TWO_HANDS;
+        description Native two-hand ECM teleoperation component;
     }
     enum-value {
-        name TELEOP_ECM_DERIVED;
-        description Component derived from native ECM teleoperation;
+        name TELEOP_ECM_ONE_HAND;
+        description Native single-hand ECM teleoperation component;
     }
     enum-value {
-        name TELEOP_ECM_GENERIC;
-        description Generic component with interfaces compatible with native teleoperation;
+        name TELEOP_ECM_TWO_HANDS_DERIVED;
+        description Component derived from native two-hand ECM teleoperation;
+    }
+    enum-value {
+        name TELEOP_ECM_ONE_HAND_DERIVED;
+        description Component derived from native single-hand ECM teleoperation;
+    }
+    enum-value {
+        name TELEOP_ECM_TWO_HANDS_GENERIC;
+        description Generic component with two-hand interfaces compatible with native teleoperation;
+    }
+    enum-value {
+        name TELEOP_ECM_ONE_HAND_GENERIC;
+        description Generic component with single-hand interfaces compatible with native teleoperation;
     }
 }
