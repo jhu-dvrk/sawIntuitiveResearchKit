@@ -33,11 +33,11 @@ public:
     mtsIntuitiveResearchKitSUJQtWidget(const std::string & componentName, double periodInSeconds = 50.0 * cmn_ms);
     ~mtsIntuitiveResearchKitSUJQtWidget() {}
 
-    void Startup(void);
+    void Startup(void) override;
 
 protected:
-    void setupUiDerived(void);
-    void timerEventDerived(void);
+    void setupUiDerived(void) override;
+    void timerEventDerived(void) override;
 
     vctQtWidgetDynamicVectorDoubleRead * QVBrakeCurrentWidget;
     vctQtWidgetDynamicVectorDoubleRead * QVExtraVoltagesWidget;
@@ -59,10 +59,10 @@ protected:
     mtsFunctionWrite Clutch;
     mtsFunctionWrite SetLiftVelocity;
 
-    vctDoubleVec JointPositionStart;
-    vctDoubleVec JointPositionFinish;
-    vctDoubleVec JointVoltageStart;
-    vctDoubleVec JointVoltageFinish;
+    Eigen::VectorXd JointPositionStart;
+    Eigen::VectorXd JointPositionFinish;
+    Eigen::VectorXd JointVoltageStart;
+    Eigen::VectorXd JointVoltageFinish;
     double BrakeCurrent;
 
     mtsFunctionRead GetBrakeCurrent;
@@ -70,9 +70,9 @@ protected:
     mtsFunctionRead GetPrimaryVoltages;
     mtsFunctionRead GetSecondaryVoltages;
     mtsFunctionRead GetExtraVoltages;
-    vctDoubleMat mJointsRecalibrationMatrix;
-    vctDoubleVec mVoltages[2];
-    vctDoubleVec mVoltagesExtra;
+    Eigen::MatrixXd mJointsRecalibrationMatrix;
+    Eigen::VectorXd mVoltages[2];
+    Eigen::VectorXd mVoltagesExtra;
     mtsFunctionWrite SetRecalibrationMatrix;
 
 protected slots:

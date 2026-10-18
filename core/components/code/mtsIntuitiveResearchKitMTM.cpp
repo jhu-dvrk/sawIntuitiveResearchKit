@@ -20,17 +20,21 @@ http://www.cisst.org/cisst/license.txt.
 #include <cmath>
 #include <iostream>
 #include <algorithm>
+#include <memory>
 #include <numeric>
 
 // cisst
+#include <cisstCommon/cmnConstants.h>
+#include <cisstCommon/cmnJointType.h>
 #include <cisstCommon/cmnPath.h>
-#include <cisstNumerical/nmrLSMinNorm.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmMaskedVector.h>
 
 #include <sawIntuitiveResearchKit/robManipulatorMTM.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitMTM.h>
+#include <sawIntuitiveResearchKit/robManipulatorGeneric.h>
+
 #include "robGravityCompensationMTM.h"
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitMTM, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
@@ -98,29 +102,28 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     m_homing_goes_to_zero = true;
 
     // joint values when orientation is locked
-    mEffortOrientationJoint.SetSize(number_of_joints());
+    mEffortOrientationJoint = Eigen::VectorXd::Zero(number_of_joints());
 
     // initialize gripper state
     m_gripper_measured_js.Name().resize(1);
     m_gripper_measured_js.Name().at(0) = "gripper";
-    m_gripper_measured_js.Position().SetSize(1);
+    m_gripper_measured_js.Position() = Eigen::VectorXd::Zero(1);
 
     m_gripper_configuration_js.Name().resize(1);
     m_gripper_configuration_js.Name().at(0) = "gripper";
-    m_gripper_configuration_js.Type().SetSize(1);
-    m_gripper_configuration_js.Type().at(0) = CMN_JOINT_REVOLUTE;
-    m_gripper_configuration_js.PositionMin().SetSize(1);
-    m_gripper_configuration_js.PositionMin().at(0) = 0.0 * cmnPI_180;
-    m_gripper_configuration_js.PositionMax().SetSize(1);
-    m_gripper_configuration_js.PositionMax().at(0) = 60.0 * cmnPI_180; // based on dVRK MTM gripper calibration procedure
+    m_gripper_configuration_js.Type() = std::vector<cmnJointType>(1, CMN_JOINT_REVOLUTE);
+
+    // based on dVRK MTM gripper calibration procedure
+    m_gripper_configuration_js.PositionMin() = Eigen::VectorXd::Constant(1, 0.0 * cmnPI_180);
+    m_gripper_configuration_js.PositionMax() = Eigen::VectorXd::Constant(1, 60.0 * cmnPI_180);
 
     // initialize trajectory data
-    m_trajectory_j.v_max.SetAll(90.0 * cmnPI_180); // degrees per second
-    m_trajectory_j.v_max.at(JNT_WRIST_ROLL) = 360.0 * cmnPI_180; // roll can go fast
-    m_trajectory_j.a_max.SetAll(45.0 * cmnPI_180);
-    m_trajectory_j.a_max.at(JNT_WRIST_ROLL) = 360.0 * cmnPI_180;
-    m_trajectory_j.goal_tolerance.SetAll(4.0 * cmnPI_180); // hard coded to 3 degrees
-    m_trajectory_j.goal_tolerance.at(JNT_WRIST_ROLL) = 6.0 * cmnPI_180; // roll has low encoder resolution
+    m_trajectory_j.v_max = Eigen::VectorXd::Constant(number_of_joints(), 90.0 * cmnPI_180); // degrees per second
+    m_trajectory_j.v_max[JNT_WRIST_ROLL] = 360.0 * cmnPI_180; // roll can go fast
+    m_trajectory_j.a_max = Eigen::VectorXd::Constant(number_of_joints(), 45.0 * cmnPI_180);
+    m_trajectory_j.a_max[JNT_WRIST_ROLL] = 360.0 * cmnPI_180;
+    m_trajectory_j.goal_tolerance = Eigen::VectorXd::Constant(number_of_joints(), 4.0 * cmnPI_180); // hard coded to 4 degrees
+    m_trajectory_j.goal_tolerance[JNT_WRIST_ROLL] = 6.0 * cmnPI_180; // roll has low encoder resolution
 
     this->StateTable.AddData(m_gripper_measured_js, "gripper/measured_js");
 
@@ -190,7 +193,6 @@ void mtsIntuitiveResearchKitMTM::PreConfigure(const Json::Value & jsonConfig,
             } else if (kinematicType == "CLOSED") {
                 mKinematicType = MTM_CLOSED;
             }
-            CreateManipulator();
         } else {
             const std::string allOptions = std::accumulate(options.begin(),
                                                            options.end(),
@@ -266,46 +268,12 @@ void mtsIntuitiveResearchKitMTM::ConfigureGC(const Json::Value & armConfig,
     }
 }
 
-robManipulator::Errno mtsIntuitiveResearchKitMTM::InverseKinematics(Eigen::VectorXd& jointSet,
-                                                                    const Eigen::Isometry3d& cartesianGoal) const
+void mtsIntuitiveResearchKitMTM::initializeKinematics(const prmConfigurationJoint& joint_config, const KDL::Chain& chain)
 {
-    if (mKinematicType == MTM_ITERATIVE) {
-        // projection of roll axis on platform tells us how the platform
-        // should move.  the projection angle is +/- q5 based on q4.  we
-        // also scale the increment based on cos(q[4]) so increment is
-        // null if roll axis is perpendicular to platform
-        jointSet[3] += jointSet[5] * cos(jointSet[4]);
-
-        // make sure we respect joint limits
-        const double q3Max = Manipulator->links[3].GetKinematics()->PositionMax();
-        const double q3Min = Manipulator->links[3].GetKinematics()->PositionMin();
-        if (jointSet[3] > q3Max) {
-            jointSet[3] = q3Max;
-        } else if (jointSet[3] < q3Min) {
-            jointSet[3] = q3Min;
-        }
-    }
-
-    if (Manipulator->InverseKinematics(jointSet, cartesianGoal) == robManipulator::ESUCCESS) {
-        // find closest solution mod 2 pi
-        const double difference = m_kin_measured_js.Position()[JNT_WRIST_ROLL] - jointSet[JNT_WRIST_ROLL];
-        const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
-        jointSet[JNT_WRIST_ROLL] = jointSet[JNT_WRIST_ROLL] + differenceInTurns * 2.0 * cmnPI;
-        return robManipulator::ESUCCESS;
-    }
-    return robManipulator::EFAILURE;
-}
-
-void mtsIntuitiveResearchKitMTM::CreateManipulator(void)
-{
-    if (Manipulator) {
-        delete Manipulator;
-    }
-
-    if (mKinematicType == MTM_ITERATIVE) {
-        Manipulator = new robManipulator();
+    if (mKinematicType == MTM_CLOSED) {
+        Manipulator = std::make_unique<robManipulatorMTM>(joint_config, chain);
     } else {
-        Manipulator = new robManipulatorMTM();
+        Manipulator = std::make_unique<robManipulatorGeneric>(joint_config, chain);
     }
 }
 
@@ -382,9 +350,8 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
     PID.enforce_position_limits(false);
     PID.enable_measured_setpoint_check(false);
     // enable PID for roll only
-    vctBoolVec enableJoints(number_of_joints());
-    enableJoints.SetAll(false);
-    enableJoints.at(JNT_WRIST_ROLL) = true;
+    Eigen::ArrayX<bool> enableJoints = Eigen::ArrayX<bool>::Constant(number_of_joints(), false);
+    enableJoints[JNT_WRIST_ROLL] = true;
     PID.enable_joints(enableJoints);
     PID.enable(true);
 
@@ -415,7 +382,7 @@ void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
 
     switch (trajectoryResult) {
 
-    case robReflexxes::Reflexxes_WORKING:
+    case robReflexxes::ResultType::WORKING:
         // if this is the first evaluation, we can't calculate expected completion time
         if (m_trajectory_j.end_time == 0.0) {
             m_trajectory_j.end_time = currentTime + m_trajectory_j.Reflexxes.Duration();
@@ -439,7 +406,7 @@ void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
         }
         break;
 
-    case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
+    case robReflexxes::ResultType::FINAL_STATE_REACHED:
         // we shouldn't be able to reach this goal
         m_arm_interface->SendError(this->GetName() + ": went past roll lower limit");
         SetDesiredState("FAULT");
@@ -561,22 +528,21 @@ void mtsIntuitiveResearchKitMTM::control_servo_cf_orientation_locked(void)
     // compute desired position from current position and locked orientation
     CartesianPositionFrm.translation() = m_local_measured_cp_frame.translation();
     CartesianPositionFrm.linear() = mEffortOrientation;
-    // important note, lock uses numerical IK as it finds a solution close to current position
-    if (Manipulator->InverseKinematics(jointSet, CartesianPositionFrm) == robManipulator::ESUCCESS) {
-        // find closest solution mod 2 pi
-        const double difference = m_pid_measured_js.Position()[JNT_WRIST_ROLL] - jointSet[JNT_WRIST_ROLL];
-        const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
-        jointSet[JNT_WRIST_ROLL] = jointSet[JNT_WRIST_ROLL] + differenceInTurns * 2.0 * cmnPI;
-        // initialize trajectory
-        m_trajectory_j.goal.head(number_of_joints_kinematics()) = jointSet;
-        m_trajectory_j.Reflexxes.Evaluate(m_servo_jp,
-                                          m_servo_jv,
-                                          m_trajectory_j.goal,
-                                          m_trajectory_j.goal_v);
-        servo_jp_internal(m_servo_jp, m_servo_jv);
-    } else {
-        m_arm_interface->SendWarning(this->GetName() + ": unable to solve inverse kinematics in control_servo_cf_orientation_locked");
+
+    std::string error_message;
+    bool ok = Manipulator->inverseKinematics(CartesianPositionFrm, jointSet, error_message);
+    if (!ok) {
+        m_arm_interface->SendWarning(this->GetName() + ": unable to solve inverse kinematics in control_servo_cf_orientation_locked: " + error_message);
+        return;
     }
+
+    // initialize trajectory
+    m_trajectory_j.goal.head(number_of_joints_kinematics()) = jointSet;
+    m_trajectory_j.Reflexxes.Evaluate(m_servo_jp,
+                                        m_servo_jv,
+                                        m_trajectory_j.goal,
+                                        m_trajectory_j.goal_v);
+    servo_jp_internal(m_servo_jp, m_servo_jv);
 }
 
 void mtsIntuitiveResearchKitMTM::SetControlEffortActiveJoints(void)
@@ -600,8 +566,8 @@ void mtsIntuitiveResearchKitMTM::control_servo_cf_preload(Eigen::VectorXd& effor
 {
     // if the hardware is simulated, we don't do preload
     if (m_simulation_mode == prmSimulationType::IO) {
-        effortPreload.SetAll(0.0);
-        wrenchPreload.SetAll(0.0);
+        effortPreload.setZero();
+        wrenchPreload.setZero();
         return;
     }
 
@@ -636,8 +602,8 @@ void mtsIntuitiveResearchKitMTM::control_servo_cf_preload(Eigen::VectorXd& effor
     double q3Goal = q[3] + q3Increment;
 
     // make sure we respect joint limits
-    const double q3Max = Manipulator->links[3].GetKinematics()->PositionMax();
-    const double q3Min = Manipulator->links[3].GetKinematics()->PositionMin();
+    const double q3Max = Manipulator->jointConfig().PositionMax()[3];
+    const double q3Min = Manipulator->jointConfig().PositionMin()[3];
     if (q3Goal > q3Max) {
         q3Goal = q3Max;
     } else if (q3Goal < q3Min) {
@@ -671,7 +637,7 @@ void mtsIntuitiveResearchKitMTM::lock_orientation(const Eigen::Matrix3d& orienta
         m_trajectory_j.Reflexxes.Set(m_trajectory_j.v,
                                      m_trajectory_j.a,
                                      StateTable.PeriodStats.PeriodAvg(),
-                                     robReflexxes::Reflexxes_TIME);
+                                     robReflexxes::SynchronizationType::TIME);
     }
     // in any case, update desired orientation in local coordinate system
     // mEffortOrientation.Assign(m_base_frame.Rotation().Inverse() * orientation);

@@ -23,6 +23,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <json/json.h>
 
 // cisst/saw
+#include <cisstCommon/cmnConstants.h>
 #include <cisstCommon/cmnPath.h>
 #include <cisstCommon/cmnUnits.h>
 #include <cisstCommon/cmnKbHit.h>
@@ -118,39 +119,36 @@ int main(int argc, char * argv[])
     size_t nbAxis = nbActuators;
     const size_t potRange = 4096;
 
-    vctDoubleMat potToEncoder;
-    vctDoubleVec directionEncoder;
-    vctDoubleVec minEncoder, maxEncoder;
-    vctDynamicVector<size_t> minPotIndex, maxPotIndex, zeroPotIndex;
-    vctDynamicVector<size_t> dataCounter;
+    Eigen::MatrixXd potToEncoder;
+    Eigen::VectorXd directionEncoder;
+    Eigen::VectorXd minEncoder, maxEncoder;
+    Eigen::ArrayX<size_t> minPotIndex, maxPotIndex, zeroPotIndex;
+    Eigen::ArrayX<size_t> dataCounter;
 
-    potToEncoder.SetSize(nbAxis, potRange);
-    potToEncoder.SetAll(mtsRobot1394::GetMissingPotentiometerValue());
+    potToEncoder = mtsRobot1394::GetMissingPotentiometerValue() * Eigen::MatrixXd::Ones(nbAxis, potRange);
 
     // human readable, works for PSM and ECM
     std::vector<double> toh = {cmn180_PI, cmn180_PI, 1000.0, cmn180_PI, cmn180_PI, cmn180_PI, cmn180_PI};
 
-    directionEncoder.SetSize(nbAxis, 1.0);
+    directionEncoder = Eigen::VectorXd::Zero(nbAxis);
     if (nbAxis == 7) {
         // PSM specific
-        directionEncoder.at(1) = -1.0;
-        directionEncoder.at(3) = -1.0;
-        directionEncoder.at(4) = -1.0;
-        directionEncoder.at(5) = -1.0;
+        directionEncoder[1] = -1.0;
+        directionEncoder[3] = -1.0;
+        directionEncoder[4] = -1.0;
+        directionEncoder[5] = -1.0;
     } else if (nbAxis == 4) {
-        directionEncoder.at(1) = -1.0;
-        directionEncoder.at(3) = -1.0;
+        directionEncoder[1] = -1.0;
+        directionEncoder[3] = -1.0;
     }
 
-    minEncoder.SetSize(nbAxis);
-    minEncoder.SetAll(std::numeric_limits<double>::max());
-    maxEncoder.SetSize(nbAxis);
-    maxEncoder.SetAll(std::numeric_limits<double>::min());
-    minPotIndex.SetSize(nbAxis);
-    maxPotIndex.SetSize(nbAxis);
-    zeroPotIndex.SetSize(nbAxis);
-    dataCounter.SetSize(nbAxis);
-    dataCounter.SetAll(0);
+    minEncoder = Eigen::VectorXd::Constant(nbAxis, std::numeric_limits<double>::max());
+    // TODO - shouldn't this be numeric_limits::lower()
+    maxEncoder = Eigen::VectorXd::Constant(nbAxis, std::numeric_limits<double>::min());
+    minPotIndex = Eigen::ArrayX<size_t>::Zero(nbAxis);
+    maxPotIndex = Eigen::ArrayX<size_t>::Zero(nbAxis);
+    zeroPotIndex = Eigen::ArrayX<size_t>::Zero(nbAxis);
+    dataCounter = Eigen::ArrayX<size_t>::Zero(nbAxis);
 
     // JSON writer used to save data/calibration
     Json::StreamWriterBuilder builder;
@@ -216,13 +214,13 @@ int main(int argc, char * argv[])
         robot->SetWatchdogPeriod(300.0 * cmn_ms);
 
         // make sure we reset the encoders to 0
-        robot->SetEncoderPosition(vctDoubleVec(nbAxis, 0.0));
+        robot->SetEncoderPosition(Eigen::VectorXd::Zero(nbAxis));
 
         // turn off pots used to check encoders
         robot->UsePotentiometersForSafetyCheck(false);
 
         // enable power and brakes
-        vctDoubleVec brakeCurrent(3, 0.0);
+        Eigen::VectorXd brakeCurrent = Eigen::VectorXd::Zero(3);
         robot->SetBrakeCurrent(brakeCurrent);
         // vctDoubleVec actuatorVoltageRatio(nbAxis, 0.0);
         // robot->SetActuatorVoltageRatio(actuatorVoltageRatio);
@@ -250,7 +248,7 @@ int main(int argc, char * argv[])
             robot->Explain();
             return -1;
         }
-        if (!robot->BrakeAmpStatus().All()) {
+        if (!robot->BrakeAmpStatus().all()) {
             std::cerr << "Error: failed to turn on brake amplifiers:" << std::endl
                       << " - status:  " << robot->BrakeAmpStatus() << std::endl
                       << " - desired: " << robot->BrakeAmpEnable() << std::endl;
@@ -290,14 +288,14 @@ int main(int argc, char * argv[])
             port->Write();
 
             // read values
-            vctIntVec potBits = robot->PotentiometerBits();
-            vctDoubleVec actuatorPos = robot->ActuatorJointState().Position();
+            Eigen::ArrayX<int> potBits = robot->PotentiometerBits();
+            Eigen::VectorXd actuatorPos = robot->ActuatorJointState().Position();
             for (size_t axis = 0;
                  axis < nbAxis;
                  ++axis) {
-                if (mtsRobot1394::IsMissingPotentiometerValue(potToEncoder.at(axis, potBits.at(axis)))) {
-                    potToEncoder.at(axis, potBits[axis]) = directionEncoder.at(axis) * actuatorPos.at(axis);
-                    dataCounter.at(axis)++;
+                if (mtsRobot1394::IsMissingPotentiometerValue(potToEncoder(axis, potBits(axis)))) {
+                    potToEncoder(axis, potBits[axis]) = directionEncoder[axis] * actuatorPos(axis);
+                    dataCounter(axis)++;
                 }
             }
             std::cout << "\rPer axis counters: " << dataCounter << std::flush;
@@ -317,7 +315,7 @@ int main(int argc, char * argv[])
             rawFile.open(rawFileName);
             Json::Value jsonValue;
             jsonValue["serial"] = serialNumber;
-            cmnDataJSON<vctDoubleMat>::SerializeText(potToEncoder, jsonValue["lookup"]);
+            cmnDataJSON<Eigen::MatrixXd>::SerializeText(potToEncoder, jsonValue["lookup"]);
             writer->write(jsonValue, &rawFile);
             rawFile.close();
             std::cout << std::endl << "Raw data saved to " << rawFileName << std::endl
@@ -345,9 +343,9 @@ int main(int argc, char * argv[])
         if (!jsonReader.parse(jsonStream, jsonValue)) {
             std::cerr << "JSON parsing failed for " << savedData << ", "
                       << jsonReader.getFormattedErrorMessages();
-            return false;
+            return 1;
         }
-        cmnDataJSON<vctDoubleMat>::DeSerializeText(potToEncoder, jsonValue["lookup"]);
+        cmnDataJSON<Eigen::MatrixXd>::DeSerializeText(potToEncoder, jsonValue["lookup"]);
     }
 
     // finding the deadzone(s)
@@ -356,7 +354,7 @@ int main(int argc, char * argv[])
          ++axis) {
         // start from first element
         std::list<std::pair<size_t, size_t> > encoderAreas;
-        bool previousHasEncoder = !mtsRobot1394::IsMissingPotentiometerValue(potToEncoder.at(axis, 0));
+        bool previousHasEncoder = !mtsRobot1394::IsMissingPotentiometerValue(potToEncoder(axis, 0));
         bool encoderStarted = previousHasEncoder;
         size_t encoderStart;
         if (encoderStarted) {
@@ -367,7 +365,7 @@ int main(int argc, char * argv[])
         for (size_t index = 1;
              index < potRange;
              ++index) {
-            const bool hasEncoder = !mtsRobot1394::IsMissingPotentiometerValue(potToEncoder.at(axis, index));
+            const bool hasEncoder = !mtsRobot1394::IsMissingPotentiometerValue(potToEncoder(axis, index));
             // transitions
             if ((hasEncoder != previousHasEncoder)
                 || (index == (potRange - 1))) {
@@ -382,14 +380,14 @@ int main(int argc, char * argv[])
             }
             // update min/max
             if (hasEncoder) {
-                const double enc = potToEncoder.at(axis, index);
-                if (enc < minEncoder.at(axis)) {
-                    minEncoder.at(axis) = enc;
-                    minPotIndex.at(axis) = index;
+                const double enc = potToEncoder(axis, index);
+                if (enc < minEncoder(axis)) {
+                    minEncoder(axis) = enc;
+                    minPotIndex(axis) = index;
                 }
-                if (enc > maxEncoder.at(axis)) {
-                    maxEncoder.at(axis) = enc;
-                    maxPotIndex.at(axis) = index;
+                if (enc > maxEncoder(axis)) {
+                    maxEncoder(axis) = enc;
+                    maxPotIndex(axis) = index;
                 }
             }
             previousHasEncoder = hasEncoder;
@@ -405,8 +403,8 @@ int main(int argc, char * argv[])
                 // remove previous and update first of current from first of previous
                 if ((iter->first - previous->second) < 20) {
                     // simple interpolation to fill in the missing values
-                    const double start = potToEncoder.at(axis, previous->second);
-                    const double end = potToEncoder.at(axis, iter->first);
+                    const double start = potToEncoder(axis, previous->second);
+                    const double end = potToEncoder(axis, iter->first);
                     const size_t nbMissing = iter->first - previous->second - 1;
                     std::cout << "Axis[" << axis << "]: found " << nbMissing << " missing consecutive pot value(s)" << std::endl;
                     const double delta = (end - start) / nbMissing;
@@ -414,10 +412,10 @@ int main(int argc, char * argv[])
                     for (size_t index = previous->second + 1;
                          index < iter->first;
                          ++index, ++counter) {
-                        if (!mtsRobot1394::IsMissingPotentiometerValue(potToEncoder.at(axis, index))) {
+                        if (!mtsRobot1394::IsMissingPotentiometerValue(potToEncoder(axis, index))) {
                             std::cerr << "!!!! this shouldn't be happening" << std::endl;
                         }
-                        potToEncoder.at(axis, index) = start + counter * delta;
+                        potToEncoder(axis, index) = start + counter * delta;
                     }
                     // concatenate lists of indices
                     iter->first = previous->first;
@@ -430,62 +428,62 @@ int main(int argc, char * argv[])
         // display final results
         for (auto iter : encoderAreas) {
             std::cout << "Axis[" << axis << "]: using encoder for range [" << iter.first
-                      << " (" << potToEncoder.at(axis, iter.first) * toh.at(axis)
+                      << " (" << potToEncoder(axis, iter.first) * toh.at(axis)
                       << "), " << iter.second << " ("
-                      << potToEncoder.at(axis, iter.second) * toh.at(axis)<< ")]" << std::endl;
+                      << potToEncoder(axis, iter.second) * toh.at(axis)<< ")]" << std::endl;
         }
     }
 
-    vctDoubleVec minEncoderExpected, maxEncoderExpected;
+    Eigen::VectorXd minEncoderExpected, maxEncoderExpected;
     if (nbAxis == 7) {
         // this is for a PSM.  We don't have the exact numbers but we have 3
         // calibration files.  Ranges differ between arms but the midpoint
         // is always the same.  Values are from jhu-dVRK-Si/cal-files 292409 586288 334809
-        minEncoderExpected.SetSize(7);
-        maxEncoderExpected.SetSize(7);
-        minEncoderExpected.at(0) = (-2.9646 + -2.9668 + -2.9675) / 3.0;
-        maxEncoderExpected.at(0) = ( 2.9646 +  2.9668 +  2.9675) / 3.0;
-        minEncoderExpected.at(1) = (-1.2656 + -1.2661 + -1.2667) / 3.0;
-        maxEncoderExpected.at(1) = ( 1.3010 +  1.3015 +  1.3021) / 3.0;
+        minEncoderExpected = Eigen::VectorXd::Zero(7);
+        maxEncoderExpected = Eigen::VectorXd::Zero(7);
+        minEncoderExpected(0) = (-2.9646 + -2.9668 + -2.9675) / 3.0;
+        maxEncoderExpected(0) = ( 2.9646 +  2.9668 +  2.9675) / 3.0;
+        minEncoderExpected(1) = (-1.2656 + -1.2661 + -1.2667) / 3.0;
+        maxEncoderExpected(1) = ( 1.3010 +  1.3015 +  1.3021) / 3.0;
         // translation
-        minEncoderExpected.at(2) = (-0.00099057 + -0.00099124 + -0.0009907) / 3.0;
-        maxEncoderExpected.at(2) = ( 0.29035    +  0.29055    +  0.29039) / 3.0;
+        minEncoderExpected(2) = (-0.00099057 + -0.00099124 + -0.0009907) / 3.0;
+        maxEncoderExpected(2) = ( 0.29035    +  0.29055    +  0.29039) / 3.0;
         // last 4 elements
-        minEncoderExpected.at(3) = (-3.0346 + -3.0283 + -3.03) / 3.0;
-        maxEncoderExpected.at(3) = ( 3.0346 +  3.0283 +  3.03) / 3.0;
-        minEncoderExpected.at(4) = (-3.0358 + -3.0271 + -3.0271) / 3.0;
-        maxEncoderExpected.at(4) = ( 3.0358 +  3.0271 +  3.0271) / 3.0;
-        minEncoderExpected.at(5) = (-3.0350 + -3.0303 + -3.0294) / 3.0;
-        maxEncoderExpected.at(5) = ( 3.0350 +  3.0303 +  3.0294) / 3.0;
-        minEncoderExpected.at(6) = (-3.0378 + -3.03   + -3.0268) / 3.0;
-        maxEncoderExpected.at(6) = ( 3.0378 +  3.03   +  3.0268) / 3.0;
+        minEncoderExpected(3) = (-3.0346 + -3.0283 + -3.03) / 3.0;
+        maxEncoderExpected(3) = ( 3.0346 +  3.0283 +  3.03) / 3.0;
+        minEncoderExpected(4) = (-3.0358 + -3.0271 + -3.0271) / 3.0;
+        maxEncoderExpected(4) = ( 3.0358 +  3.0271 +  3.0271) / 3.0;
+        minEncoderExpected(5) = (-3.0350 + -3.0303 + -3.0294) / 3.0;
+        maxEncoderExpected(5) = ( 3.0350 +  3.0303 +  3.0294) / 3.0;
+        minEncoderExpected(6) = (-3.0378 + -3.03   + -3.0268) / 3.0;
+        maxEncoderExpected(6) = ( 3.0378 +  3.03   +  3.0268) / 3.0;
     } else if (nbAxis == 4) {
         // this is for an ECM, using 267579 438610
-        minEncoderExpected.SetSize(4);
-        maxEncoderExpected.SetSize(4);
-        minEncoderExpected.at(0) = (-2.9657 + -2.968) / 2.0;
-        maxEncoderExpected.at(0) = ( 2.9657 +  2.968) / 2.0;
-        minEncoderExpected.at(1) = (-1.1253 + -1.1061) / 2.0;
-        maxEncoderExpected.at(1) = ( 1.0612 +  1.0431) / 2.0;
+        minEncoderExpected = Eigen::VectorXd::Zero(4);
+        maxEncoderExpected = Eigen::VectorXd::Zero(4);
+        minEncoderExpected(0) = (-2.9657 + -2.968) / 2.0;
+        maxEncoderExpected(0) = ( 2.9657 +  2.968) / 2.0;
+        minEncoderExpected(1) = (-1.1253 + -1.1061) / 2.0;
+        maxEncoderExpected(1) = ( 1.0612 +  1.0431) / 2.0;
         // translation
-        minEncoderExpected.at(2) = ( 0.001  +  0.001) / 2.0;
-        maxEncoderExpected.at(2) = ( 0.2595 +  0.25894) / 2.0;
+        minEncoderExpected(2) = ( 0.001  +  0.001) / 2.0;
+        maxEncoderExpected(2) = ( 0.2595 +  0.25894) / 2.0;
         // last 4 elements
-        minEncoderExpected.at(3) = (-1.5434 + -1.5414) / 2.0;
-        maxEncoderExpected.at(3) = ( 1.5434 +  1.5414) / 2.0;
+        minEncoderExpected(3) = (-1.5434 + -1.5414) / 2.0;
+        maxEncoderExpected(3) = ( 1.5434 +  1.5414) / 2.0;
     }
 
-    vctDoubleVec offsetEncoder(nbAxis, 0.0);
+    Eigen::VectorXd offsetEncoder = Eigen::VectorXd::Zero(nbAxis);
 
     for (size_t axis = 0;
          axis < nbAxis;
          ++axis) {
         std::cout << "Axis[" << axis
-                  << "]: range [" << minEncoder.at(axis) * toh.at(axis)
-                  << ", " << maxEncoder.at(axis) * toh.at(axis) << "] = "
-                  << (maxEncoder.at(axis) - minEncoder.at(axis)) * toh.at(axis) << std::endl;
-        const double encoderRange = maxEncoder.at(axis) - minEncoder.at(axis);
-        const double encoderRangeExpected =  maxEncoderExpected.at(axis) - minEncoderExpected.at(axis);
+                  << "]: range [" << minEncoder[axis] * toh.at(axis)
+                  << ", " << maxEncoder[axis] * toh.at(axis) << "] = "
+                  << (maxEncoder[axis] - minEncoder[axis]) * toh.at(axis) << std::endl;
+        const double encoderRange = maxEncoder[axis] - minEncoder[axis];
+        const double encoderRangeExpected =  maxEncoderExpected(axis) - minEncoderExpected(axis);
         if ((encoderRange < 0.95 * encoderRangeExpected)
             || (encoderRange > 1.05 * encoderRangeExpected)) {
             std::cerr << "Axis[" << axis
@@ -495,29 +493,29 @@ int main(int argc, char * argv[])
             return -1;
         }
         // compute offset using mid point
-        offsetEncoder.at(axis) = (minEncoderExpected.at(axis) + maxEncoderExpected.at(axis)) / 2.0
-            - (minEncoder.at(axis) + maxEncoder.at(axis)) / 2.0;
-        std::cout << " - encoder offset: " << offsetEncoder.at(axis) * toh.at(axis) << std::endl;
+        offsetEncoder[axis] = (minEncoderExpected(axis) + maxEncoderExpected(axis)) / 2.0
+            - (minEncoder[axis] + maxEncoder[axis]) / 2.0;
+        std::cout << " - encoder offset: " << offsetEncoder[axis] * toh.at(axis) << std::endl;
         // add offset to recorded values and try to find the closest
         // to zero encoder value within pot range
         double zeroEncoder = std::numeric_limits<double>::max();
         for (size_t index = 0;
              index < potRange;
              ++index) {
-            const bool hasEncoder = !mtsRobot1394::IsMissingPotentiometerValue(potToEncoder.at(axis, index));
+            const bool hasEncoder = !mtsRobot1394::IsMissingPotentiometerValue(potToEncoder(axis, index));
             if (hasEncoder) {
                 // add offset
-                potToEncoder.at(axis, index) += offsetEncoder.at(axis);
-                potToEncoder.at(axis, index) *= directionEncoder.at(axis);
+                potToEncoder(axis, index) += offsetEncoder[axis];
+                potToEncoder(axis, index) *= directionEncoder(axis);
                 // try to find lowest encoder value
-                const double enc = std::abs(potToEncoder.at(axis, index));
+                const double enc = std::abs(potToEncoder(axis, index));
                 if (enc < zeroEncoder) {
                     zeroEncoder = enc;
-                    zeroPotIndex.at(axis) = index;
+                    zeroPotIndex[axis] = index;
                 }
             }
         }
-        std::cout << " - zero pot index: " << zeroPotIndex.at(axis) << std::endl
+        std::cout << " - zero pot index: " << zeroPotIndex(axis) << std::endl
                   << " - zero encoder value: " << zeroEncoder * toh.at(axis) << std::endl;
 
         // padding
@@ -533,14 +531,14 @@ int main(int argc, char * argv[])
                 for (size_t indexPadding = startPadding;
                      indexPadding < index;
                      ++indexPadding) {
-                    potToEncoder.at(axis, indexPadding) = potToEncoder.at(axis, index);
+                    potToEncoder(axis, indexPadding) = potToEncoder(axis, index);
                 }
             } else if (!previousValueIsMissing && currentValueIsMissing) {
                 const size_t endPadding = std::min(potRange, index + paddingWidth);
                 for (size_t indexPadding = index;
                      indexPadding < endPadding;
                      ++indexPadding) {
-                    potToEncoder.at(axis, indexPadding) = potToEncoder.at(axis, index - 1);
+                    potToEncoder(axis, indexPadding) = potToEncoder(axis, index - 1);
                 }
                 // then skip forward
                 index = endPadding;
@@ -563,7 +561,7 @@ int main(int argc, char * argv[])
     potToEncoderFile.open(potToEncoderFileName);
     Json::Value jsonValue;
     jsonValue["serial"] = serialNumber;
-    cmnDataJSON<vctDoubleMat>::SerializeText(potToEncoder, jsonValue["lookup"]);
+    cmnDataJSON<Eigen::MatrixXd>::SerializeText(potToEncoder, jsonValue["lookup"]);
     writer->write(jsonValue, &potToEncoderFile);
     potToEncoderFile.close();
 

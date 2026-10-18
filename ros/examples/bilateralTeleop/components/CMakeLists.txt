@@ -52,12 +52,11 @@ endif (catkin_FOUND)
 set (
   REQUIRED_CISST_LIBRARIES
   cisstCommon
-  cisstVector
   cisstOSAbstraction
   cisstMultiTask
   cisstParameterTypes
   cisstRobot
-  cisstNumerical)
+)
 
 find_package (cisst 1.5 REQUIRED COMPONENTS ${REQUIRED_CISST_LIBRARIES})
 

@@ -1,0 +1,16 @@
+{
+    BasedOnStyle: Google,
+    UseTab: Never,
+    IndentWidth: 4,
+    AccessModifierOffset: -4,
+    ColumnLimit: 80,
+    PackConstructorInitializers: NextLine,
+    BinPackArguments: false,
+    BinPackParameters: false,
+    AlignAfterOpenBracket: BlockIndent,
+    AllowShortBlocksOnASingleLine: Always,
+    AllowShortIfStatementsOnASingleLine: WithoutElse,
+    DerivePointerAlignment: false,
+    PointerAlignment: Left,
+    BreakBeforeBraces: Linux,
+}

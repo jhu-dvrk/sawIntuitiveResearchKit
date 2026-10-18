@@ -1,5 +1,6 @@
-/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-    */
-/* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab:
+ */
 
 /*
   Author(s):  Anton Deguet
@@ -19,31 +20,33 @@
 #ifndef _robManipulatorECM_h
 #define _robManipulatorECM_h
 
-#include <cisstRobot/robManipulator.h>
-#include <cisstNumerical/nmrLSEISolver.h>
-
+#include <sawIntuitiveResearchKit/robManipulatorGeneric.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
-class robManipulatorECM: public robManipulator
+#include <kdl/chain.hpp>
+#include <kdl/chainfksolverpos_recursive.hpp>
+#include <kdl/chainjnttojacsolver.hpp>
+#include <kdl/jacobian.hpp>
+#include <kdl/jntarray.hpp>
+
+class robManipulatorECM : public robManipulatorGeneric
 {
+protected:
+    robManipulatorECM* raw_clone() const override;
+
+    bool internalInverseKinematics(
+        const Eigen::Isometry3d& goal_pose,
+        Eigen::VectorXd& joint_positions,
+        std::string& error_message
+    ) override;
 
 public:
-    robManipulatorECM(const vctFrame4x4<double>& Rtw0 = vctFrame4x4<double>());
+    robManipulatorECM(
+        const prmConfigurationJoint& joint_config, const KDL::Chain& chain
+    );
 
-    robManipulatorECM(const std::string& robotfilename,
-                      const vctFrame4x4<double>& Rtw0 = vctFrame4x4<double>());
-
-    robManipulatorECM(const std::vector<robKinematics *> linkParms,
-                      const vctFrame4x4<double>& Rtw0 = vctFrame4x4<double>());
-
-    ~robManipulatorECM() {}
-
-    robManipulator::Errno
-    InverseKinematics(vctDynamicVector<double> & q,
-                      const vctFrame4x4<double> & Rts,
-                      double tolerance = 1e-12,
-                      size_t Niterations = 1000,
-                      double LAMBDA = 0.001);
+private:
+    const double insertion_offset;
 };
 
-#endif // _robManipulatorECM_h
+#endif

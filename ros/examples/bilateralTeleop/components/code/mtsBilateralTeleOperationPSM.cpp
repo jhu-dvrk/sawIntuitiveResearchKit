@@ -63,20 +63,20 @@ prmStateCartesian mtsBilateralTeleOperationPSM::Arm::computeGoal(Arm* target, do
     prmStateCartesian goal;
     prmStateCartesian target_state = target->state();
 
-    vct3 target_translation = target_state.Position().Translation() - target->ClutchOrigin().Translation();
-    vct3 goal_translation = scale * target_translation + ClutchOrigin().Translation();
+    Eigen::Vector3d target_translation = target_state.Position().translation() - target->ClutchOrigin().translation();
+    Eigen::Vector3d goal_translation = scale * target_translation + ClutchOrigin().translation();
 
-    auto align = vctMatRot3(target->ClutchOrigin().Rotation().TransposeRef() * ClutchOrigin().Rotation());
+    Eigen::Matrix3d align = target->ClutchOrigin().rotation().inverse() * ClutchOrigin().rotation();
 
     if (target_state.PositionIsValid()) {
-        goal.Position().Translation() = goal_translation;
-        goal.Position().Rotation() = target_state.Position().Rotation() * align;
+        goal.Position().translation() = goal_translation;
+        goal.Position().linear() = target_state.Position().rotation() * align;
     }
     goal.PositionIsValid() = target_state.PositionIsValid();
 
     if (target_state.VelocityIsValid()) {
-        goal.Velocity().Ref<3>(0) = scale * target_state.Velocity().Ref<3>(0);
-        goal.Velocity().Ref<3>(3) = target_state.Velocity().Ref<3>(3);
+        goal.Velocity().head<3>() = scale * target_state.Velocity().head<3>();
+        goal.Velocity().tail<3>() = target_state.Velocity().tail<3>();
     }
     goal.VelocityIsValid() = target_state.VelocityIsValid();
 
@@ -108,7 +108,7 @@ void mtsBilateralTeleOperationPSM::Arm::servo(prmStateCartesian goal)
     servo_cpvf(goal);
 }
 
-vctFrm4x4& mtsBilateralTeleOperationPSM::ArmMTM::ClutchOrigin() { return teleop->mMTM.m_pose_initial; }
+Eigen::Isometry3d& mtsBilateralTeleOperationPSM::ArmMTM::ClutchOrigin() { return teleop->mMTM.m_pose_initial; }
 
 prmStateCartesian mtsBilateralTeleOperationPSM::ArmMTM::state()
 {
@@ -123,8 +123,8 @@ prmStateCartesian mtsBilateralTeleOperationPSM::ArmMTM::state()
 
     if (teleop->m_config.use_MTM_linear_velocity || teleop->m_config.use_MTM_angular_velocity) {
         auto mtm_velocity = teleop->mMTM.m_measured_cv;
-        state.Velocity().Ref<3>(0) = mtm_velocity.VelocityLinear();
-        state.Velocity().Ref<3>(3) = mtm_velocity.VelocityAngular();
+        state.Velocity().head<3>() = mtm_velocity.VelocityLinear();
+        state.Velocity().tail<3>() = mtm_velocity.VelocityAngular();
         state.VelocityIsValid() = mtm_velocity.Valid();
     } else {
         state.VelocityIsValid() = false;
@@ -151,18 +151,18 @@ void mtsBilateralTeleOperationPSM::ArmMTM::servo(prmStateCartesian goal)
         servo.Goal() = goal.Position();
 
         if (goal.VelocityIsValid()) {
-            servo.Velocity() = goal.Velocity().Ref<3>(0);
-            servo.VelocityAngular() = goal.Velocity().Ref<3>(3);
+            servo.Velocity() = goal.Velocity().head<3>();
+            servo.VelocityAngular() = goal.Velocity().tail<3>();
         } else {
-            servo.Velocity().Assign(vct3(0));
-            servo.VelocityAngular().Assign(vct3(0));
+            servo.Velocity().setZero();
+            servo.VelocityAngular().setZero();
         }
 
         teleop->mArmMTM.servo_cp(servo);
     }
 }
 
-vctFrm4x4& mtsBilateralTeleOperationPSM::ArmPSM::ClutchOrigin() { return teleop->mPSM.m_pose_initial; };
+Eigen::Isometry3d& mtsBilateralTeleOperationPSM::ArmPSM::ClutchOrigin() { return teleop->mPSM.m_pose_initial; };
 
 prmStateCartesian mtsBilateralTeleOperationPSM::ArmPSM::state()
 {
@@ -179,8 +179,8 @@ prmStateCartesian mtsBilateralTeleOperationPSM::ArmPSM::state()
 
     teleop->mArmPSM.measured_cv(teleop->mArmPSM.m_measured_cv);
     auto psm_velocity = teleop->mArmPSM.m_measured_cv;
-    state.Velocity().Ref<3>(0) = psm_velocity.VelocityLinear();
-    state.Velocity().Ref<3>(3) = psm_velocity.VelocityAngular();
+    state.Velocity().head<3>() = psm_velocity.VelocityLinear();
+    state.Velocity().tail<3>() = psm_velocity.VelocityAngular();
     state.VelocityIsValid() = psm_velocity.Valid();
 
     if (force_source) {
@@ -204,11 +204,11 @@ void mtsBilateralTeleOperationPSM::ArmPSM::servo(prmStateCartesian goal)
         servo.Goal() = goal.Position();
 
         if (goal.VelocityIsValid()) {
-            servo.Velocity() = goal.Velocity().Ref<3>(0);
-            servo.VelocityAngular() = goal.Velocity().Ref<3>(3);
+            servo.Velocity() = goal.Velocity().head<3>();
+            servo.VelocityAngular() = goal.Velocity().tail<3>();
         } else {
-            servo.Velocity().Assign(vct3(0));
-            servo.VelocityAngular().Assign(vct3(0));
+            servo.Velocity().setZero();
+            servo.VelocityAngular().setZero();
         }
 
         teleop->mPSM.servo_cp(servo);
@@ -302,6 +302,6 @@ void mtsBilateralTeleOperationPSM::RunCartesianTeleop()
 
     auto mtm_goal = mArmMTM.computeGoal(&mArmPSM, 1.0 / m_config.scale);
     // scale MTM torque goal to reduce oscillations
-    mtm_goal.Force().Ref<3>(3) = m_mtm_torque_gain * mtm_goal.Force().Ref<3>(3);
+    mtm_goal.Force().tail<3>() = m_mtm_torque_gain * mtm_goal.Force().tail<3>();
     mArmMTM.servo(mtm_goal);
 }

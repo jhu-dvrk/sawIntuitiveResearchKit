@@ -46,12 +46,12 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJFixed: public mtsTaskPeriodic
 
     mtsIntuitiveResearchKitSUJFixed(const std::string & componentName, const double periodInSeconds);
     mtsIntuitiveResearchKitSUJFixed(const mtsTaskPeriodicConstructorArg & arg);
-    inline ~mtsIntuitiveResearchKitSUJFixed() {}
+    ~mtsIntuitiveResearchKitSUJFixed();
 
-    void Configure(const std::string & filename);
-    void Startup(void);
-    void Run(void);
-    void Cleanup(void);
+    void Configure(const std::string & filename) override;
+    void Startup(void) override;
+    void Run(void) override;
+    void Cleanup(void) override;
 
     void set_simulated(void);
 
@@ -98,7 +98,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJFixed: public mtsTaskPeriodic
     } state_events;
     mtsInterfaceProvided * m_interface;
 
-    vctFixedSizeVector<mtsIntuitiveResearchKitSUJFixedArmData *, 4> m_sarms;
+    std::array<std::unique_ptr<mtsIntuitiveResearchKitSUJFixedArmData>, 4> m_sarms;
     size_t m_reference_arm_index; // arm used to provide base frame to all other SUJ arms, traditionally the ECM
 
     void error_event_handler(const mtsMessage & message);

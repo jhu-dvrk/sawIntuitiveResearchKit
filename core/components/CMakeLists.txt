@@ -33,13 +33,12 @@ install (FILES "${SAW_INTUITIVE_RESEARCH_KIT_REVISION_HEADER}"
 
 set (REQUIRED_CISST_LIBRARIES
   cisstCommon
-  cisstVector
   cisstOSAbstraction
   cisstMultiTask
   cisstInteractive
   cisstParameterTypes
   cisstRobot
-  cisstNumerical)
+)
 
 find_package (cisst 1.5 REQUIRED COMPONENTS ${REQUIRED_CISST_LIBRARIES})
 
@@ -132,12 +131,11 @@ if (sawRobotIO1394_FOUND AND sawControllers_FOUND)
     mtsDaVinciHeadSensor.h
     mtsDaVinciEndoscopeFocus.h
     mtsToolList.h
+    robManipulator.h
     robManipulatorECM.h
+    robManipulatorGeneric.h
     robManipulatorMTM.h
-    robManipulatorPSMSnake.h
-    mtsPSMCompensation.h
     prmActuatorJointCouplingCheck.h
-    prmConfigurationJointFromManipulator.h
     robGravityCompensation.h
 
     arm_proxy.h
@@ -164,12 +162,11 @@ if (sawRobotIO1394_FOUND AND sawControllers_FOUND)
     mtsDaVinciHeadSensor.cpp
     mtsDaVinciEndoscopeFocus.cpp
     mtsToolList.cpp
+    robManipulator.cpp
     robManipulatorECM.cpp
+    robManipulatorGeneric.cpp
     robManipulatorMTM.cpp
-    robManipulatorPSMSnake.cpp
-    mtsPSMCompensation.cpp
     prmActuatorJointCouplingCheck.cpp
-    prmConfigurationJointFromManipulator.cpp
     robGravityCompensationMTM.cpp
     robGravityCompensationMTM.h
 

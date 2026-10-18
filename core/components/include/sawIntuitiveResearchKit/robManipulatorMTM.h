@@ -1,5 +1,6 @@
-/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-    */
-/* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab:
+ */
 
 /*
   Author(s):  Anton Deguet
@@ -19,34 +20,59 @@
 #ifndef _robManipulatorMTM_h
 #define _robManipulatorMTM_h
 
-#include <cisstRobot/robManipulator.h>
-#include <cisstNumerical/nmrLSEISolver.h>
-
+#include <sawIntuitiveResearchKit/robManipulatorGeneric.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
-class robManipulatorMTM: public robManipulator
+#include <kdl/chainfksolverpos_recursive.hpp>
+#include <kdl/chainjnttojacsolver.hpp>
+
+class robManipulatorMTM : public robManipulatorGeneric
 {
+protected:
+    robManipulatorMTM* raw_clone() const override;
+
+    bool internalInverseKinematics(
+        const Eigen::Isometry3d& goal_pose,
+        Eigen::VectorXd& joint_positions,
+        std::string& error_message
+    ) override;
 
 public:
-    robManipulatorMTM(const vctFrame4x4<double>& Rtw0 = vctFrame4x4<double>());
+    robManipulatorMTM(
+        const prmConfigurationJoint& joint_config, const KDL::Chain& chain
+    );
 
-    robManipulatorMTM(const std::string& robotfilename,
-                      const vctFrame4x4<double>& Rtw0 = vctFrame4x4<double>());
+protected:
+    const double upper_arm_length;
+    const double elbow_to_wrist_angle;
+    const double elbow_to_wrist_length;
 
-    robManipulatorMTM(const std::vector<robKinematics *> linkParms,
-                      const vctFrame4x4<double>& Rtw0 = vctFrame4x4<double>());
+    robManipulatorMTM(
+        const prmConfigurationJoint& joint_config,
+        const KDL::Chain& chain,
+        double upper_arm_length,
+        double forearm_length,
+        double forearm_end_to_wrist
+    );
 
-    ~robManipulatorMTM() {}
+    bool solveShoulderElbowIK(
+        Eigen::VectorXd& joint_positions, const Eigen::Vector3d& goal_position
+    ) const;
 
-    robManipulator::Errno
-    InverseKinematics(vctDynamicVector<double> & q,
-                      const vctFrame4x4<double> & Rts,
-                      double tolerance = 1e-12,
-                      size_t Niterations = 1000,
-                      double LAMBDA = 0.001);
+    double findOptimalPlatformAngle(
+        const Eigen::VectorXd& joint_positions,
+        const Eigen::Isometry3d& goal_pose
+    );
 
-    double FindOptimalPlatformAngle(const vctDynamicVector<double> & q,
-                                    const vctFrame4x4<double> & Rt07) const;
+    // Cost function for comparing wrist IK solutions
+    double wristIKCost(const Eigen::Vector3d& reference_joints, const Eigen::Vector3d& solution_joints) const;
+
+    // Solve for best wrist joint positions to achieve goal pose, given platform
+    // angle, wrist joints, and goal pose wrt end of the forearm (link 2).
+    Eigen::Vector3d solveWristIK(
+        const Eigen::Vector3d& wrist_joints,
+        const Eigen::Isometry3d& goal
+    ) const;
 };
 
-#endif // _robManipulatorMTM_h
+#endif  // _robManipulatorMTM_h

@@ -103,8 +103,8 @@ void mtsDerivedTeleOperationPSM::RunEnabled(void)
         PSMExtra.measured_cv(PSMExtra.m_measured_cv);
 
         // Extract only position data, ignore orientation
-        vct3 force = PSMExtra.m_measured_cf.Force().Ref<3>(0);
-        const vct3 velocity = PSMExtra.m_measured_cv.VelocityLinear();
+        Eigen::Vector3d force = PSMExtra.m_measured_cf.Force().head<3>();
+        const Eigen::Vector3d velocity = PSMExtra.m_measured_cv.VelocityLinear();
 
         // Scale force based on velocity, i.e. at high velocity apply less forces
         for (size_t i = 0; i < 3; i++) {
@@ -114,7 +114,7 @@ void mtsDerivedTeleOperationPSM::RunEnabled(void)
         }
 
         // Set wrench for MTM
-        MTMExtra.m_setpoint_cf.Force().Ref<3>(0) = force;
+        MTMExtra.m_setpoint_cf.Force().head<3>() = force;
         mMTM.body_servo_cf(MTMExtra.m_setpoint_cf);
     }
 }

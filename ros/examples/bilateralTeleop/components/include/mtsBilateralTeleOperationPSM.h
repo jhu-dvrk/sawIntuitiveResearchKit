@@ -28,7 +28,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmStateCartesian.h>
 
 // Always include last
-#include <sawIntuitiveResearchKitBilateralTeleopExport.h>
+#include "sawIntuitiveResearchKitBilateralTeleopExport.h"
 
 class CISST_EXPORT mtsBilateralTeleOperationPSM: public mtsTeleOperationPSM
 {
@@ -67,7 +67,7 @@ protected:
 
         virtual prmStateCartesian computeGoal(Arm* target, double scale);
 
-        virtual vctFrm4x4& ClutchOrigin() = 0;
+        virtual Eigen::Isometry3d& ClutchOrigin() = 0;
 
         virtual prmStateCartesian state();
         virtual void servo(prmStateCartesian goal);
@@ -85,7 +85,7 @@ protected:
         ArmMTM(mtsBilateralTeleOperationPSM* teleop) : Arm(teleop) {}
         ~ArmMTM() {}
 
-        vctFrm4x4& ClutchOrigin() override;
+        Eigen::Isometry3d& ClutchOrigin() override;
         
         prmStateCartesian state() override;
         void servo(prmStateCartesian goal) override;
@@ -99,7 +99,7 @@ protected:
         ArmPSM(mtsBilateralTeleOperationPSM* teleop) : Arm(teleop) {}
         ~ArmPSM() {}
 
-        vctFrm4x4& ClutchOrigin() override;
+        Eigen::Isometry3d& ClutchOrigin() override;
         
         prmStateCartesian state() override;
         void servo(prmStateCartesian goal) override;

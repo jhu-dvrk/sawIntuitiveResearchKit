@@ -24,6 +24,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstCommon/cmnJointType.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJ.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
+#include <sawIntuitiveResearchKit/robManipulatorGeneric.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmStateJoint.h>
@@ -32,7 +33,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 #include <cisstParameterTypes/prmEventButton.h>
-#include <cisstRobot/robManipulator.h>
 
 const size_t MUX_ARRAY_SIZE = 6;
 const size_t MUX_MAX_INDEX = 15;
@@ -80,17 +80,15 @@ public:
         m_state_table_configuration.SetAutomaticAdvance(false);
 
         for (size_t potArray = 0; potArray < 2; ++potArray) {
-            m_voltages[potArray].SetSize(MUX_ARRAY_SIZE);
-            m_positions[potArray].SetSize(MUX_ARRAY_SIZE);
-            m_voltage_to_position_scales[potArray].SetSize(MUX_ARRAY_SIZE);
-            m_voltage_to_position_offsets[potArray].SetSize(MUX_ARRAY_SIZE);
+            m_voltages[potArray] = Eigen::VectorXd::Zero(MUX_ARRAY_SIZE);
+            m_positions[potArray] = Eigen::VectorXd::Zero(MUX_ARRAY_SIZE);
+            m_voltage_to_position_scales[potArray] = Eigen::VectorXd::Zero(MUX_ARRAY_SIZE);
+            m_voltage_to_position_offsets[potArray] = Eigen::VectorXd::Zero(MUX_ARRAY_SIZE);
         }
-        m_primary_secondary_weight.SetSize(MUX_ARRAY_SIZE);
-        m_secondary_primary_weight.SetSize(MUX_ARRAY_SIZE);
-        m_primary_secondary_weight.SetAll(0.5);
-        m_secondary_primary_weight.SetAll(0.5);
-        m_delta_measured_js.SetSize(MUX_ARRAY_SIZE);
-        m_voltages_extra.SetSize(MUX_MAX_INDEX - 2 * MUX_ARRAY_SIZE + 1);
+        m_primary_secondary_weight = 0.5 * Eigen::VectorXd::Ones(MUX_ARRAY_SIZE);
+        m_secondary_primary_weight = 0.5 * Eigen::VectorXd::Ones(MUX_ARRAY_SIZE);
+        m_delta_measured_js = Eigen::VectorXd::Zero(MUX_ARRAY_SIZE);
+        m_voltages_extra = Eigen::VectorXd::Zero(MUX_MAX_INDEX - 2 * MUX_ARRAY_SIZE + 1);
 
         m_measured_js.Position() = Eigen::VectorXd(MUX_ARRAY_SIZE);
         m_measured_js.Name().resize(MUX_ARRAY_SIZE);
@@ -225,7 +223,7 @@ public:
     }
 
 
-    inline void calibrate_potentiometers(const Eigen::Matrix<double, Eigen::Dynamic, 6>& mat)
+    inline void calibrate_potentiometers(const Eigen::Matrix<double, 6, 6>& mat)
     {
         for (size_t col = 0; col < 6; col++) {
             // IF:                                      Pi = Offset + Vi * Scale
@@ -328,8 +326,8 @@ public:
     Eigen::VectorXd m_voltages_extra;
 
     // kinematics
-    robManipulator m_manipulator;
-    Eigen::MatrixXd m_recalibration_matrix;
+    std::unique_ptr<robManipulator> m_manipulator;
+    Eigen::Matrix<double, 6, 6> m_recalibration_matrix;
     Eigen::VectorXd m_new_joint_scales[2];
     Eigen::VectorXd m_new_joint_offsets[2];
 
@@ -375,10 +373,13 @@ mtsIntuitiveResearchKitSUJ::mtsIntuitiveResearchKitSUJ(const mtsTaskPeriodicCons
 }
 
 
+// defined here so definition of mtsIntuitiveResearchKitSUJArmData is available
+mtsIntuitiveResearchKitSUJ::~mtsIntuitiveResearchKitSUJ() = default;
+
 void mtsIntuitiveResearchKitSUJ::init(void)
 {
     // initialize arm pointers
-    m_sarms.fill(nullptr);
+    m_sarms = std::array<std::unique_ptr<mtsIntuitiveResearchKitSUJArmData>, 4>{};
 
     // configure state machine common to all arms (ECM/MTM/PSM)
     // possible states
@@ -580,9 +581,11 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         // ECM and change base frame on attached arms
         mtsInterfaceProvided * interfaceProvided = this->AddInterfaceProvided(name);
         mtsInterfaceRequired * interfaceRequired = this->AddInterfaceRequired(name, MTS_OPTIONAL);
-        auto sarm = new mtsIntuitiveResearchKitSUJArmData(name, type, plugNumber, m_simulation_mode,
-                                                          interfaceProvided, interfaceRequired);
-        m_sarms[armIndex] = sarm;
+        m_sarms[armIndex] = std::make_unique<mtsIntuitiveResearchKitSUJArmData>(
+            name, type, plugNumber, m_simulation_mode,
+            interfaceProvided, interfaceRequired
+        );
+        auto sarm = m_sarms[armIndex].get();
         AddStateTable(&(sarm->m_state_table));
         AddStateTable(&(sarm->m_state_table_brake_current));
 
@@ -675,7 +678,23 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         sarm->m_state_table_configuration.Advance();
 
         // look for DH
-        sarm->m_manipulator.LoadRobot(jsonArm["DH"]);
+        const auto kdl_chain = loadKDLChain(jsonArm["DH"]);
+        if (!kdl_chain.has_value()) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << name
+                                << ": failed to load kinematics parameters from file \""
+                                << filename << "\"\n";
+            exit(EXIT_FAILURE);
+        }
+
+        const auto joint_config = loadJointConfig(jsonArm["DH"]);
+        if (!joint_config.has_value()) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << name
+                                        << ": failed to load joint configuration parameters from file \""
+                                        << filename << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        sarm->m_manipulator = std::make_unique<robManipulatorGeneric>(*joint_config, *kdl_chain);
 
         // Read setup transforms
         Eigen::Isometry3d transform;
@@ -727,7 +746,7 @@ void mtsIntuitiveResearchKitSUJ::enter_DISABLED(void)
     update_operating_state_and_busy(prmOperatingState::DISABLED, false);
 
     // power off brakes
-    RobotIO.SetActuatorCurrent(vctDoubleVec(4, 0.0));
+    RobotIO.SetActuatorCurrent(Eigen::VectorXd::Zero(4).eval());
     RobotIO.PowerOffSequence(true); // for the SUJ controller, we need to close the safety relay
 
     // disable power on PWM
@@ -763,7 +782,7 @@ void mtsIntuitiveResearchKitSUJ::enter_POWERING(void)
     const double currentTime = this->StateTable.GetTic();
     m_homing_timer = currentTime;
     // pre-load the boards with zero current
-    RobotIO.SetActuatorCurrent(vctDoubleVec(4, 0.0));
+    RobotIO.SetActuatorCurrent(Eigen::VectorXd::Zero(4).eval());
     // enable power and set a flags to move to next step
     RobotIO.PowerOnSequence();
 
@@ -783,9 +802,9 @@ void mtsIntuitiveResearchKitSUJ::transition_POWERING(void)
     // check status
     if ((currentTime - m_homing_timer) > mtsIntuitiveResearchKit::TimeToPower) {
         // check power status
-        vctBoolVec actuatorAmplifiersStatus(4);
+        Eigen::ArrayX<bool> actuatorAmplifiersStatus(4);
         RobotIO.GetActuatorAmpStatus(actuatorAmplifiersStatus);
-        if (actuatorAmplifiersStatus.All()) {
+        if (actuatorAmplifiersStatus.all()) {
             dispatch_status("power on");
             m_powered = true;
             m_state_machine.SetCurrentState("ENABLED");
@@ -810,10 +829,10 @@ void mtsIntuitiveResearchKitSUJ::enter_ENABLED(void)
     PWM.DisablePWM(false);
 
     // make sure motor current is zero (brakes)
-    RobotIO.SetActuatorCurrent(vctDoubleVec(4, 0.0));
+    RobotIO.SetActuatorCurrent(Eigen::VectorXd::Zero(4).eval());
 
     // when returning from manual mode, make sure brakes are not released
-    for (auto sarm : m_sarms) {
+    for (auto& sarm : m_sarms) {
         sarm->m_clutched = 0;
         sarm->m_brake_desired_current = 0.0;
         m_previous_tic = 0.0;
@@ -859,7 +878,7 @@ void mtsIntuitiveResearchKitSUJ::Cleanup(void)
     set_lift_velocity(0.0);
     PWM.DisablePWM(true);
     // make sure requested current is back to 0
-    RobotIO.SetActuatorCurrent(vctDoubleVec(4, 0.0));
+    RobotIO.SetActuatorCurrent(Eigen::VectorXd::Zero(4).eval());
     // turn off amplifiers
     RobotIO.PowerOffSequence(true); // also opens safety relays
 }
@@ -874,7 +893,7 @@ void mtsIntuitiveResearchKitSUJ::set_simulation_mode(const prmSimulationType & m
     }
 
     // set all arms simulated
-    for (auto sarm : m_sarms) {
+    for (auto& sarm : m_sarms) {
         if (sarm != nullptr) {
             sarm->m_simulation_mode = mode;
         }
@@ -899,9 +918,9 @@ void mtsIntuitiveResearchKitSUJ::get_robot_data(void)
 
     // check that the robot still has power
     if (m_powered) {
-        vctBoolVec actuatorAmplifiersStatus(4);
+        Eigen::ArrayX<bool> actuatorAmplifiersStatus(4);
         RobotIO.GetActuatorAmpStatus(actuatorAmplifiersStatus);
-        if (!actuatorAmplifiersStatus.All()) {
+        if (!actuatorAmplifiersStatus.all()) {
             m_powered = false;
             dispatch_error("detected power loss");
             set_desired_state("DISABLED");
@@ -974,7 +993,7 @@ void mtsIntuitiveResearchKitSUJ::get_and_convert_potentiometers(void)
         m_voltages /= m_voltage_samples_number;
         // for each arm, i.e. SUJ1, SUJ2, SUJ3, ...
         for (size_t arm_index = 0; arm_index < 4; ++arm_index) {
-            auto * sarm = m_sarms[arm_index];
+            auto* sarm = m_sarms[arm_index].get();
             // start stable when reading 1st joint on all arms
             if (m_mux_index == 0) {
                 sarm->m_state_table.Start();
@@ -1071,15 +1090,13 @@ void mtsIntuitiveResearchKitSUJ::get_and_convert_potentiometers(void)
 void mtsIntuitiveResearchKitSUJ::update_forward_kinematics(void)
 {
     // for real robots first update all the local_measured_cp if all arms are ready
-    for (auto sarm : m_sarms) {
+    for (auto& sarm : m_sarms) {
         if (sarm != nullptr) {
             if (sarm->m_measured_js.Valid()) {
                 if (sarm->m_need_update_forward_kinemactics) {
                     sarm->m_need_update_forward_kinemactics = false;
                     // forward kinematic
-                    Eigen::VectorXd jp = Eigen::VectorXd::Zero(sarm->m_manipulator.links.size());
-                    jp.head(sarm->m_measured_js.Position().size()) = sarm->m_measured_js.Position();
-                    Eigen::Isometry3d dh_cp = sarm->m_manipulator.ForwardKinematics(jp);
+                    Eigen::Isometry3d dh_cp = sarm->m_manipulator->forwardKinematics(sarm->m_measured_js.Position());
                     // pre and post transformations loaded from JSON file, base frame updated using events
                     Eigen::Isometry3d local_cp = sarm->m_world_to_SUJ * dh_cp * sarm->m_SUJ_to_arm_base;
                     // update local only
@@ -1099,7 +1116,7 @@ void mtsIntuitiveResearchKitSUJ::update_forward_kinematics(void)
     prmPositionCartesianGet reference_arm_local_cp;
     prmPositionCartesianGet reference_arm_to_cart_cp;
 
-    auto * reference_sarm = m_sarms[m_reference_arm_index];
+    auto& reference_sarm = m_sarms[m_reference_arm_index];
     if (! (reference_sarm->m_get_local_measured_cp(reference_arm_local_cp))) {
         // interface not connected, reporting wrt cart
         reference_arm_to_cart_cp.Position().setIdentity();
@@ -1129,7 +1146,7 @@ void mtsIntuitiveResearchKitSUJ::update_forward_kinematics(void)
     Eigen::Isometry3d reference_frame = reference_arm_to_cart_cp.Position();
     Eigen::Isometry3d local_cp, cp;
     for (size_t arm_index = 0; arm_index < 4; ++arm_index) {
-        auto * sarm = m_sarms[arm_index];
+        auto& sarm = m_sarms[arm_index];
         // update positions with base frame, local positions are only
         // updated from FK when joints are ready
         if (arm_index != m_reference_arm_index) {
@@ -1235,7 +1252,7 @@ void mtsIntuitiveResearchKitSUJ::run_ENABLED(void)
     const double brakeCurrentRate = 8.0; // rate = 8 A/s, about 1/4 second to get up/down
 
     for (size_t arm_index = 0; arm_index < 4; ++arm_index) {
-        auto sarm = m_sarms[arm_index];
+        auto& sarm = m_sarms[arm_index];
         // brakes
         // increase current for brakes
         if (sarm->m_clutched > 0) {
@@ -1329,7 +1346,7 @@ void mtsIntuitiveResearchKitSUJ::error_event_handler(const mtsMessage & message)
 void mtsIntuitiveResearchKitSUJ::dispatch_error(const std::string & message)
 {
     m_interface->SendError(this->GetName() + ": " + message);
-    for (auto sarm : m_sarms) {
+    for (auto& sarm : m_sarms) {
         sarm->m_interface_provided->SendError(sarm->m_name + " SUJ: " + message);
     }
 }
@@ -1338,7 +1355,7 @@ void mtsIntuitiveResearchKitSUJ::dispatch_error(const std::string & message)
 void mtsIntuitiveResearchKitSUJ::dispatch_warning(const std::string & message)
 {
     m_interface->SendWarning(this->GetName() + ": " + message);
-    for (auto sarm : m_sarms) {
+    for (auto& sarm : m_sarms) {
         sarm->m_interface_provided->SendWarning(sarm->m_name + " SUJ: " + message);
     }
 }
@@ -1347,7 +1364,7 @@ void mtsIntuitiveResearchKitSUJ::dispatch_warning(const std::string & message)
 void mtsIntuitiveResearchKitSUJ::dispatch_status(const std::string & message)
 {
     m_interface->SendStatus(this->GetName() + ": " + message);
-    for (auto sarm : m_sarms) {
+    for (auto& sarm : m_sarms) {
         sarm->m_interface_provided->SendStatus(sarm->m_name + " SUJ: " + message);
     }
 }
@@ -1356,7 +1373,7 @@ void mtsIntuitiveResearchKitSUJ::dispatch_status(const std::string & message)
 void mtsIntuitiveResearchKitSUJ::dispatch_operating_state(void)
 {
     state_events.operating_state(m_operating_state);
-    for (auto sarm : m_sarms) {
+    for (auto& sarm : m_sarms) {
         sarm->state_events.operating_state(m_operating_state);
         sarm->state_events.current_state(m_state_machine.CurrentState());
         sarm->state_events.desired_state(m_state_machine.DesiredState());

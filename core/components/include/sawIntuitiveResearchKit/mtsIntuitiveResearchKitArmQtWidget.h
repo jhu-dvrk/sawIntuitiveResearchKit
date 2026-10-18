@@ -20,7 +20,7 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsIntuitiveResearchKitArmQtWidget_h
 #define _mtsIntuitiveResearchKitArmQtWidget_h
 
-#include <cisstVector/vctForceTorqueQtWidget.h>
+#include <cisstVectorQt/vctForceTorqueQtWidget.h>
 #include <cisstMultiTask/mtsComponent.h>
 #include <cisstMultiTask/mtsEventReceiver.h>
 #include <cisstMultiTask/mtsMessageQtWidget.h>

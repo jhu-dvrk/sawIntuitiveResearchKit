@@ -19,8 +19,8 @@
 #ifndef _robGravityCompensation_h
 #define _robGravityCompensation_h
 
+#include <Eigen/Core>
 #include <cisstParameterTypes/prmStateJoint.h>
-#include <cisstVector/vctTypes.h>
 
 class robGravityCompensation {
 public:

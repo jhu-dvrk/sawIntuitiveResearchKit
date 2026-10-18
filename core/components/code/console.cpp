@@ -338,17 +338,17 @@ void dvrk::console::clutch_event_handler(const prmEventButton & _button)
     case prmEventButton::PRESSED:
         m_global_clutched = true;
         m_interface_provided->SendStatus(m_name + ": clutch pressed");
-        m_system->audio.beep(vct3(0.1, 700.0, m_system->m_audio_volume));
+        m_system->audio.beep(Eigen::Vector3d(0.1, 700.0, m_system->m_audio_volume));
         break;
     case prmEventButton::RELEASED:
         m_global_clutched = false;
         m_interface_provided->SendStatus(m_name + ": clutch released");
-        m_system->audio.beep(vct3(0.1, 700.0, m_system->m_audio_volume));
+        m_system->audio.beep(Eigen::Vector3d(0.1, 700.0, m_system->m_audio_volume));
         break;
     case prmEventButton::CLICKED:
         m_interface_provided->SendStatus(m_name + ": clutch quick tap");
-        m_system->audio.beep(vct3(0.05, 2000.0, m_system->m_audio_volume));
-        m_system->audio.beep(vct3(0.05, 2000.0, m_system->m_audio_volume));
+        m_system->audio.beep(Eigen::Vector3d(0.05, 2000.0, m_system->m_audio_volume));
+        m_system->audio.beep(Eigen::Vector3d(0.05, 2000.0, m_system->m_audio_volume));
         if (m_teleop_PSM_cycle_1 != nullptr) {
             if (m_teleop_PSM_cycle_1->m_selected) {
                 select_teleop(m_teleop_PSM_cycle_2->m_name);
@@ -416,17 +416,17 @@ void dvrk::console::camera_event_handler(const prmEventButton & _button)
     case prmEventButton::PRESSED:
         m_camera = true;
         m_interface_provided->SendStatus(m_name + ": camera pressed");
-        m_system->audio.beep(vct3(0.1, 1000.0, m_system->m_audio_volume));
+        m_system->audio.beep(Eigen::Vector3d(0.1, 1000.0, m_system->m_audio_volume));
         break;
     case prmEventButton::RELEASED:
         m_camera = false;
         m_interface_provided->SendStatus(m_name + ": camera released");
-        m_system->audio.beep(vct3(0.1, 1000.0, m_system->m_audio_volume));
+        m_system->audio.beep(Eigen::Vector3d(0.1, 1000.0, m_system->m_audio_volume));
         break;
     case prmEventButton::CLICKED:
         m_interface_provided->SendStatus(m_name + ": camera quick tap");
-        m_system->audio.beep(vct3(0.05, 2500.0, m_system->m_audio_volume));
-        m_system->audio.beep(vct3(0.05, 2500.0, m_system->m_audio_volume));
+        m_system->audio.beep(Eigen::Vector3d(0.05, 2500.0, m_system->m_audio_volume));
+        m_system->audio.beep(Eigen::Vector3d(0.05, 2500.0, m_system->m_audio_volume));
         break;
     default:
         break;
@@ -466,12 +466,12 @@ void dvrk::console::operator_present_event_handler(const prmEventButton & _butto
     case prmEventButton::PRESSED:
         m_operator_present = true;
         m_interface_provided->SendStatus(m_name + ": operator present");
-        m_system->audio.beep(vct3(0.3, 1500.0, m_system->m_audio_volume));
+        m_system->audio.beep(Eigen::Vector3d(0.3, 1500.0, m_system->m_audio_volume));
         break;
     case prmEventButton::RELEASED:
         m_operator_present = false;
         m_interface_provided->SendStatus(m_name + ": operator not present");
-        m_system->audio.beep(vct3(0.3, 1200.0, m_system->m_audio_volume));
+        m_system->audio.beep(Eigen::Vector3d(0.3, 1200.0, m_system->m_audio_volume));
         break;
     default:
         break;

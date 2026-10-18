@@ -155,7 +155,7 @@ void dvrk::system_ROS::bridge_interface_provided_arm(const std::string & _arm_na
     subscribers_bridge().AddSubscriberToCommandWrite<bool, CISST_RAL_MSG(std_msgs, Bool)>
         (_required_interface_name, "body/set_cf_orientation_absolute",
          _arm_name + "/body/set_cf_orientation_absolute");
-    subscribers_bridge().AddServiceFromCommandQualifiedRead<vctDoubleVec, vctDoubleVec, CISST_RAL_SRV(cisst_msgs, ConvertFloat64Array)>
+    subscribers_bridge().AddServiceFromCommandQualifiedRead<Eigen::VectorXd, Eigen::VectorXd, CISST_RAL_SRV(cisst_msgs, ConvertFloat64Array)>
         (_required_interface_name, "actuator_to_joint_position",
          _arm_name + "/actuator_to_joint_position");
 
@@ -196,10 +196,10 @@ void dvrk::system_ROS::bridge_interface_provided_ECM(const std::string & _arm_na
         (_required_interface_name, "set_endoscope_type",
          _arm_name + "/set_endoscope_type");
 
-    // vct3 is stamped at publication; the lens frame is fixed per arm.
+    // Vector3d is stamped at publication; the lens frame is fixed per arm.
     CISST_RAL_MSG(geometry_msgs, Vector3Stamped) gravity_message;
     gravity_message.header.frame_id = _arm_name;
-    m_pub_bridge->AddPublisherFromCommandRead<vct3, CISST_RAL_MSG(geometry_msgs, Vector3Stamped)>
+    m_pub_bridge->AddPublisherFromCommandRead<Eigen::Vector3d, CISST_RAL_MSG(geometry_msgs, Vector3Stamped)>
         (_required_interface_name, "gravity_direction",
          _arm_name + "/gravity_direction", 5, false, gravity_message);
     m_connections.Add(m_pub_bridge->GetName(), _required_interface_name,
@@ -229,7 +229,7 @@ void dvrk::system_ROS::bridge_interface_provided_MTM(const std::string & _arm_na
     // bridged (e.g. subscribers and events)
     const std::string _required_interface_name = _arm_name + "_using_" + _interface_name;
 
-    subscribers_bridge().AddSubscriberToCommandWrite<vctMatRot3, CISST_RAL_MSG(geometry_msgs, Quaternion)>
+    subscribers_bridge().AddSubscriberToCommandWrite<Eigen::Matrix3d, CISST_RAL_MSG(geometry_msgs, Quaternion)>
         (_required_interface_name, "lock_orientation",
          _arm_name + "/lock_orientation");
     subscribers_bridge().AddSubscriberToCommandVoid
@@ -327,7 +327,7 @@ void dvrk::system_ROS::add_topics_system(const std::string & _name)
     events_bridge().AddPublisherFromEventWrite<double, CISST_RAL_MSG(std_msgs, Float64)>
         (interface_name, "volume",
          ros_namespace + "volume");
-    events_bridge().AddSubscriberToCommandWrite<vctDoubleVec, CISST_RAL_MSG(std_msgs, Float64MultiArray)>
+    events_bridge().AddSubscriberToCommandWrite<Eigen::VectorXd, CISST_RAL_MSG(std_msgs, Float64MultiArray)>
         (interface_name, "beep",
          ros_namespace + "beep");
     events_bridge().AddSubscriberToCommandWrite<std::string, CISST_RAL_MSG(std_msgs, String)>
@@ -581,10 +581,10 @@ void dvrk::system_ROS::add_topics_SUJ_voltages(void)
                                                      node_handle_ptr());
         const auto arms = std::list<std::string>({"ECM", "PSM1", "PSM2", "PSM3"});
         for (auto arm : arms) {
-            pub_bridge->AddPublisherFromCommandRead<vctDoubleVec, CISST_RAL_MSG(sensor_msgs, JointState)>
+            pub_bridge->AddPublisherFromCommandRead<Eigen::VectorXd, CISST_RAL_MSG(sensor_msgs, JointState)>
                 ("SUJ_" + arm, "GetVoltagesPrimary",
                  "SUJ/" + arm + "/primary_voltage/measured_js");
-            pub_bridge->AddPublisherFromCommandRead<vctDoubleVec, CISST_RAL_MSG(sensor_msgs, JointState)>
+            pub_bridge->AddPublisherFromCommandRead<Eigen::VectorXd, CISST_RAL_MSG(sensor_msgs, JointState)>
                 ("SUJ_" + arm, "GetVoltagesSecondary",
                  "SUJ/" + arm + "/secondary_voltage/measured_js");
             m_connections.Add(pub_bridge->GetName(), "SUJ_" + arm,
@@ -665,7 +665,7 @@ void dvrk::system_ROS::add_topics_teleop_PSM(const std::string & _name)
     ros_namespace += "/";
 
     // publisher
-    m_pub_bridge->AddPublisherFromCommandRead<vctMatRot3, CISST_RAL_MSG(geometry_msgs, QuaternionStamped)>
+    m_pub_bridge->AddPublisherFromCommandRead<Eigen::Matrix3d, CISST_RAL_MSG(geometry_msgs, QuaternionStamped)>
         (_name, "alignment_offset",
          ros_namespace + "alignment_offset");
     // connect

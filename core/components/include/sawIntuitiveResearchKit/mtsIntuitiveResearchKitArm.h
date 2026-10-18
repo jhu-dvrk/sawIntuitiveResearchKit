@@ -19,8 +19,6 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsIntuitiveResearchKitArm_h
 #define _mtsIntuitiveResearchKitArm_h
 
-#include <cisstNumerical/nmrPInverse.h>
-
 #include <cisstMultiTask/mtsTaskPeriodic.h>
 #include <cisstParameterTypes/prmOperatingState.h>
 #include <cisstParameterTypes/prmPositionJointSet.h>
@@ -44,7 +42,6 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstParameterTypes/prmSimulationType.h>
 
-#include <cisstRobot/robManipulator.h>
 #include <cisstRobot/robReflexxes.h>
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
@@ -52,6 +49,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/arm_configuration.h>
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
 #include <sawIntuitiveResearchKit/robGravityCompensation.h>
+#include "sawIntuitiveResearchKit/robManipulator.h"
 
 // forward declarations
 class osaCartesianImpedanceController;
@@ -101,6 +99,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     void ConfigureDH(const Json::Value & jsonConfig, const std::string & filename, const bool ignoreCoupling = false);
     void ConfigureDH(const std::string & filename);
 
+    virtual void initializeKinematics(const prmConfigurationJoint& joint_config, const KDL::Chain& chain) = 0;
+
     /*! Arm specific configuration for derived classes PSM,
       MTM... Called by Configure method. */
     inline virtual void PreConfigure(const Json::Value & CMN_UNUSED(jsonConfig),
@@ -115,10 +115,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     /*! Initialization, including resizing data members and setting up
       cisst/SAW interfaces */
-    virtual void CreateManipulator(void);
     virtual void Init(void);
 
-    virtual void update_configuration_js(void);
+    virtual void update_configuration_js(const prmConfigurationJoint& joint_config);
     void actuator_to_joint_position(const Eigen::VectorXd& actuator, Eigen::VectorXd& joint) const;
 
     void ResizeKinematicsData(void);
@@ -242,10 +241,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         return true;
     }
 
-    /*! Inverse kinematics must be redefined for each arm type. */
-    virtual robManipulator::Errno InverseKinematics(Eigen::VectorXd& jointSet,
-                                                    const Eigen::Isometry3d& cartesianGoal) const = 0;
-
     /*! Alternate signature for ROS services. */
     void inverse_kinematics(const prmInverseKinematicsRequest & request,
                             prmInverseKinematicsResponse & response) const ;
@@ -323,8 +318,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         mtsFunctionWrite operating_state;
     } state_events;
 
-    robManipulator * Manipulator = nullptr;
-    std::string mConfigurationFile;
+    std::unique_ptr<robManipulator> Manipulator = nullptr;
     bool m_has_coupling = false;
     prmActuatorJointCoupling m_coupling;
 
@@ -371,9 +365,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     prmForceTorqueJointSet m_feed_forward_jf_param;
     Eigen::VectorXd m_servo_jf_vector; // number of joints for kinematics, more convenient type than prmForceTorqueJointSet
     // to estimate wrench from joint efforts
-    nmrPInverseDynamicData
-        m_jacobian_pinverse_data,
-        m_jacobian_transpose_pinverse_data;
     prmForceCartesianGet m_body_measured_cf, m_spatial_measured_cf;
 
     // cartesian impendance controller

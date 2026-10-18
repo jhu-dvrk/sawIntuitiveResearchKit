@@ -19,7 +19,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <cppunit/TestCase.h>
 #include <cppunit/extensions/HelperMacros.h>
 
-#include <cisstVector/vctDynamicVectorTypes.h>
 #include <sawIntuitiveResearchKit/robManipulatorECM.h>
 #include <sawIntuitiveResearchKit/robManipulatorMTM.h>
 
@@ -27,14 +26,14 @@ class ManipulatorTestData {
 public:
     std::string Name;
     size_t NumberOfLinks;
-    robManipulator * Manipulator;
-    vctDoubleVec LowerLimits;
-    vctDoubleVec UpperLimits;
-    vctDoubleVec Increments;
-    vctDoubleVec ActualJoints, PreviousActualJoints;
-    vctFrm4x4 ActualPose;
-    vctDoubleVec SolutionJoints;
-    vctFrm4x4 SolutionPose;
+    std::unique_ptr<robManipulator> Manipulator;
+    Eigen::VectorXd LowerLimits;
+    Eigen::VectorXd UpperLimits;
+    Eigen::VectorXd Increments;
+    Eigen::VectorXd ActualJoints, PreviousActualJoints;
+    Eigen::Isometry3d ActualPose;
+    Eigen::VectorXd SolutionJoints;
+    Eigen::Isometry3d SolutionPose;
 
     virtual void CheckIKResults(void) = 0;
 };

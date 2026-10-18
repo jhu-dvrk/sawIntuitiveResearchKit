@@ -45,11 +45,11 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     mtsTeleOperationPSM(const mtsTaskPeriodicConstructorArg & arg);
     ~mtsTeleOperationPSM();
 
-    void Configure(const std::string & filename = "");
+    void Configure(const std::string & filename = "") override;
     virtual void Configure(const Json::Value & jsonConfig);
-    void Startup(void);
-    void Run(void);
-    void Cleanup(void);
+    void Startup(void) override;
+    void Run(void) override;
+    void Cleanup(void) override;
 
     void set_scale(const double & scale);
     void lock_rotation(const bool & lock);
@@ -87,7 +87,7 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     void SetDesiredState(const std::string & state);
     void state_command(const std::string & command);
 
-    vctMatRot3 UpdateAlignOffset(void);
+    Eigen::Matrix3d UpdateAlignOffset(void);
     void UpdateInitialState(void);
 
     void StateChanged(void);
@@ -129,8 +129,8 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
         prmVelocityCartesianGet m_measured_cv;
         prmPositionCartesianGet m_setpoint_cp;
         prmPositionCartesianSet m_move_cp;
-        vctFrm4x4 m_pose_to_follow; // orientation for the MTM to align to PSM
-        vctFrm4x4 m_pose_initial;
+        Eigen::Isometry3d m_pose_to_follow; // orientation for the MTM to align to PSM
+        Eigen::Isometry3d m_pose_initial;
     } mMTM;
 
     struct {
@@ -149,16 +149,16 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
         prmPositionCartesianGet m_setpoint_cp;
         prmPositionCartesianSet m_servo_cp;
         prmPositionJointSet     m_jaw_servo_jp;
-        vctFrm4x4 m_pose_initial;
+        Eigen::Isometry3d m_pose_initial;
     } mPSM;
 
     struct {
         mtsFunctionRead  measured_cp;
         prmPositionCartesianGet m_measured_cp;
-        vctFrm4x4 m_pose_initial;
+        Eigen::Isometry3d m_pose_initial;
     } mBaseFrame;
 
-    vctMatRot3 m_alignment_offset,
+    Eigen::Matrix3d m_alignment_offset,
         m_alignment_offset_initial; // rotation offset between MTM and PSM when tele-operation goes in follow mode
 
     // conversion from gripper (MTM) to jaw (PSM)
@@ -190,7 +190,7 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     bool m_jaw_caught_up_after_clutch = false;
     prmForceCartesianSet m_following_mtm_body_servo_cf;
 
-    vctMatRot3 mMTMClutchedOrientation;
+    Eigen::Matrix3d mMTMClutchedOrientation;
     mtsStateTable * mConfigurationStateTable;
 
     mtsStateMachine mTeleopState;

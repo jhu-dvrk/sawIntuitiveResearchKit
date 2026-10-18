@@ -17,9 +17,6 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 
-// system include
-#include <iostream>
-
 // Qt include
 #include <QMessageBox>
 #include <QCloseEvent>
@@ -27,6 +24,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <QPushButton>
 
 // cisst
+#include <cisstCommon/cmnConstants.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmPositionJointGet.h>
 
@@ -50,16 +48,12 @@ mtsIntuitiveResearchKitSUJQtWidget::mtsIntuitiveResearchKitSUJQtWidget(const std
 
     const double negativeInfinity = cmnTypeTraits<double>::MinusInfinity();
 
-    JointPositionStart.SetSize(6);
-    JointPositionStart.SetAll(negativeInfinity);
-    JointPositionFinish.SetSize(6);
-    JointPositionFinish.SetAll(negativeInfinity);
+    JointPositionStart = Eigen::VectorXd::Constant(6, negativeInfinity);
+    JointPositionFinish = Eigen::VectorXd::Constant(6, negativeInfinity);
 
-    mVoltagesExtra.SetSize(4);
-    mVoltagesExtra.Zeros();
+    mVoltagesExtra = Eigen::VectorXd::Zero(4);
 
-    mJointsRecalibrationMatrix.SetSize(6, 6);
-    mJointsRecalibrationMatrix.SetAll(negativeInfinity);
+    mJointsRecalibrationMatrix = Eigen::MatrixXd::Constant(6, 6, negativeInfinity);
 }
 
 void mtsIntuitiveResearchKitSUJQtWidget::Startup(void)
@@ -199,7 +193,7 @@ void mtsIntuitiveResearchKitSUJQtWidget::timerEventDerived(void)
         // brake voltage
         if (GetBrakeCurrent.IsValid()) {
             GetBrakeCurrent(BrakeCurrent);
-            QVBrakeCurrentWidget->SetValue(vctDoubleVec(1, BrakeCurrent * 1000.0));
+            QVBrakeCurrentWidget->SetValue(Eigen::VectorXd::Constant(1, BrakeCurrent * 1000.0));
         }
         // extra voltages
         if (GetExtraVoltages.IsValid()) {
@@ -258,13 +252,13 @@ void mtsIntuitiveResearchKitSUJQtWidget::SlotRecalibrationStartChanged(void)
     QVPotentiometerRecalibrationStartWidget->GetValue(JointPositionStart);
     if (currentColumn == 0) {
         // convert mm to m
-        mJointsRecalibrationMatrix.Element(0, currentColumn) = JointPositionStart[currentColumn] / 1000.0;
+        mJointsRecalibrationMatrix(0, currentColumn) = JointPositionStart[currentColumn] / 1000.0;
     } else {
         // convert deg to rad
-        mJointsRecalibrationMatrix.Element(0, currentColumn) = JointPositionStart[currentColumn] * (cmnPI / 180.0);
+        mJointsRecalibrationMatrix(0, currentColumn) = JointPositionStart[currentColumn] * (cmnPI / 180.0);
     }
-    mJointsRecalibrationMatrix.Element(1, currentColumn) = mVoltages[0][currentColumn];
-    mJointsRecalibrationMatrix.Element(2, currentColumn) = mVoltages[1][currentColumn];
+    mJointsRecalibrationMatrix(1, currentColumn) = mVoltages[0][currentColumn];
+    mJointsRecalibrationMatrix(2, currentColumn) = mVoltages[1][currentColumn];
 }
 
 void mtsIntuitiveResearchKitSUJQtWidget::SlotRecalibrationFinishChanged(void)
@@ -273,18 +267,18 @@ void mtsIntuitiveResearchKitSUJQtWidget::SlotRecalibrationFinishChanged(void)
     QVPotentiometerRecalibrationFinishWidget->GetValue(JointPositionFinish);
     if (currentColumn == 0) {
         // convert mm to m
-        mJointsRecalibrationMatrix.Element(3, currentColumn) = JointPositionFinish[currentColumn] / 1000.0;
+        mJointsRecalibrationMatrix(3, currentColumn) = JointPositionFinish[currentColumn] / 1000.0;
     } else {
         // convert deg to rad
-        mJointsRecalibrationMatrix.Element(3, currentColumn) = JointPositionFinish[currentColumn] * (cmnPI / 180.0);
+        mJointsRecalibrationMatrix(3, currentColumn) = JointPositionFinish[currentColumn] * (cmnPI / 180.0);
     }
-    mJointsRecalibrationMatrix.Element(4, currentColumn) = mVoltages[0][currentColumn];
-    mJointsRecalibrationMatrix.Element(5, currentColumn) = mVoltages[1][currentColumn];
+    mJointsRecalibrationMatrix(4, currentColumn) = mVoltages[0][currentColumn];
+    mJointsRecalibrationMatrix(5, currentColumn) = mVoltages[1][currentColumn];
 }
 
 void mtsIntuitiveResearchKitSUJQtWidget::SlotManualRecalibration(void)
 {
-    if (mJointsRecalibrationMatrix.IsFinite()) {
+    if (mJointsRecalibrationMatrix.array().isFinite().all()) {
         SetRecalibrationMatrix(mJointsRecalibrationMatrix);
     } else {
         QMessageBox::information(this, tr("mtsIntuitiveResearchKitSUJQtWidget"),

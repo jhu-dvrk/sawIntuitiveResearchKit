@@ -23,6 +23,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <memory>
 
 #include <cisstParameterTypes/prmActuatorJointCoupling.h>
+#include <cisstParameterTypes/prmConfigurationJoint.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
 #include <sawIntuitiveResearchKit/mtsToolList.h>
 
@@ -60,16 +61,14 @@ protected:
                        const std::string & filename) override;
     virtual bool ConfigureTool(const std::string & filename);
 
+    virtual void ConfigureToolDH(const Json::Value& json_config, const std::string& filename);
+
     /*! Configuration methods */
-    inline size_t number_of_joints(void) const override {
-        return 7;
-    }
+    size_t number_of_joints(void) const override { return 7; }
 
-    inline size_t number_of_joints_kinematics(void) const override {
-        return m_snake_like ? 8 : 6;
-    }
+    size_t number_of_joints_kinematics(void) const override { return 6; }
 
-    inline size_t number_of_brakes(void) const override {
+    size_t number_of_brakes(void) const override {
         switch (m_generation) {
         case dvrk::generation::Classic:
             return 0;
@@ -86,12 +85,9 @@ protected:
     void UpdateStateJointKinematics(void) override;
     void ToJointsPID(const Eigen::VectorXd& jointsKinematics, Eigen::VectorXd& jointsPID) override;
 
-    robManipulator::Errno InverseKinematics(Eigen::VectorXd& jointSet,
-                                            const Eigen::Isometry3d& cartesianGoal) const override;
-
     bool is_safe_for_cartesian_control(void) const override;
 
-
+    void initializeKinematics(const prmConfigurationJoint& joint_config, const KDL::Chain& chain) override;
     void Init(void) override;
 
     bool is_homed(void) const override;
@@ -109,8 +105,8 @@ protected:
     void TransitionHomed(void); // for adapter/tool detection
 
     // methods used in change coupling/engaging
-    void update_configuration_js_no_tool(void);
-    void update_configuration_js(void) override;
+    void update_configuration_js_no_tool(const prmConfigurationJoint& joint_config);
+    void update_configuration_js(const prmConfigurationJoint& joint_config) override;
 
     // engaging adapter
     void EnterEngagingAdapter(void);
@@ -210,6 +206,10 @@ protected:
         mtsFunctionWrite tool_type;
         mtsFunctionVoid tool_type_request;
     } ToolEvents;
+
+    // Kinematics of non-tool portion of arm
+    prmConfigurationJoint arm_joints;
+    KDL::Chain arm_chain;
 
     /*! 5mm tools with 8 joints */
     bool m_snake_like = false;

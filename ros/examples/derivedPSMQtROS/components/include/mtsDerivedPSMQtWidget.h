@@ -46,7 +46,7 @@ signals:
     void SignalActivated(bool lock);
 
 private slots:
-    void timerEvent(QTimerEvent * event);
+    void timerEvent(QTimerEvent * event) override;
     // to set from the GUI
     void SlotSetGain(double gain);
     void SlotActivate(bool activate);

@@ -1,5 +1,6 @@
-/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-    */
-/* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab:
+ */
 
 /*
   Author(s):  Anton Deguet, Rishibrata Biswas, Adnan Munawar
@@ -17,31 +18,42 @@
 */
 
 #include <sawIntuitiveResearchKit/robManipulatorMTM.h>
+
 #include <algorithm>
 #include <cmath>
 #include <limits>
 #include <string>
 #include <vector>
 
-namespace {
+#include <unsupported/Eigen/EulerAngles>
+
+#include <cisstCommon/cmnConstants.h>
+#include <sawIntuitiveResearchKit/robManipulatorGeneric.h>
+
+namespace
+{
 
 const double TWO_PI = 2.0 * cmnPI;
 
-void AddAngleLifts(std::vector<double> & values,
-                   const double & angle,
-                   const double & minimum,
-                   const double & maximum)
+void AddAngleLifts(
+    std::vector<double>& values,
+    const double& angle,
+    const double& minimum,
+    const double& maximum
+)
 {
-    const int first = static_cast<int>(std::ceil((minimum - angle) / TWO_PI - 1e-12));
-    const int last = static_cast<int>(std::floor((maximum - angle) / TWO_PI + 1e-12));
+    const int first =
+        static_cast<int>(std::ceil((minimum - angle) / TWO_PI - 1e-12));
+    const int last =
+        static_cast<int>(std::floor((maximum - angle) / TWO_PI + 1e-12));
     for (int turn = first; turn <= last; ++turn) {
         values.push_back(angle + turn * TWO_PI);
     }
 }
 
-double SquaredLimitPenalty(const double & value,
-                           const double & minimum,
-                           const double & maximum)
+double SquaredLimitPenalty(
+    const double& value, const double& minimum, const double& maximum
+)
 {
     // This is only a tie breaker: continuity with the supplied joint vector
     // remains the primary selection criterion.
@@ -51,14 +63,15 @@ double SquaredLimitPenalty(const double & value,
     return 1e-6 * range * range / (safeMargin * safeMargin);
 }
 
-double SquaredPlatformPreferencePenalty(const double & platform,
-                                        const double & preferredPlatform)
+double SquaredPlatformPreferencePenalty(
+    const double& platform, const double& preferredPlatform
+)
 {
     const double difference = platform - preferredPlatform;
     return difference * difference;
 }
 
-double SquaredNeutralJointPenalty(const double & value)
+double SquaredNeutralJointPenalty(const double& value)
 {
     // Joint 5 (wrist pitch) should remain near its neutral position whenever
     // the redundant platform and alternate Euler branch make that possible.
@@ -69,141 +82,286 @@ double SquaredNeutralJointPenalty(const double & value)
     return wristPitchPreferenceWeight * value * value;
 }
 
+}  // namespace
+
+// Compute { angle, length } of wrist/gimbal wrt elbow joint
+std::pair<double, double> computeElbowToWrist(const KDL::Chain& chain)
+{
+    const double forearm_length = chain.getSegment(2).getFrameToTip().p.Norm();
+    const double forearm_end_to_wrist =
+        chain.getSegment(3).getFrameToTip().p.Norm();
+
+    const double elbow_to_wrist_angle =
+        std::atan(forearm_end_to_wrist / forearm_length);
+    const double elbow_to_wrist_length = std::sqrt(
+        forearm_end_to_wrist * forearm_end_to_wrist +
+        forearm_length * forearm_length
+    );
+
+    return {elbow_to_wrist_angle, elbow_to_wrist_length};
 }
 
-robManipulatorMTM::robManipulatorMTM(const std::vector<robKinematics *> linkParms,
-                                     const vctFrame4x4<double> &Rtw0)
-    : robManipulator(linkParms, Rtw0)
+robManipulatorMTM::robManipulatorMTM(
+    const prmConfigurationJoint& joint_config, const KDL::Chain& chain
+)
+    : robManipulatorMTM(
+          joint_config,
+          chain,
+          chain.getSegment(1).getFrameToTip().p.Norm(),
+          chain.getSegment(2).getFrameToTip().p.Norm(),
+          chain.getSegment(3).getFrameToTip().p.Norm()
+      )
 {
 }
 
-robManipulatorMTM::robManipulatorMTM(const std::string &robotfilename,
-                                     const vctFrame4x4<double> &Rtw0)
-    : robManipulator(robotfilename, Rtw0)
+robManipulatorMTM::robManipulatorMTM(
+    const prmConfigurationJoint& joint_config,
+    const KDL::Chain& chain,
+    double upper_arm_length,
+    double forearm_length,
+    double forearm_end_to_wrist
+)
+    : robManipulatorGeneric(joint_config, chain),
+      upper_arm_length(upper_arm_length),
+      elbow_to_wrist_angle(std::atan(forearm_end_to_wrist / forearm_length)),
+      elbow_to_wrist_length(std::sqrt(
+          forearm_end_to_wrist * forearm_end_to_wrist +
+          forearm_length * forearm_length
+      ))
 {
 }
 
-robManipulatorMTM::robManipulatorMTM(const vctFrame4x4<double> &Rtw0)
-    : robManipulator(Rtw0)
+robManipulatorMTM* robManipulatorMTM::raw_clone() const
 {
+    return new robManipulatorMTM(joint_config, chain);
 }
 
-robManipulator::Errno
-robManipulatorMTM::InverseKinematics(vctDynamicVector<double> & q,
-                                     const vctFrame4x4<double> & Rts,
-                                     double CMN_UNUSED(tolerance),
-                                     size_t CMN_UNUSED(Niterations),
-                                     double CMN_UNUSED(LAMBDA))
+// Solve for triangle's interior angle opposite from side c. Returns NaN if no
+// such triangle exists.
+double solveTriangleInteriorAngle(double side_a, double side_b, double side_c)
 {
-    if (q.size() != links.size()) {
-        mLastError = "robManipulatorMTM::InverseKinematics: expected "
-            + std::to_string(links.size()) + " joints values but received "
-            + std::to_string(q.size());
-        CMN_LOG_RUN_ERROR << mLastError << std::endl;
-        return robManipulator::EFAILURE;
+    // law of cosines: c^2 = a^2 + b^2 - 2ab*cos(gamma)
+    // where triangle has sides a, b, c and gamma is the angle opposite side c
+    double numerator = side_a * side_a + side_b * side_b - side_c * side_c;
+    double denominator = 2 * side_a * side_b;
+    double cos_gamma = numerator / denominator;
+
+    return std::acos(cos_gamma);
+}
+
+// Given goal position of arm, solve for shoulder yaw/pitch and elbow pitch
+bool robManipulatorMTM::solveShoulderElbowIK(
+    Eigen::VectorXd& joint_positions, const Eigen::Vector3d& goal_position
+) const
+{
+    // shoulder yaw is just angle in transverse/horizontal plane
+    // coordinate system of shoulder is rotated 90 degrees, so we use X/-Y
+    // instead of Y/X
+    const double shoulder_yaw =
+        std::atan2(goal_position.x(), -goal_position.y());
+    const double shoulder_to_wrist_distance = goal_position.norm();
+
+    // shoulder-elbow-wrist is a triangle with three known side lengths
+    // so the shoulder-elbow-wrist angle is fully determined
+    const double theta = solveTriangleInteriorAngle(
+        upper_arm_length, elbow_to_wrist_length, shoulder_to_wrist_distance
+    );
+    if (std::isnan(theta)) { return false; }
+
+    // interior angle formed by shoulder-elbow-forearm
+    const double elbow_interior_angle = theta + elbow_to_wrist_angle;
+    // elbow joint pitch is supplementary/exterior angle, with 90 degree offset
+    const double elbow_pitch = (cmnPI - elbow_interior_angle) - cmnPI_2;
+
+    // angle of ground-shoulder-wrist
+    const double alpha =
+        std::acos(-goal_position.z() / shoulder_to_wrist_distance);
+    if (std::isnan(alpha)) { return false; }
+
+    // angle of elbow-shoulder-wrist
+    const double beta = solveTriangleInteriorAngle(
+        upper_arm_length, shoulder_to_wrist_distance, elbow_to_wrist_length
+    );
+    if (std::isnan(beta)) { return false; }
+
+    // shoulder pitch is ground-shoulder-elbow angle
+    const double shoulder_pitch = alpha - beta;
+
+    joint_positions[0] = shoulder_yaw;
+    joint_positions[1] = shoulder_pitch;
+    joint_positions[2] = elbow_pitch;
+
+    return true;
+}
+
+double robManipulatorMTM::findOptimalPlatformAngle(
+    const Eigen::VectorXd& q, const Eigen::Isometry3d& goal_pose
+)
+{
+    Eigen::Isometry3d wrist_base_pose;
+    forwardKinematics(q, wrist_base_pose, 3);
+
+    // Goal pose of wrist/gimbal with respect to platform base
+    Eigen::Isometry3d wrist_target_pose = wrist_base_pose.inverse() * goal_pose;
+
+    // Projection of gripper (Z) axis on to the platform plane (XY)
+    const Eigen::Vector2d ee_projection =
+        wrist_target_pose.rotation().col(2).head<2>();
+    // If gripper/ee axis is nearly normal to plane, just keep platform where it
+    // is
+    if (ee_projection.norm() < 1e-12) { return q[3]; }
+
+    const double theta = -std::atan2(ee_projection.y(), ee_projection.x());
+    // Closest equivalent angle (mod 180)
+    const double angle = closestEquivalent(q[3], theta, 3, cmnPI);
+
+    const double weight = std::abs(std::cos(q[4]));
+    const double platform = angle * weight + q[3] * (1.0 - weight);
+    return std::clamp(
+        platform, joint_config.PositionMin()[3], joint_config.PositionMax()[3]
+    );
+}
+
+double robManipulatorMTM::wristIKCost(
+    const Eigen::Vector3d& reference_joints, const Eigen::Vector3d& solution_joints
+) const
+{
+    double cost = 0.0;
+    cost += SquaredNeutralJointPenalty(solution_joints[0]);
+
+    for (Eigen::Index joint = 0; joint < 3; ++joint) {
+        const double delta = solution_joints[joint] - reference_joints[joint];
+        cost += delta * delta;
+        cost += SquaredLimitPenalty(
+            solution_joints[joint], joint_config.PositionMin()[4 + joint], joint_config.PositionMax()[4 + joint]
+        );
     }
 
-    if (links.size() == 0) {
-        mLastError = "robManipulatorMTM::InverseKinematics: the manipulator has no links";
-        CMN_LOG_RUN_ERROR << mLastError << std::endl;
-        return robManipulator::EFAILURE;
-    }
+    return cost;
+}
 
-    // if we encounter a joint limit, keep computing a solution but at
-    // the end return failure
-    bool hasReachedJointLimit = false;
+Eigen::Vector3d robManipulatorMTM::solveWristIK(
+    const Eigen::Vector3d& wrist_joints,
+    const Eigen::Isometry3d& goal
+) const
+{
+    // Convert the MTM tool frame to the frame used by the DH wrist.
 
-    // take Rtw0 into account
-    vctFrm4x4 Rt07;
-    Rtw0.ApplyInverseTo(Rts, Rt07);
+    // inverse of frame 4->7 transformation when joints are at zero, used to align EE frame so we can solve for gimbal angles with an Euler angle decomposition
+    static const Eigen::Isometry3d Rt78(Eigen::EulerAnglesYZXd(cmnPI_2, 0.0, cmnPI_2));
 
-    q[0] = atan2l(Rt07.Translation().X(),
-                  -Rt07.Translation().Y());
+    const Eigen::Isometry3d aligned_goal = goal * Rt78;
 
-    // The position solution is specific to the MTM standard-DH chain, but
-    // its lengths come from the robot model loaded by robManipulator.
-    const double l1 = links[1].PStar().Norm();
-    const double l1_sqr = l1 * l1;
+    const Eigen::EulerAnglesZYXd euler(aligned_goal.rotation());
 
-    // Create the triangle "above" the forearm to find position.  For the
-    // MTM, these are respectively A of link 3 and D of link 4.
-    const double forarmBase = links[2].PStar().Norm();
-    const double forarmHeight = links[3].PStar().Norm();
-    const double l2_sqr = forarmBase * forarmBase + forarmHeight * forarmHeight;
-    const double l2 = sqrt(l2_sqr) ;
-    const double angleOffset = asinl(forarmHeight / l2);
+    // ZYX has two non-singular families:
+    // (alpha, beta, gamma) and (alpha + pi, pi - beta, gamma + pi).
+    // The roll access orientation is opposite from the Euler axis, so roll = -gamma or -(gamma + pi)
+    const Eigen::Vector3d angles[2] = {
+        Eigen::Vector3d(euler.alpha(), euler.beta(), -euler.gamma()),
+        Eigen::Vector3d(euler.alpha() + cmnPI, cmnPI - euler.beta(), -euler.gamma()-cmnPI)
+    };
 
-    // project in plane formed by links 2 & 3 to find q2 and q3 (joint[1] and joint[2])
-    const double x = -Rt07.Translation().Z();
-    const double y = sqrt(Rt07.Translation().X() * Rt07.Translation().X()
-                          + Rt07.Translation().Y() * Rt07.Translation().Y());
+    double best_cost = std::numeric_limits<double>::infinity();
+    Eigen::Vector3d best_solution = wrist_joints;
 
-    // 2 dof IK in plane
-    const double d_sqr = x * x + y * y;
-    const double d = sqrt(d_sqr);
-    const double a1 = atan2l(y, x);
-    const double a2 = acosl((l1_sqr - l2_sqr + d_sqr) / (2.0 * l1 * d));
-    const double q1 = a1 - a2;
-    const double q2 = -acosl((l1_sqr + l2_sqr - d_sqr) / (2.0 * l1 * l2));
+    for (size_t branch = 0; branch < 2; ++branch) {
+        // pitch/yaw range is less than 360, at most one equivalent position within the joint limits
+        const double pitch = closestEquivalent(angles[branch].x(), angles[branch].x(), 4);
+        const double yaw = closestEquivalent(angles[branch].y(), angles[branch].y(), 5);
 
-    q[1] = q1;
-    q[2] = q2 - angleOffset + cmnPI_2;
+        if (pitch < joint_config.PositionMin()[4] || pitch > joint_config.PositionMax()[4]) {
+            continue;
+        }
 
-    // check joint limits for first 3 joints
-    for (size_t joint = 0; joint < 3; joint++) {
-        if (ClampJointValueAndUpdateError(joint, q[joint], 1e-5)) {
-            hasReachedJointLimit = true;
+        if (yaw < joint_config.PositionMin()[5] || yaw > joint_config.PositionMax()[5]) {
+            continue;
+        }
+
+        // roll has multiple equivalent positions
+        std::vector<double> roll_values;
+        AddAngleLifts(roll_values, angles[branch].z(), joint_config.PositionMin()[6], joint_config.PositionMax()[6]);
+
+        for (const double roll : roll_values) {
+            const Eigen::Vector3d solution(pitch, yaw, roll);
+            const double cost = wristIKCost(wrist_joints, solution);
+
+            if (cost < best_cost) {
+                best_cost = cost;
+                best_solution = solution;
+            }
         }
     }
+
+    return best_solution;
+}
+
+bool robManipulatorMTM::internalInverseKinematics(
+    const Eigen::Isometry3d& goal_pose,
+    Eigen::VectorXd& joint_positions,
+    std::string& error_message
+)
+{
+    if (joint_positions.size() != chain.getNrOfJoints()) {
+        error_message = "robManipulatorMTM::InverseKinematics: expected " +
+                        std::to_string(chain.getNrOfJoints()) +
+                        " joints values but received " +
+                        std::to_string(joint_positions.size());
+        CMN_LOG_RUN_ERROR << error_message << std::endl;
+        return false;
+    }
+
+    bool position_ok =
+        solveShoulderElbowIK(joint_positions, goal_pose.translation());
+    if (!position_ok) { return false; }
 
     // Joint 3 (the platform) is redundant for a Cartesian pose.  Resolve
     // this one-dimensional redundancy by evaluating the analytic wrist IK at
     // platform angles throughout its physical range.  The caller-provided q
     // is the continuity reference, so include it explicitly before sampling.
-    const vctDynamicVector<double> reference(q);
-    const double preferredPlatform = FindOptimalPlatformAngle(reference, Rt07);
-    const double platformMin = links[3].GetKinematics()->PositionMin();
-    const double platformMax = links[3].GetKinematics()->PositionMax();
-    const double platformStep = cmnPI / 90.0; // two degrees
-    std::vector<double> platformCandidates;
-    platformCandidates.push_back(std::min(platformMax, std::max(platformMin, reference[3])));
-    platformCandidates.push_back(platformMin);
-    platformCandidates.push_back(platformMax);
-    for (double platform = platformMin; platform < platformMax; platform += platformStep) {
-        platformCandidates.push_back(platform);
+    const double preferred_platform =
+        findOptimalPlatformAngle(joint_positions, goal_pose);
+    const double platform_min = joint_config.PositionMin()[3];
+    const double platform_max = joint_config.PositionMax()[3];
+    const double platform_step = cmnPI / 90.0;  // two degrees
+    std::vector<double> platform_candidates;
+    platform_candidates.push_back(
+        std::clamp(joint_positions[3], platform_min, platform_max)
+    );
+    platform_candidates.push_back(platform_min);
+    platform_candidates.push_back(platform_max);
+    for (double platform = platform_min; platform < platform_max;
+         platform += platform_step) {
+        platform_candidates.push_back(platform);
     }
 
-    bool foundWristSolution = false;
-    double bestCost = std::numeric_limits<double>::infinity();
-    vctDynamicVector<double> bestQ(q);
+    double best_cost = std::numeric_limits<double>::infinity();
+    Eigen::VectorXd best_solution = joint_positions;
+    Eigen::VectorXd reference = joint_positions;
+    bool found_wrist_solution = false;
+
     const double wristMin[3] = {
-        links[4].GetKinematics()->PositionMin(),
-        links[5].GetKinematics()->PositionMin(),
-        links[6].GetKinematics()->PositionMin()
+        joint_config.PositionMin()[4],
+        joint_config.PositionMin()[5],
+        joint_config.PositionMin()[6]
     };
     const double wristMax[3] = {
-        links[4].GetKinematics()->PositionMax(),
-        links[5].GetKinematics()->PositionMax(),
-        links[6].GetKinematics()->PositionMax()
+        joint_config.PositionMax()[4],
+        joint_config.PositionMax()[5],
+        joint_config.PositionMax()[6]
     };
 
-    for (size_t platformIndex = 0; platformIndex < platformCandidates.size(); ++platformIndex) {
-        const double platform = platformCandidates[platformIndex];
-        q[3] = platform;
+    for (const double platform : platform_candidates) {
+        joint_positions[3] = platform;
 
         // Convert the MTM tool frame to the frame used by the DH wrist.
-        vctEulerYZXRotation3 eulerOffset;
-        eulerOffset.Assign(cmnPI_2, 0.0, -cmnPI_2);
-        vctMatrixRotation3<double, true> Rt8;
-        vctEulerToMatrixRotation3(eulerOffset, Rt8);
-        vctFrm4x4 Rt78, Rt08;
-        Rt78.Rotation().Assign(Rt8);
-        Rt08 = Rt07 * Rt78;
+        const Eigen::EulerAnglesYZXd offset(cmnPI_2, 0.0, -cmnPI_2);
+        const Eigen::Isometry3d aligned_goal = goal_pose * offset;
 
-        const vctFrm4x4 Rt04 = ForwardKinematics(q, 4);
-        vctFrm4x4 Rt48;
-        Rt04.ApplyInverseTo(Rt08, Rt48);
-        const vctEulerZYXRotation3 euler(Rt48.Rotation());
+        Eigen::Isometry3d Rt04;
+        forwardKinematics(joint_positions, 4);
+        const Eigen::Isometry3d wrist_goal = Rt04.inverse() * aligned_goal;
+        const Eigen::EulerAnglesZYXd euler(wrist_goal.rotation());
 
         // ZYX has two non-singular families:
         // (alpha, beta, gamma) and (alpha + pi, pi - beta, gamma + pi).
@@ -222,20 +380,20 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double> & q,
                     for (size_t rollIndex = 0; rollIndex < roll.size(); ++rollIndex) {
                         const double wrist[3] = {pitch[pitchIndex], yaw[yawIndex], roll[rollIndex]};
                         double cost = (platform - reference[3]) * (platform - reference[3]);
-                        cost += SquaredPlatformPreferencePenalty(platform, preferredPlatform);
+                        cost += SquaredPlatformPreferencePenalty(platform, preferred_platform);
                         cost += SquaredNeutralJointPenalty(wrist[0]); // MTM joint 5: wrist pitch
                         for (size_t joint = 0; joint < 3; ++joint) {
-                            const double difference = wrist[joint] - reference[joint + 4];
+                            const double difference = wrist[joint] - joint_positions[joint + 4];
                             cost += difference * difference;
                             cost += SquaredLimitPenalty(wrist[joint], wristMin[joint], wristMax[joint]);
                         }
-                        if (cost < bestCost) {
-                            bestCost = cost;
-                            bestQ.Assign(q);
-                            bestQ[4] = wrist[0];
-                            bestQ[5] = wrist[1];
-                            bestQ[6] = wrist[2];
-                            foundWristSolution = true;
+                        if (cost < best_cost) {
+                            best_cost = cost;
+                            best_solution = joint_positions;
+                            best_solution[4] = wrist[0];
+                            best_solution[5] = wrist[1];
+                            best_solution[6] = wrist[2];
+                            found_wrist_solution = true;
                         }
                     }
                 }
@@ -243,57 +401,16 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double> & q,
         }
     }
 
-    if (!foundWristSolution) {
-        mLastError = "robManipulatorMTM::InverseKinematics: no platform and wrist solution within joint limits";
-        CMN_LOG_RUN_ERROR << mLastError << std::endl;
-        return robManipulator::EFAILURE;
-    }
-    q.Assign(bestQ);
-
-    if (hasReachedJointLimit) {
-        return robManipulator::EFAILURE;
+    if (!found_wrist_solution) {
+        error_message =
+            "robManipulatorMTM::InverseKinematics: no platform and wrist "
+            "solution within joint limits";
+        CMN_LOG_RUN_ERROR << error_message << std::endl;
+        return false;
     }
 
-    return robManipulator::ESUCCESS;
-}
+    joint_positions = best_solution;
+    bool limit_reached = clampJoints(joint_positions);
 
-double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double> & q,
-                                                   const vctFrame4x4<double> & Rt07) const
-{
-    const vctFrm4x4 Rt03 = ForwardKinematics(q, 3);
-    vctFrm4x4 Rt37;
-    Rt03.ApplyInverseTo(Rt07, Rt37);
-
-    const double x = Rt37.Element(0, 2);
-    const double y = Rt37.Element(1, 2);
-    const double projectionNorm = std::sqrt(x * x + y * y);
-    if (projectionNorm <= 1e-12) {
-        return q[3];
-    }
-    double angleDifference = std::acos(std::max(-1.0, std::min(1.0, -x / projectionNorm)));
-    if (y > 0.0) {
-        angleDifference = -angleDifference;
-    }
-
-    const double option1 = angleDifference;
-    double option2 = option1 - cmnPI;
-    if (option2 > cmnPI) {
-        option2 -= TWO_PI;
-    } else if (option2 < -3.0 * cmnPI_2) {
-        option2 += TWO_PI;
-    }
-    if ((option2 < -cmnPI) && (option2 > -3.0 * cmnPI_2) && (q[3] > 0.0)) {
-        option2 += TWO_PI;
-    }
-    double normalizedOption1 = option1;
-    if ((normalizedOption1 > cmnPI_2) && (normalizedOption1 < cmnPI) && (q[3] < 0.0)) {
-        normalizedOption1 -= TWO_PI;
-    }
-
-    const double solution = (std::abs(q[3] - option2) < std::abs(q[3] - normalizedOption1))
-        ? option2 : normalizedOption1;
-    const double projectionWeight = std::abs(std::cos(q[4]));
-    const double platform = solution * projectionWeight + q[3] * (1.0 - projectionWeight);
-    return std::min(links[3].GetKinematics()->PositionMax(),
-                    std::max(links[3].GetKinematics()->PositionMin(), platform));
+    return !limit_reached;
 }

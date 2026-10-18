@@ -22,6 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <memory>
 
+#include <cisstParameterTypes/prmConfigurationJoint.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitEndoscopeTypes.h>
 
@@ -64,19 +65,16 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
         return 3;
     }
 
-    robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
-                                            const vctFrm4x4 & cartesianGoal) const override;
-
     // see base class
     inline bool is_safe_for_cartesian_control(void) const override {
-        return (m_kin_measured_js.Position().at(2) > 50.0 * cmn_mm);
+        return (m_kin_measured_js.Position()[2] > 50.0 * cmn_mm);
     }
 
-    void CreateManipulator(void) override;
+    void initializeKinematics(const prmConfigurationJoint& joint_config, const KDL::Chain& chain) override;
     void Init(void) override;
     void get_robot_data(void) override;
 
-    vct3 m_gravity_direction;
+    Eigen::Vector3d m_gravity_direction;
 
     bool is_homed(void) const override;
     void unhome(void) override;
@@ -122,7 +120,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
 
     // tooltip, used for up/down endoscopes
     robManipulator * ToolOffset;
-    vctFrm4x4 ToolOffsetTransformation;
+    Eigen::Isometry3d ToolOffsetTransformation;
 
     std::unique_ptr<GravityCompensationECM> m_gc;
 };

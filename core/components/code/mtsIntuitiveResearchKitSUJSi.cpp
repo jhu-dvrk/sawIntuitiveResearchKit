@@ -18,13 +18,14 @@ http://www.cisst.org/cisst/license.txt.
 
 // system include
 #include <iostream>
+#include <memory>
 #include <time.h>
 
 // cisst
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJSi.h>
 
-
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
+#include <sawIntuitiveResearchKit/robManipulatorGeneric.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstMultiTask/mtsManagerLocal.h>
@@ -34,7 +35,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 #include <cisstParameterTypes/prmEventButton.h>
-#include <cisstRobot/robManipulator.h>
 
 static const std::map<std::string, size_t> NB_JOINTS = {{"PSM1", 4}, {"PSM2", 4}, {"PSM3", 5}, {"ECM", 4}};
 
@@ -60,29 +60,24 @@ public:
         m_interface_message(interfaceMessage)
     {
         // recalibration matrix
-        m_recalibration_matrix.SetSize(m_nb_joints, m_nb_joints);
-        m_recalibration_matrix.Zeros();
-        m_new_joint_scales[0].SetSize(m_nb_joints);
-        m_new_joint_scales[0].Zeros();
-        m_new_joint_scales[1].SetSize(m_nb_joints);
-        m_new_joint_scales[1].Zeros();
+        m_recalibration_matrix = Eigen::MatrixXd::Zero(m_nb_joints, m_nb_joints);
+        m_new_joint_scales[0] = Eigen::VectorXd::Zero(m_nb_joints);
+        m_new_joint_scales[1] = Eigen::VectorXd::Zero(m_nb_joints);
 
-        m_new_joint_offsets[0].SetSize(m_nb_joints);
-        m_new_joint_offsets[0].Zeros();
-        m_new_joint_offsets[1].SetSize(m_nb_joints);
-        m_new_joint_offsets[1].Zeros();
+        m_new_joint_offsets[0] = Eigen::VectorXd::Zero(m_nb_joints);
+        m_new_joint_offsets[1] = Eigen::VectorXd::Zero(m_nb_joints);
 
         // configuration table is not added to main component so this
         // has no effect
         m_state_table_configuration.SetAutomaticAdvance(false);
 
         for (size_t potArray = 0; potArray < 2; ++potArray) {
-            m_voltages[potArray].SetSize(m_nb_joints);
-            m_positions[potArray].SetSize(m_nb_joints);
+            m_voltages[potArray] = Eigen::VectorXd::Zero(m_nb_joints);
+            m_positions[potArray] = Eigen::VectorXd::Zero(m_nb_joints);
         }
-        m_delta_measured_js.SetSize(m_nb_joints);
+        m_delta_measured_js = Eigen::VectorXd::Zero(m_nb_joints);
 
-        m_measured_js.Position().SetSize(m_nb_joints, 0.0);
+        m_measured_js.Position() = Eigen::VectorXd::Zero(m_nb_joints);
         m_measured_js.Name().resize(m_nb_joints);
         m_configuration_js.Name().resize(m_nb_joints);
         std::stringstream jointName;
@@ -92,20 +87,19 @@ public:
             m_measured_js.Name().at(index) = jointName.str();
             m_configuration_js.Name().at(index) = jointName.str();
         }
-        m_live_measured_js.Position().ForceAssign(m_measured_js.Position());
+        m_live_measured_js.Position() = m_measured_js.Position();
         cmnDataCopy(m_live_measured_js.Name(), m_measured_js.Name());
 
-        m_configuration_js.Type().SetSize(m_nb_joints);
-        m_configuration_js.Type().SetAll(CMN_JOINT_REVOLUTE);
+        m_configuration_js.Type() = std::vector<cmnJointType>(m_nb_joints, CMN_JOINT_REVOLUTE);
         m_configuration_js.Type().at(0) = CMN_JOINT_PRISMATIC;
         // joint limits are only used in simulation mode so we can set
         // arbitrarily wide limits
-        m_configuration_js.PositionMin().SetSize(m_nb_joints);
-        m_configuration_js.PositionMax().SetSize(m_nb_joints);
-        m_configuration_js.PositionMin().SetAll(-2.0 * cmnPI);
-        m_configuration_js.PositionMax().SetAll( 2.0 * cmnPI);
-        m_configuration_js.PositionMin().at(0) = -2.0 * cmn_m;
-        m_configuration_js.PositionMax().at(0) =  2.0 * cmn_m;
+        m_configuration_js.PositionMin() = -2.0 * cmnPI * Eigen::VectorXd::Ones(m_nb_joints);
+        m_configuration_js.PositionMax() = 2.0 * cmnPI * Eigen::VectorXd::Ones(m_nb_joints);
+        m_configuration_js.PositionMin() = -2.0 * cmnPI * Eigen::VectorXd::Ones(m_nb_joints);
+        m_configuration_js.PositionMax() = 2.0 * cmnPI * Eigen::VectorXd::Ones(m_nb_joints);
+        m_configuration_js.PositionMin()[0] = -2.0 * cmn_m;
+        m_configuration_js.PositionMax()[0] =  2.0 * cmn_m;
 
         m_state_table.AddData(m_voltages[0], "PrimaryVoltage");
         m_state_table.AddData(m_voltages[1], "SecondaryVoltage");
@@ -193,7 +187,7 @@ public:
             return;
         }
         // save the desired position
-        m_measured_js.Position().Assign(newPosition.Goal());
+        m_measured_js.Position() = newPosition.Goal();
         m_measured_js.SetValid(true);
         m_measured_js.SetTimestamp(newPosition.Timestamp());
         m_need_update_forward_kinemactics = true;
@@ -212,27 +206,27 @@ public:
     }
 
 
-    inline void calibrate_potentiometers(const vctMat & mat)
+    inline void calibrate_potentiometers(const Eigen::MatrixXd& mat)
     {
         for (size_t col = 0; col < m_nb_joints; col++) {
             // IF:                                      Pi = Offset + Vi * Scale
             // Given P1 / V1 & P2 / V2, THEN:           Scale = (P1 - P2) / (V1 - V2)
 
             // Delta_P = P1 - P2
-            const double deltaJointPosition = mat.Element(0, col) - mat.Element(3, col);
+            const double deltaJointPosition = mat(0, col) - mat(3, col);
 
             // Delta_V = V1 - V2 (primary)
-            const double deltaPrimaryVoltage = mat.Element(1, col) - mat.Element(4, col);
+            const double deltaPrimaryVoltage = mat(1, col) - mat(4, col);
 
             // V1 - V2 (secondary)
-            const double deltaSecondaryVoltage = mat.Element(2, col) - mat.Element(5, col);
+            const double deltaSecondaryVoltage = mat(2, col) - mat(5, col);
 
             // Scale = Delta_P / Delta_V
             m_new_joint_scales[0][col] = deltaJointPosition / deltaPrimaryVoltage;
             m_new_joint_scales[1][col] = deltaJointPosition / deltaSecondaryVoltage;
 
-            m_new_joint_offsets[0][col] = mat.Element(0, col) - mat.Element(1, col) * m_new_joint_scales[0][col];
-            m_new_joint_offsets[1][col] = mat.Element(0, col) - mat.Element(2, col) * m_new_joint_scales[1][col];
+            m_new_joint_offsets[0][col] = mat(0, col) - mat(1, col) * m_new_joint_scales[0][col];
+            m_new_joint_offsets[1][col] = mat(0, col) - mat(2, col) * m_new_joint_scales[1][col];
         }
 
         std::cerr << "SUJ scales and offsets for arm: " << m_name << std::endl
@@ -279,14 +273,14 @@ public:
     mtsStateTable m_state_table_configuration; // changes only at config and if recalibrate
 
     // 2 arrays, one for each set of potentiometers
-    vctDoubleVec m_voltages[2];
-    vctDoubleVec m_positions[2];
-    vctDoubleVec m_delta_measured_js;
+    Eigen::VectorXd m_voltages[2];
+    Eigen::VectorXd m_positions[2];
+    Eigen::VectorXd m_delta_measured_js;
     bool m_pots_agree = false;
     bool m_waiting_for_live = true;
 
-    vctDoubleVec m_voltage_to_position_scales[2];
-    vctDoubleVec m_voltage_to_position_offsets[2];
+    Eigen::VectorXd m_voltage_to_position_scales[2];
+    Eigen::VectorXd m_voltage_to_position_offsets[2];
     prmStateJoint m_measured_js, m_live_measured_js;
     prmConfigurationJoint m_configuration_js;
 
@@ -295,14 +289,14 @@ public:
     prmPositionCartesianGet m_measured_cp;
     prmPositionCartesianGet m_local_measured_cp;
 
-    robManipulator m_manipulator;
-    vctMat m_recalibration_matrix;
-    vctDoubleVec m_new_joint_scales[2];
-    vctDoubleVec m_new_joint_offsets[2];
+    std::unique_ptr<robManipulatorGeneric> m_manipulator = nullptr;
+    Eigen::MatrixXd m_recalibration_matrix;
+    Eigen::VectorXd m_new_joint_scales[2];
+    Eigen::VectorXd m_new_joint_offsets[2];
 
     // setup transformations from json file
-    vctFrame4x4<double> m_world_to_SUJ;
-    vctFrame4x4<double> m_SUJ_to_arm_base;
+    Eigen::Isometry3d m_world_to_SUJ;
+    Eigen::Isometry3d m_SUJ_to_arm_base;
 
     // base frame
     mtsFunctionWrite m_arm_set_base_frame;
@@ -338,11 +332,13 @@ mtsIntuitiveResearchKitSUJSi::mtsIntuitiveResearchKitSUJSi(const mtsTaskPeriodic
     init();
 }
 
+// defined here so definition of mtsIntuitiveResearchKitSUJSiArmData is available
+mtsIntuitiveResearchKitSUJSi::~mtsIntuitiveResearchKitSUJSi() = default;
 
 void mtsIntuitiveResearchKitSUJSi::init(void)
 {
     // initialize arm pointers
-    m_sarms.SetAll(nullptr);
+    m_sarms = std::array<std::unique_ptr<mtsIntuitiveResearchKitSUJSiArmData>, 4>{};
 
     // configure state machine common to all arms (ECM/MTM/PSM)
     // possible states
@@ -465,12 +461,12 @@ void mtsIntuitiveResearchKitSUJSi::Configure(const std::string & filename)
         mtsInterfaceProvided * interfaceProvided = this->AddInterfaceProvided(name);
         mtsInterfaceRequired * interfaceRequired = this->AddInterfaceRequired(name, MTS_OPTIONAL);
         mtsInterfaceRequired * interfaceRequiredIO = this->AddInterfaceRequired(name + "IO", MTS_OPTIONAL);
-        auto sarm = new mtsIntuitiveResearchKitSUJSiArmData(name, m_simulation_mode,
+        auto sarm = std::make_unique<mtsIntuitiveResearchKitSUJSiArmData>(name, m_simulation_mode,
                                                             interfaceProvided,
                                                             interfaceRequired,
                                                             interfaceRequiredIO,
                                                             m_interface);
-        m_sarms[index] = sarm;
+        m_sarms[index] = std::move(sarm);
         AddStateTable(&(sarm->m_state_table));
 
         // save which arm is the Reference Arm
@@ -486,7 +482,7 @@ void mtsIntuitiveResearchKitSUJSi::Configure(const std::string & filename)
         std::string itf = "SUJ-Clutch-" + name;
         mtsInterfaceRequired * requiredInterface = this->AddInterfaceRequired(itf, MTS_OPTIONAL);
         if (requiredInterface) {
-            requiredInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJSiArmData::clutch_callback, sarm,
+            requiredInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJSiArmData::clutch_callback, m_sarms[index].get(),
                                                     "Button");
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "Configure: can't add required interface \"" << itf
@@ -502,10 +498,10 @@ void mtsIntuitiveResearchKitSUJSi::Configure(const std::string & filename)
             // look for hard coded position if available - users can always push new joint values using ROS
             Json::Value jsonPosition = jsonArm["simulated_position"];
             if (!jsonPosition.empty()) {
-                vctDoubleVec position;
-                cmnDataJSON<vctDoubleVec>::DeSerializeText(position, jsonPosition);
-                if (position.size() == nb_joints) {
-                    sarm->m_measured_js.Position().Assign(position);
+                Eigen::VectorXd position;
+                cmnDataJSON<Eigen::VectorXd>::DeSerializeText(position, jsonPosition);
+                if (position.size() == (Eigen::Index)nb_joints) {
+                    sarm->m_measured_js.Position() = position;
                     sarm->m_measured_js.SetValid(true);
                     sarm->m_need_update_forward_kinemactics = true;
                 } else {
@@ -526,20 +522,33 @@ void mtsIntuitiveResearchKitSUJSi::Configure(const std::string & filename)
         Json::Value jsonDH = jsonArm["DH"];
         if (!jsonDH.empty()) {
             // look for DH
-            sarm->m_manipulator.LoadRobot(jsonArm["DH"]);
-            if (sarm->m_manipulator.links.size() != (nb_joints + 2)) {
-                CMN_LOG_CLASS_INIT_ERROR << "Configure: incorrect kinematic chain lenght for \""
-                                         << name << "\", expected " << nb_joints + 2
-                                         << " but found " << sarm->m_manipulator.links.size() << " elements" << std::endl;
+            const auto kdl_chain = loadKDLChain(jsonDH);
+            if (!kdl_chain.has_value()) {
+                CMN_LOG_CLASS_INIT_ERROR << "Configure " << name
+                                   << ": failed to load kinematics parameters from file \""
+                                   << filename << "\"\n";
+                exit(EXIT_FAILURE);
+            }
+
+            const auto joint_config = loadJointConfig(jsonDH);
+            if (!joint_config.has_value()) {
+                CMN_LOG_CLASS_INIT_ERROR << "Configure " << name
+                                         << ": failed to load joint configuration parameters from file \""
+                                         << filename << std::endl;
+                exit(EXIT_FAILURE);
+            }
+
+            sarm->m_manipulator = std::make_unique<robManipulatorGeneric>(*joint_config, *kdl_chain);
+            if (kdl_chain->getNrOfJoints() != nb_joints) {
+                CMN_LOG_CLASS_INIT_ERROR << "Configure: incorrect kinematic chain length for \""
+                                         << name << "\", expected " << nb_joints
+                                         << " active joints but found " << kdl_chain->getNrOfJoints() << std::endl;
                 exit(EXIT_FAILURE);
 
             }
             // read setup transforms
-            vctFrm3 transform;
-            cmnDataJSON<vctFrm3>::DeSerializeText(transform, jsonArm["world_origin_to_SUJ"]);
-            sarm->m_world_to_SUJ.From(transform);
-            cmnDataJSON<vctFrm3>::DeSerializeText(transform, jsonArm["SUJ_tip_to_tool_origin"]);
-            sarm->m_SUJ_to_arm_base.From(transform);
+            cmnDataJSON<Eigen::Isometry3d>::DeSerializeText(sarm->m_world_to_SUJ , jsonArm["world_origin_to_SUJ"]);
+            cmnDataJSON<Eigen::Isometry3d>::DeSerializeText(sarm->m_SUJ_to_arm_base, jsonArm["SUJ_tip_to_tool_origin"]);
         }
     }
 }
@@ -640,7 +649,7 @@ void mtsIntuitiveResearchKitSUJSi::set_simulation_mode(const prmSimulationType &
     }
 
     // set all arms simulated
-    for (auto sarm : m_sarms) {
+    for (auto& sarm : m_sarms) {
         if (sarm != nullptr) {
             sarm->m_simulation_mode = mode;
         }
@@ -654,20 +663,20 @@ void mtsIntuitiveResearchKitSUJSi::get_robot_data(void)
         return;
     }
 
-    for (auto sarm : m_sarms) {
+    for (auto& sarm : m_sarms) {
         if (sarm != nullptr) {
             prmStateJoint primary_js, secondary_js;
             if (sarm->primary_measured_js(primary_js) && sarm->secondary_measured_js(secondary_js)) {
                 if (primary_js.Valid() && secondary_js.Valid()) {
-                    sarm->m_positions[0].Assign(primary_js.Position());
-                    sarm->m_positions[1].Assign(secondary_js.Position());
+                    sarm->m_positions[0] = primary_js.Position();
+                    sarm->m_positions[1] = secondary_js.Position();
 
                     // compare primary and secondary pots when arm is not clutched
                     const double angleTolerance = 2.0 * cmnPI_180;
                     const double distanceTolerance = 3.0 * cmn_mm;
-                    sarm->m_delta_measured_js.DifferenceOf(sarm->m_positions[0], sarm->m_positions[1]);
+                    sarm->m_delta_measured_js = sarm->m_positions[0] - sarm->m_positions[1];
                     if ((sarm->m_delta_measured_js[0] > distanceTolerance) ||
-                        (sarm->m_delta_measured_js.Ref(sarm->m_nb_joints - 1, 1).MaxAbsElement() > angleTolerance)) {
+                        (sarm->m_delta_measured_js.tail(sarm->m_nb_joints - 1).array().abs() > angleTolerance).any()) {
                         // send messages if this is new
                         if (sarm->m_pots_agree) {
                             dispatch_warning(sarm->m_name + " primary and secondary potentiometers don't seem to agree");
@@ -687,14 +696,12 @@ void mtsIntuitiveResearchKitSUJSi::get_robot_data(void)
                     }
 
                     // use average of positions reported by potentiometers
-                    sarm->m_live_measured_js.Position().SumOf(sarm->m_positions[0],
-                                                              sarm->m_positions[1]);
-                    sarm->m_live_measured_js.Position().Divide(2.0);
+                    sarm->m_live_measured_js.Position() = (sarm->m_positions[0] + sarm->m_positions[1]) / 2.0;
                     sarm->m_live_measured_js.SetValid(true);
 
                     if (sarm->m_waiting_for_live) {
                         // copy live jp
-                        sarm->m_measured_js.Position().Assign(sarm->m_live_measured_js.Position());
+                        sarm->m_measured_js.Position() = sarm->m_live_measured_js.Position();
                         sarm->m_measured_js.SetValid(true);
                         sarm->m_measured_js.SetTimestamp(mtsComponentManager::GetInstance()->GetTimeServer().GetRelativeTime());
                         sarm->m_waiting_for_live = false;
@@ -716,19 +723,17 @@ void mtsIntuitiveResearchKitSUJSi::get_robot_data(void)
 void mtsIntuitiveResearchKitSUJSi::update_forward_kinematics(void)
 {
     // first update all the local_measured_cp if all arms are ready
-    for (auto sarm : m_sarms) {
+    for (auto& sarm : m_sarms) {
         if (sarm != nullptr) {
             if (sarm->m_measured_js.Valid()) {
                 if (sarm->m_need_update_forward_kinemactics) {
                     sarm->m_need_update_forward_kinemactics = false;
                     // forward kinematic
-                    vctDoubleVec jp(sarm->m_manipulator.links.size(), 0.0);
-                    jp.Ref(sarm->m_measured_js.Position().size()).Assign(sarm->m_measured_js.Position());
-                    vctFrm4x4 dh_cp = sarm->m_manipulator.ForwardKinematics(jp);
+                    Eigen::Isometry3d dh_cp = sarm->m_manipulator->forwardKinematics(sarm->m_measured_js.Position());
                     // pre and post transformations loaded from JSON file, base frame updated using events
-                    vctFrm4x4 local_cp = sarm->m_world_to_SUJ * dh_cp * sarm->m_SUJ_to_arm_base;
+                    Eigen::Isometry3d local_cp = sarm->m_world_to_SUJ * dh_cp * sarm->m_SUJ_to_arm_base;
                     // update local only
-                    sarm->m_local_measured_cp.Position().From(local_cp);
+                    sarm->m_local_measured_cp.Position() = local_cp;
                     sarm->m_local_measured_cp.SetTimestamp(sarm->m_measured_js.Timestamp());
                     sarm->m_local_measured_cp.SetValid(true);
                     sarm->m_interface_message->SendStatus(sarm->m_name + " SUJ: measured_cp updated");
@@ -744,17 +749,17 @@ void mtsIntuitiveResearchKitSUJSi::update_forward_kinematics(void)
     prmPositionCartesianGet reference_arm_local_cp;
     prmPositionCartesianGet reference_arm_to_cart_cp;
 
-    auto * reference_sarm = m_sarms[m_reference_arm_index];
+    auto* reference_sarm = m_sarms[m_reference_arm_index].get();
     if (! (reference_sarm->m_get_local_measured_cp(reference_arm_local_cp))) {
         // interface not connected, reporting wrt cart
-        reference_arm_to_cart_cp.Position().Assign(vctFrm3::Identity());
+        reference_arm_to_cart_cp.Position() = Eigen::Isometry3d();
         reference_arm_to_cart_cp.SetValid(true);
         reference_arm_to_cart_cp.SetReferenceFrame("Cart");
     } else {
         // get position from reference arm and convert to useful type
-        vctFrm3 cart_to_reference_arm_cp = reference_sarm->m_local_measured_cp.Position() * reference_arm_local_cp.Position();
+        Eigen::Isometry3d cart_to_reference_arm_cp = reference_sarm->m_local_measured_cp.Position() * reference_arm_local_cp.Position();
         // compute and send new base frame for all SUJs (SUJ will handle BaseFrameArm differently)
-        reference_arm_to_cart_cp.Position().From(cart_to_reference_arm_cp.Inverse());
+        reference_arm_to_cart_cp.Position() = cart_to_reference_arm_cp.inverse();
         // it's an inverse, swap moving and reference frames
         reference_arm_to_cart_cp.SetReferenceFrame(reference_arm_local_cp.MovingFrame());
         reference_arm_to_cart_cp.SetMovingFrame(reference_sarm->m_local_measured_cp.ReferenceFrame());
@@ -766,23 +771,23 @@ void mtsIntuitiveResearchKitSUJSi::update_forward_kinematics(void)
                                                        reference_arm_local_cp.Timestamp()));
     }
     // reference sarm measured_cp is always with respect to cart, same as local
-    reference_sarm->m_measured_cp.Position().Assign(reference_sarm->m_local_measured_cp.Position());
+    reference_sarm->m_measured_cp.Position() = reference_sarm->m_local_measured_cp.Position();
     reference_sarm->m_measured_cp.SetValid(reference_sarm->m_local_measured_cp.Valid());
     reference_sarm->m_measured_cp.SetTimestamp(reference_sarm->m_local_measured_cp.Timestamp());
 
     // update other arms
-    vctFrm4x4 reference_frame(reference_arm_to_cart_cp.Position());
-    vctFrm4x4 local_cp, cp;
+    Eigen::Isometry3d reference_frame(reference_arm_to_cart_cp.Position());
+    Eigen::Isometry3d local_cp, cp;
     for (size_t arm_index = 0; arm_index < 4; ++arm_index) {
-        auto * sarm = m_sarms[arm_index];
+        auto* sarm = m_sarms[arm_index].get();
         // update positions with base frame, local positions are only
         // updated from FK when joints are ready
         if (arm_index != m_reference_arm_index) {
             sarm->m_measured_cp.SetReferenceFrame(reference_arm_to_cart_cp.ReferenceFrame());
-            local_cp.From(sarm->m_local_measured_cp.Position());
+            local_cp = sarm->m_local_measured_cp.Position();
             cp = reference_frame * local_cp;
             // - with base frame
-            sarm->m_measured_cp.Position().From(cp);
+            sarm->m_measured_cp.Position() = cp;
             sarm->m_measured_cp.SetValid(sarm->m_local_measured_cp.Valid()
                                          && reference_arm_to_cart_cp.Valid());
             sarm->m_measured_cp.SetTimestamp(std::max(sarm->m_local_measured_cp.Timestamp(),
@@ -793,7 +798,7 @@ void mtsIntuitiveResearchKitSUJSi::update_forward_kinematics(void)
         }
         // convert from prmPositionCartesianGet to prmPositionCartesianSet
         prmPositionCartesianSet base_frame;
-        base_frame.Goal().Assign(sarm->m_measured_cp.Position());
+        base_frame.Goal() = sarm->m_measured_cp.Position();
         base_frame.SetValid(sarm->m_measured_cp.Valid());
         base_frame.SetTimestamp(sarm->m_measured_cp.Timestamp());
         base_frame.SetReferenceFrame(sarm->m_measured_cp.ReferenceFrame());
@@ -896,7 +901,7 @@ void mtsIntuitiveResearchKitSUJSi::set_reference_arm(const std::string & arm_nam
 void mtsIntuitiveResearchKitSUJSi::dispatch_error(const std::string & message)
 {
     m_interface->SendError(this->GetName() + ": " + message);
-    for (auto sarm : m_sarms) {
+    for (auto& sarm : m_sarms) {
         sarm->m_interface_provided->SendError(sarm->m_name + " SUJ: " + message);
     }
 }
@@ -905,7 +910,7 @@ void mtsIntuitiveResearchKitSUJSi::dispatch_error(const std::string & message)
 void mtsIntuitiveResearchKitSUJSi::dispatch_warning(const std::string & message)
 {
     m_interface->SendWarning(this->GetName() + ": " + message);
-    for (auto sarm : m_sarms) {
+    for (auto& sarm : m_sarms) {
         sarm->m_interface_provided->SendWarning(sarm->m_name + " SUJ: " + message);
     }
 }
@@ -914,7 +919,7 @@ void mtsIntuitiveResearchKitSUJSi::dispatch_warning(const std::string & message)
 void mtsIntuitiveResearchKitSUJSi::dispatch_status(const std::string & message)
 {
     m_interface->SendStatus(this->GetName() + ": " + message);
-    for (auto sarm : m_sarms) {
+    for (auto& sarm : m_sarms) {
         sarm->m_interface_provided->SendStatus(sarm->m_name + " SUJ: " + message);
     }
 }
@@ -923,7 +928,7 @@ void mtsIntuitiveResearchKitSUJSi::dispatch_status(const std::string & message)
 void mtsIntuitiveResearchKitSUJSi::dispatch_operating_state(void)
 {
     state_events.operating_state(m_operating_state);
-    for (auto sarm : m_sarms) {
+    for (auto& sarm : m_sarms) {
         sarm->state_events.operating_state(m_operating_state);
         sarm->state_events.current_state(m_state_machine.CurrentState());
         sarm->state_events.desired_state(m_state_machine.DesiredState());

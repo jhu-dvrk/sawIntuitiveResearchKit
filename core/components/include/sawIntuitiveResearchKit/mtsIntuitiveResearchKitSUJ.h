@@ -43,7 +43,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJ: public mtsTaskPeriodic
 
     mtsIntuitiveResearchKitSUJ(const std::string & componentName, const double periodInSeconds);
     mtsIntuitiveResearchKitSUJ(const mtsTaskPeriodicConstructorArg & arg);
-    inline ~mtsIntuitiveResearchKitSUJ() {}
+    ~mtsIntuitiveResearchKitSUJ();
 
     void Configure(const std::string & filename) override;
     void Startup(void) override;
@@ -153,8 +153,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJ: public mtsTaskPeriodic
         mtsFunctionWrite SetPWMDutyCycle;
     } PWM;
 
-    // mtsIntuitiveResearchKitArmTypes::RobotStateType mRobotState;
-
     // Home Action
     double m_homing_timer;
 
@@ -166,7 +164,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJ: public mtsTaskPeriodic
     const size_t m_voltage_samples_number;
     size_t m_voltage_samples_counter;
     Eigen::VectorXd m_voltages;
-    std::array<mtsIntuitiveResearchKitSUJArmData*, 4> m_sarms;
+    std::array<std::unique_ptr<mtsIntuitiveResearchKitSUJArmData>, 4> m_sarms;
     size_t m_reference_arm_index; // arm used to provide base frame to all other SUJ arms, traditionally the ECM
 
     void dispatch_error(const std::string & message);

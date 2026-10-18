@@ -150,8 +150,8 @@ void ListView::itemAdded(int id) {
     list_empty_display->setHidden(list_layout->count() != 0);
 
     Q_ASSERT(list_layout->count() == model.count());
-    Q_ASSERT(selections.size() == model.count());
-    Q_ASSERT(item_views.size() == model.count());
+    Q_ASSERT((int)selections.size() == model.count());
+    Q_ASSERT((int)item_views.size() == model.count());
 }
 
 void ListView::itemUpdated(int id) {
@@ -160,15 +160,15 @@ void ListView::itemUpdated(int id) {
         if (item_view->getId() == id) {
             item_view->updateData(id);
             Q_ASSERT(list_layout->count() == model.count());
-            Q_ASSERT(selections.size() == model.count());
-            Q_ASSERT(item_views.size() == model.count());
+            Q_ASSERT((int)selections.size() == model.count());
+            Q_ASSERT((int)item_views.size() == model.count());
             return;
         }
     }
 
     Q_ASSERT(list_layout->count() == model.count());
-    Q_ASSERT(selections.size() == model.count());
-    Q_ASSERT(item_views.size() == model.count());
+    Q_ASSERT((int)selections.size() == model.count());
+    Q_ASSERT((int)item_views.size() == model.count());
 }
 
 void ListView::itemRemoved(int id) {
@@ -188,8 +188,8 @@ void ListView::itemRemoved(int id) {
     list_empty_display->setHidden(list_layout->count() != 0);
 
     Q_ASSERT(list_layout->count() == model.count());
-    Q_ASSERT(selections.size() == model.count());
-    Q_ASSERT(item_views.size() == model.count());
+    Q_ASSERT((int)selections.size() == model.count());
+    Q_ASSERT((int)item_views.size() == model.count());
 }
 
 void ListView::reset() {
@@ -220,8 +220,8 @@ void ListView::reset() {
     list_empty_display->setHidden(list_layout->count() != 0);
 
     Q_ASSERT(list_layout->count() == model.count());
-    Q_ASSERT(selections.size() == model.count());
-    Q_ASSERT(item_views.size() == model.count());
+    Q_ASSERT((int)selections.size() == model.count());
+    Q_ASSERT((int)item_views.size() == model.count());
 }
 
 }

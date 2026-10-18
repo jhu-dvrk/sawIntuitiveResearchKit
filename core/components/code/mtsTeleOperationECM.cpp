@@ -23,12 +23,13 @@ http://www.cisst.org/cisst/license.txt.
 // cisst
 #include <sawIntuitiveResearchKit/mtsTeleOperationECM.h>
 
+#include <unsupported/Eigen/EulerAngles>
 #include <cisstCommon/cmnUnits.h>
-#include <cisstVector/vctBoundingBox3.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmOperatingState.h>
 #include <cisstParameterTypes/prmForceCartesianSet.h>
+#include <unsupported/Eigen/src/EulerAngles/EulerAngles.h>
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsTeleOperationECM, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
 
@@ -537,18 +538,18 @@ void mtsTeleOperationECM::TransitionCheckingData(void)
         }
         if (m_config.check_MTMs_workspace) {
             // Make sure the coordinate systems match the ISI console side.
-            vctBoundingBox3 workArea(vct3(-400.0 * cmn_mm,
+            Eigen::AlignedBox3d workArea(Eigen::Vector3d(-400.0 * cmn_mm,
                                           -200.0 * cmn_mm,
                                             10.0 * cmn_mm),
-                                     vct3( 400.0 * cmn_mm,
+                                     Eigen::Vector3d( 400.0 * cmn_mm,
                                            200.0 * cmn_mm,
                                            800.0 * cmn_mm));
-            if (!workArea.Includes(mMTML.m_measured_cp.Position().Translation())) {
+            if (!workArea.contains(mMTML.m_measured_cp.Position().translation())) {
                 mInterface->SendError(this->GetName() + ": MTML position doesn't seem to be in the work area.  Make sure your \"base-frame\" is set correctly in your console JSON configuration file.");
                 mTeleopState.SetDesiredState("DISABLED");
                 return;
             }
-            if (!workArea.Includes(mMTMR.m_measured_cp.Position().Translation())) {
+            if (!workArea.contains(mMTMR.m_measured_cp.Position().translation())) {
                 mInterface->SendError(this->GetName() + ": MTMR position doesn't seem to be in the work area.  Make sure your \"base-frame\" is set correctly in your console JSON configuration file.");
                 mTeleopState.SetDesiredState("DISABLED");
                 return;
@@ -571,48 +572,37 @@ void mtsTeleOperationECM::EnterEnabled(void)
         // Set cartesian effort parameters only on motorized MTMs.
         mMTML.use_gravity_compensation(true);
         mMTML.body_set_cf_orientation_absolute(true);
-        mMTML.lock_orientation(mMTML.m_measured_cp.Position().Rotation());
+        mMTML.lock_orientation(Eigen::Matrix3d(mMTML.m_measured_cp.Position().rotation()));
         mMTMR.use_gravity_compensation(true);
         mMTMR.body_set_cf_orientation_absolute(true);
-        mMTMR.lock_orientation(mMTMR.m_measured_cp.Position().Rotation());
+        mMTMR.lock_orientation(Eigen::Matrix3d(mMTMR.m_measured_cp.Position().rotation()));
     }
 
     // initial state for MTM force feedback
     // -1- initial distance between MTMs
-    vct3 vectorLR;
-    vectorLR.DifferenceOf(mMTMR.m_measured_cp.Position().Translation(),
-                          mMTML.m_measured_cp.Position().Translation());
+    Eigen::Vector3d vectorLR = mMTMR.m_measured_cp.Position().translation() - mMTML.m_measured_cp.Position().translation();
     // -2- mid-point, aka center of image
-    mInitial.C.SumOf(mMTMR.m_measured_cp.Position().Translation(),
-                     mMTML.m_measured_cp.Position().Translation());
-    mInitial.C.Multiply(0.5);
+    mInitial.C = 0.5 * (mMTMR.m_measured_cp.Position().translation() + mMTML.m_measured_cp.Position().translation());
     // -3- image up vector
-    mInitial.Up.CrossProductOf(vectorLR, mInitial.C);
-    mInitial.Up.NormalizedSelf();
+    mInitial.Up = vectorLR.cross(mInitial.C).normalized();
     // -4- width of image, depth of arms wrt image plan
-    vct3 side;
-    side.CrossProductOf(mInitial.C, mInitial.Up);
-    side.NormalizedSelf();
-    mInitial.w = 0.5 * vctDotProduct(side, vectorLR);
-    mInitial.d = 0.5 * vctDotProduct(mInitial.C.Normalized(), vectorLR);
+    Eigen::Vector3d side = mInitial.C.cross(mInitial.Up).normalized();
+    mInitial.w = 0.5 * side.dot(vectorLR);
+    mInitial.d = 0.5 * mInitial.C.normalized().dot(vectorLR);
 
     // projections
-    mInitial.Lr.Assign(mInitial.C[0], 0, mInitial.C[2]);
-    mInitial.Lr.NormalizedSelf();
-    mInitial.Ud.Assign(0, mInitial.C[1], mInitial.C[2]);
-    mInitial.Ud.NormalizedSelf();
-    mInitial.Cw.Assign(mInitial.Up[0], mInitial.Up[1], 0);
-    mInitial.Cw.NormalizedSelf();
+    mInitial.Lr = Eigen::Vector3d(mInitial.C[0], 0, mInitial.C[2]).normalized();
+    mInitial.Ud = Eigen::Vector3d(0, mInitial.C[1], mInitial.C[2]).normalized();
+    mInitial.Cw = Eigen::Vector3d(mInitial.Up[0], mInitial.Up[1], 0).normalized();
 
     mInitial.ECMPositionJoint = mECM.m_setpoint_js.Position();
 
     // -5- store current rotation matrix for MTML, MTMR, and ECM
-    vctEulerZYXRotation3 eulerAngles;
-    eulerAngles.Assign(mInitial.ECMPositionJoint[3], mInitial.ECMPositionJoint[0], mInitial.ECMPositionJoint[1]);
-    vctEulerToMatrixRotation3(eulerAngles, mInitial.ECMRotEuler);
+    Eigen::EulerAnglesZYXd euler_angles(mInitial.ECMPositionJoint[3], mInitial.ECMPositionJoint[0], mInitial.ECMPositionJoint[1]);
+    mInitial.ECMRotEuler = euler_angles.toRotationMatrix();
 
-    mInitial.MTMLRot = mMTML.m_measured_cp.Position().Rotation();
-    mInitial.MTMRRot = mMTMR.m_measured_cp.Position().Rotation();
+    mInitial.MTMLRot = mMTML.m_measured_cp.Position().rotation();
+    mInitial.MTMRRot = mMTMR.m_measured_cp.Position().rotation();
 
 #if 0
     std::cerr << CMN_LOG_DETAILS << std::endl
@@ -640,54 +630,39 @@ void mtsTeleOperationECM::RunEnabled(void)
     }
 
     /* --- Forces on MTMs --- */
-    const vct3 frictionForceCoeff(-10.0, -10.0, -40.0);
+    const Eigen::Vector3d frictionForceCoeff(-10.0, -10.0, -40.0);
     const double distanceForceCoeff = 150.0;
 
     //-1- vector between MTMs
-    vct3 vectorLR;
-    vectorLR.DifferenceOf(mMTMR.m_measured_cp.Position().Translation(),
-                          mMTML.m_measured_cp.Position().Translation());
+    const Eigen::Vector3d vectorLR = mMTMR.m_measured_cp.Position().translation() - mMTML.m_measured_cp.Position().translation();
     // -2- mid-point, aka center of image
-    vct3 c;
-    c.SumOf(mMTMR.m_measured_cp.Position().Translation(),
-            mMTML.m_measured_cp.Position().Translation());
-    c.Multiply(0.5);
-    vct3 directionC = c.Normalized();
+    const Eigen::Vector3d c = 0.5 * (mMTMR.m_measured_cp.Position().translation() +
+                               mMTML.m_measured_cp.Position().translation());
+    const Eigen::Vector3d directionC = c.normalized();
     // -3- image up vector
-    vct3 up;
-    up.CrossProductOf(vectorLR, c);
-    up.NormalizedSelf();
+    const Eigen::Vector3d up = vectorLR.cross(c).normalized();
     // -4- Width of image
-    vct3 side;
-    side.CrossProductOf(c, up);
-    side.NormalizedSelf();
+    const Eigen::Vector3d side = c.cross(up).normalized();
     // -5- find desired position for L and R
-    vct3 goalL(c);
-    goalL.AddProductOf(-mInitial.w, side);
-    goalL.AddProductOf(-mInitial.d, directionC);
-    vct3 goalR(c);
-    goalR.AddProductOf(mInitial.w, side);
-    goalR.AddProductOf(mInitial.d, directionC);
-
+    const Eigen::Vector3d offset = mInitial.w * side -+mInitial.d * directionC;
+    const Eigen::Vector3d goalL = c - offset;
+    const Eigen::Vector3d goalR = c + offset;
 
     // compute forces on L and R based on error in position
-    vct3 forceFriction;
-    vct3 force;
     prmForceCartesianSet wrenchR, wrenchL;
 
     // MTMR
     // apply force
-    force.DifferenceOf(goalR,
-                       mMTMR.m_measured_cp.Position().Translation());
-    force.Multiply(distanceForceCoeff);
-    wrenchR.Force().Ref<3>(0).Assign(force);
+    Eigen::Vector3d force = goalR - mMTMR.m_measured_cp.Position().translation();
+    wrenchR.Force().head<3>() = distanceForceCoeff * force;
     // add friction force
+
+    Eigen::Vector3d force_friction;
     if (m_mtmr_measured_cv_available) {
-        forceFriction.ElementwiseProductOf(frictionForceCoeff,
-                                           mMTMR.m_measured_cv.VelocityLinear());
-        wrenchR.Force().Ref<3>(0).Add(forceFriction);
+        force_friction = frictionForceCoeff.cwiseProduct(mMTMR.m_measured_cv.VelocityLinear());
+        wrenchR.Force().head<3>(0) += force_friction;
     }
-    wrenchR.Force().Ref<3>(0).Multiply(m_config.haptic_feedback_ratio);
+    wrenchR.Force().head<3>(0) *= m_config.haptic_feedback_ratio;
     // apply
     if (m_config.MTM_is_haptic) {
         mMTMR.body_servo_cf(wrenchR);
@@ -695,71 +670,65 @@ void mtsTeleOperationECM::RunEnabled(void)
 
     // MTML
     // apply force
-    force.DifferenceOf(goalL,
-                       mMTML.m_measured_cp.Position().Translation());
-    force.Multiply(distanceForceCoeff);
-    wrenchL.Force().Ref<3>(0).Assign(force);
+    force = goalL - mMTML.m_measured_cp.Position().translation();
+    wrenchL.Force().head<3>(0) = distanceForceCoeff * force;
     // add friction force
     if (m_mtml_measured_cv_available) {
-        forceFriction.ElementwiseProductOf(frictionForceCoeff,
-                                           mMTML.m_measured_cv.VelocityLinear());
-        wrenchL.Force().Ref<3>(0).Add(forceFriction);
+        force_friction = frictionForceCoeff.cwiseProduct(mMTML.m_measured_cv.VelocityLinear());
+        wrenchL.Force().head<3>(0) += force_friction;
     }
-    wrenchL.Force().Ref<3>(0).Multiply(m_config.haptic_feedback_ratio);
+    wrenchL.Force().head<3>(0) *= m_config.haptic_feedback_ratio;
     // apply
     if (m_config.MTM_is_haptic) {
         mMTML.body_servo_cf(wrenchL);
     }
 
     /* --- Joint Control --- */
-    static const vct3 normXZ(0.0, 1.0, 0.0);
-    static const vct3 normYZ(1.0, 0.0, 0.0);
-    static const vct3 normXY(0.0, 0.0, 1.0);
+    static const Eigen::Vector3d normXZ(0.0, 1.0, 0.0);
+    static const Eigen::Vector3d normYZ(1.0, 0.0, 0.0);
+    static const Eigen::Vector3d normXY(0.0, 0.0, 1.0);
     // Initial ECM joints
-    vctVec goalJoints(mInitial.ECMPositionJoint);
+    Eigen::VectorXd goalJoints(mInitial.ECMPositionJoint);
     // Change in directions and joints
-    vctVec changeJoints(4);
-    vctVec changeDir(4);
-    vct3 crossN;  // normal to direction of motion
+    Eigen::VectorXd changeJoints(4);
+    Eigen::VectorXd changeDir(4);
+    Eigen::Vector3d crossN;  // normal to direction of motion
 
     // - Direction 0 - left/right, movement in the XZ plane
-    vct3  lr(c[0], 0.0, c[2]);
-    lr.NormalizedSelf();
-    if (mInitial.Lr.AlmostEqual(lr)) {
+    Eigen::Vector3d lr = Eigen::Vector3d(c[0], 0.0, c[2]).normalized();
+    if (mInitial.Lr.isApprox(lr)) {
         changeDir[0] = 0.0;
     } else {
-        changeDir[0] = -acos(vctDotProduct(mInitial.Lr, lr));
-        crossN = vctCrossProduct(mInitial.Lr, lr);
-        if (vctDotProduct(normXZ, crossN) < 0.0) {
+        changeDir[0] = -std::acos(mInitial.Lr.dot(lr));
+        crossN = mInitial.Lr.cross(lr);
+        if (normXZ.dot(crossN) < 0.0) {
             changeDir[0] = -changeDir[0];
         }
     }
 
     // - Direction 1 - up/down, movement in the YZ plane
-    vct3  ud(0.0, c[1], c[2]);
-    ud.NormalizedSelf();
-    if (mInitial.Ud.AlmostEqual(ud)) {
+    Eigen::Vector3d ud = Eigen::Vector3d(0.0, c[1], c[2]).normalized();
+    if (mInitial.Ud.isApprox(ud)) {
         changeDir[1] = 0.0;
     } else {
-        changeDir[1] = acos(vctDotProduct(mInitial.Ud, ud));
-        crossN = vctCrossProduct(mInitial.Ud, ud);
-        if (vctDotProduct(normYZ, crossN) < 0.0) {
+        changeDir[1] = acos(mInitial.Ud.dot(ud));
+        crossN = mInitial.Ud.cross(ud);
+        if (normYZ.dot(crossN) < 0.0) {
             changeDir[1] = -changeDir[1];
         }
     }
 
     // - Direction 2 - in/out
-    changeDir[2] = m_config.scale * (mInitial.C.Norm() - c.Norm());
+    changeDir[2] = m_config.scale * (mInitial.C.norm() - c.norm());
 
     // - Direction 3 - cc/ccw, movement in the XY plane
-    vct3 cw(up[0], up[1], 0);
-    cw.NormalizedSelf();
-    if (mInitial.Cw.AlmostEqual(cw)) {
+    Eigen::Vector3d cw = Eigen::Vector3d(up[0], up[1], 0).normalized();
+    if (mInitial.Cw.isApprox(cw)) {
         changeDir[3] = 0.0;
     } else {
-        changeDir[3] = -acos(vctDotProduct(mInitial.Cw, cw));
-        crossN = vctCrossProduct(mInitial.Cw, cw);
-        if (vctDotProduct(normXY, crossN) < 0) {
+        changeDir[3] = -acos(mInitial.Cw.dot(cw));
+        crossN = mInitial.Cw.cross(cw);
+        if (normXY.dot(crossN) < 0) {
             changeDir[3] = -changeDir[3];
         }
     }
@@ -771,27 +740,21 @@ void mtsTeleOperationECM::RunEnabled(void)
     changeJoints[2] = changeDir[2];
     changeJoints[3] = changeDir[3];
 
-    goalJoints.Add(changeJoints);
-    mECM.m_servo_jp.Goal().ForceAssign(goalJoints);
+    goalJoints += changeJoints;
+    mECM.m_servo_jp.Goal() = goalJoints;
     mECM.servo_jp(mECM.m_servo_jp);
 
     /* --- Lock Orientation --- */
 
-    //Calculate new rotations of MTMs
-    vctMatRot3 currMTMLRot;
-    vctMatRot3 currMTMRRot;
     // Current ECM Rotation
-    vctEulerZYXRotation3 finalEulerAngles;
-    vctMatrixRotation3<double> currECMRot;
-    vctMatrixRotation3<double> finalECMRot;
+    Eigen::Matrix3d finalECMRot;
 
-    finalEulerAngles.Assign(goalJoints[3], goalJoints[0], goalJoints[1]);
-    vctEulerToMatrixRotation3(finalEulerAngles, finalECMRot);
-    currECMRot = finalECMRot * mInitial.ECMRotEuler.Inverse();
+    Eigen::EulerAnglesZYXd finalEulerAngles(goalJoints[3], goalJoints[0], goalJoints[1]);
+    const Eigen::Matrix3d currECMRot = finalEulerAngles.toRotationMatrix() * mInitial.ECMRotEuler.inverse();
 
-    // Set MTM Orientation
-    currMTMLRot = currECMRot.Inverse() * mInitial.MTMLRot;
-    currMTMRRot = currECMRot.Inverse() * mInitial.MTMRRot;
+    // Calculate new rotations of MTMs
+    const Eigen::Matrix3d currMTMLRot = currECMRot.inverse() * mInitial.MTMLRot;
+    const Eigen::Matrix3d currMTMRRot = currECMRot.inverse() * mInitial.MTMRRot;
 
     if (m_config.MTM_is_haptic) {
         // set cartesian effort parameters
@@ -853,10 +816,10 @@ void mtsTeleOperationECM::Clutch(const bool & clutch)
             prmForceCartesianSet wrench;
             mMTML.body_servo_cf(wrench);
             mMTML.use_gravity_compensation(true);
-            mMTML.lock_orientation(mMTML.m_measured_cp.Position().Rotation());
+            mMTML.lock_orientation(Eigen::Matrix3d(mMTML.m_measured_cp.Position().rotation()));
             mMTMR.body_servo_cf(wrench);
             mMTMR.use_gravity_compensation(true);
-            mMTMR.lock_orientation(mMTMR.m_measured_cp.Position().Rotation());
+            mMTMR.lock_orientation(Eigen::Matrix3d(mMTMR.m_measured_cp.Position().rotation()));
         }
     } else {
         m_clutched = false;

@@ -84,7 +84,7 @@ public:
     }
 
     inline void local_servo_cp(const prmPositionCartesianSet & cp) {
-        m_local_measured_cp.Position().Assign(cp.Goal());
+        m_local_measured_cp.Position() = cp.Goal();
         m_local_measured_cp.Timestamp() = cp.Timestamp();
         m_local_measured_cp.Valid() = cp.Valid();
     }
@@ -137,10 +137,14 @@ mtsIntuitiveResearchKitSUJFixed::mtsIntuitiveResearchKitSUJFixed(const mtsTaskPe
     init();
 }
 
+
+// defined here so definition of mtsIntuitiveResearchKitSUJFixedArmData is available
+mtsIntuitiveResearchKitSUJFixed::~mtsIntuitiveResearchKitSUJFixed() = default;
+
 void mtsIntuitiveResearchKitSUJFixed::init(void)
 {
-    // initialize arm pointers
-    m_sarms.SetAll(nullptr);
+// initialize arm pointers
+    m_sarms = std::array<std::unique_ptr<mtsIntuitiveResearchKitSUJFixedArmData>, 4>{};
 
     // configure state machine common to all arms (ECM/MTM/PSM)
     // possible states
@@ -232,7 +236,6 @@ void mtsIntuitiveResearchKitSUJFixed::Configure(const std::string & filename)
         exit(EXIT_FAILURE);
     }
 
-    mtsIntuitiveResearchKitSUJFixedArmData * sarm;
     for (unsigned int index = 0; index < jsonArms.size(); ++index) {
         // name
         Json::Value jsonArm = jsonArms[index];
@@ -249,10 +252,12 @@ void mtsIntuitiveResearchKitSUJFixed::Configure(const std::string & filename)
         // ECM and change base frame on attached arms
         mtsInterfaceProvided * interfaceProvided = this->AddInterfaceProvided(name);
         mtsInterfaceRequired * interfaceRequired = this->AddInterfaceRequired(name, MTS_OPTIONAL);
-        sarm = new mtsIntuitiveResearchKitSUJFixedArmData(name,
-                                                          interfaceProvided,
-                                                          interfaceRequired);
-        m_sarms[index] = sarm;
+        m_sarms[index] = std::make_unique<mtsIntuitiveResearchKitSUJFixedArmData>(
+            name,
+            interfaceProvided,
+            interfaceRequired
+        );
+        auto& sarm = m_sarms[index];
         AddStateTable(&(sarm->m_state_table));
 
         // save which arm is the Reference Arm
@@ -267,16 +272,16 @@ void mtsIntuitiveResearchKitSUJFixed::Configure(const std::string & filename)
         // look for hard coded position if available - users can always push new joint values using ROS
         Json::Value json_cp = jsonArm["measured_cp"];
         if (!json_cp.empty()) {
-            vctFrm4x4 transform;
+            Eigen::Isometry3d transform;
             try {
-                cmnDataJSON<vctFrm4x4>::DeSerializeText(transform, json_cp);
+                cmnDataJSON<Eigen::Isometry3d>::DeSerializeText(transform, json_cp);
             } catch (std::exception & e) {
                 CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
                                          << ": caught exception \"" << e.what() << " for "
                                          << name << " measured_cp" << std::endl;
                 exit(EXIT_FAILURE);
             }
-            sarm->m_local_measured_cp.Position().From(transform);
+            sarm->m_local_measured_cp.Position() = transform;
             sarm->m_local_measured_cp.SetValid(true);
         } else {
             CMN_LOG_CLASS_INIT_WARNING << "Configure: failed to load \"measured_cp\" for \""
@@ -375,17 +380,17 @@ void mtsIntuitiveResearchKitSUJFixed::update_forward_kinematics(void)
     prmPositionCartesianGet reference_arm_local_cp;
     prmPositionCartesianGet reference_arm_to_cart_cp;
 
-    auto * reference_sarm = m_sarms[m_reference_arm_index];
+    auto& reference_sarm = m_sarms[m_reference_arm_index];
     if (! (reference_sarm->m_get_local_measured_cp(reference_arm_local_cp))) {
         // interface not connected, reporting wrt cart
-        reference_arm_to_cart_cp.Position().Assign(vctFrm3::Identity());
+        reference_arm_to_cart_cp.Position() = Eigen::Isometry3d();
         reference_arm_to_cart_cp.SetValid(true);
         reference_arm_to_cart_cp.SetReferenceFrame("Cart");
     } else {
         // get position from reference arm and convert to useful type
-        vctFrm3 cart_to_reference_arm_cp = reference_sarm->m_local_measured_cp.Position() * reference_arm_local_cp.Position();
+        Eigen::Isometry3d cart_to_reference_arm_cp = reference_sarm->m_local_measured_cp.Position() * reference_arm_local_cp.Position();
         // compute and send new base frame for all SUJs (SUJ will handle BaseFrameArm differently)
-        reference_arm_to_cart_cp.Position().From(cart_to_reference_arm_cp.Inverse());
+        reference_arm_to_cart_cp.Position() = cart_to_reference_arm_cp.inverse();
         // it's an inverse, swap moving and reference frames
         reference_arm_to_cart_cp.SetReferenceFrame(reference_arm_local_cp.MovingFrame());
         reference_arm_to_cart_cp.SetMovingFrame(reference_sarm->m_local_measured_cp.ReferenceFrame());
@@ -397,23 +402,20 @@ void mtsIntuitiveResearchKitSUJFixed::update_forward_kinematics(void)
                                                        reference_arm_local_cp.Timestamp()));
     }
     // reference sarm measured_cp is always with respect to cart, same as local
-    reference_sarm->m_measured_cp.Position().Assign(reference_sarm->m_local_measured_cp.Position());
+    reference_sarm->m_measured_cp.Position() = reference_sarm->m_local_measured_cp.Position();
     reference_sarm->m_measured_cp.SetValid(reference_sarm->m_local_measured_cp.Valid());
     reference_sarm->m_measured_cp.SetTimestamp(reference_sarm->m_local_measured_cp.Timestamp());
 
     // update other arms
-    vctFrm4x4 reference_frame(reference_arm_to_cart_cp.Position());
-    vctFrm4x4 local_cp, cp;
+    Eigen::Isometry3d reference_frame(reference_arm_to_cart_cp.Position());
     for (size_t arm_index = 0; arm_index < 4; ++arm_index) {
-        auto * sarm = m_sarms[arm_index];
+        auto& sarm = m_sarms[arm_index];
         // update positions with base frame, local positions are only
         // updated from FK when joints are ready
         if (arm_index != m_reference_arm_index) {
             sarm->m_measured_cp.SetReferenceFrame(reference_arm_to_cart_cp.ReferenceFrame());
-            local_cp.From(sarm->m_local_measured_cp.Position());
-            cp = reference_frame * local_cp;
             // - with base frame
-            sarm->m_measured_cp.Position().From(cp);
+            sarm->m_measured_cp.Position() = reference_frame * sarm->m_local_measured_cp.Position();
             sarm->m_measured_cp.SetValid(sarm->m_local_measured_cp.Valid()
                                          && reference_arm_to_cart_cp.Valid());
             sarm->m_measured_cp.SetTimestamp(std::max(sarm->m_local_measured_cp.Timestamp(),
@@ -424,7 +426,7 @@ void mtsIntuitiveResearchKitSUJFixed::update_forward_kinematics(void)
         }
         // convert from prmPositionCartesianGet to prmPositionCartesianSet
         prmPositionCartesianSet base_frame;
-        base_frame.Goal().Assign(sarm->m_measured_cp.Position());
+        base_frame.Goal() = sarm->m_measured_cp.Position();
         base_frame.SetValid(sarm->m_measured_cp.Valid());
         base_frame.SetTimestamp(sarm->m_measured_cp.Timestamp());
         base_frame.SetReferenceFrame(sarm->m_measured_cp.ReferenceFrame());
@@ -527,7 +529,7 @@ void mtsIntuitiveResearchKitSUJFixed::set_reference_arm(const std::string & arm_
 void mtsIntuitiveResearchKitSUJFixed::dispatch_error(const std::string & message)
 {
     m_interface->SendError(message);
-    for (auto sarm : m_sarms) {
+    for (auto& sarm : m_sarms) {
         sarm->m_interface->SendError(sarm->m_name + " " + message);
     }
 }
@@ -536,7 +538,7 @@ void mtsIntuitiveResearchKitSUJFixed::dispatch_error(const std::string & message
 void mtsIntuitiveResearchKitSUJFixed::dispatch_warning(const std::string & message)
 {
     m_interface->SendWarning(message);
-    for (auto sarm : m_sarms) {
+    for (auto& sarm : m_sarms) {
         sarm->m_interface->SendWarning(sarm->m_name + " " + message);
     }
 }
@@ -545,7 +547,7 @@ void mtsIntuitiveResearchKitSUJFixed::dispatch_warning(const std::string & messa
 void mtsIntuitiveResearchKitSUJFixed::dispatch_status(const std::string & message)
 {
     m_interface->SendStatus(message);
-    for (auto sarm : m_sarms) {
+    for (auto& sarm : m_sarms) {
         sarm->m_interface->SendStatus(sarm->m_name + " " + message);
     }
 }
@@ -554,7 +556,7 @@ void mtsIntuitiveResearchKitSUJFixed::dispatch_status(const std::string & messag
 void mtsIntuitiveResearchKitSUJFixed::dispatch_operating_state(void)
 {
     state_events.operating_state(m_operating_state);
-    for (auto sarm : m_sarms) {
+    for (auto& sarm : m_sarms) {
         sarm->state_events.operating_state(m_operating_state);
         sarm->state_events.current_state(m_state_machine.CurrentState());
         sarm->state_events.desired_state(m_state_machine.DesiredState());

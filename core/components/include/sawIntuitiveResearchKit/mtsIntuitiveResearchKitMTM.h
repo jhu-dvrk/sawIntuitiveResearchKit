@@ -20,8 +20,10 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsIntuitiveResearchKitMTM_h
 #define _mtsIntuitiveResearchKitMTM_h
 
+#include <kdl/chain.hpp>
 #include <memory>
 
+#include <cisstParameterTypes/prmConfigurationJoint.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
 
 // Always include last
@@ -74,9 +76,6 @@ public:
 
     void ConfigureGC(const Json::Value & armConfig, const cmnPath & configPath, const std::string & filename) override;
 
-    robManipulator::Errno InverseKinematics(Eigen::VectorXd& jointSet,
-                                            const Eigen::Isometry3d& cartesianGoal) const override;
-
     inline bool is_safe_for_cartesian_control(void) const override {
         return true;
     };
@@ -86,7 +85,7 @@ public:
         MTM_CLOSED
     } mKinematicType = MTM_CLOSED;
 
-    virtual void CreateManipulator(void) override;
+    virtual void initializeKinematics(const prmConfigurationJoint& joint_config, const KDL::Chain& chain) override;
     virtual void Init(void) override;
 
     bool is_homed(void) const override;

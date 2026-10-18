@@ -48,7 +48,7 @@ public:
 protected:
 
     // Custom method to be called when the arm is homed
-    void RunHomed(void);
+    void RunHomed(void) override;
 
     bool m_activated = false;
     bool m_recently_activated = false;
