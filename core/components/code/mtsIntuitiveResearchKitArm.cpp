@@ -859,7 +859,7 @@ void mtsIntuitiveResearchKitArm::get_robot_data(void)
         if (!(actuatorAmplifiersStatus.all())) {
             m_powered = false;
             CMN_LOG_CLASS_RUN_ERROR << GetName() << ": get_robot_data:\n - Actuator amp status: "
-                                    << actuatorAmplifiersStatus << std::endl;
+                                    << actuatorAmplifiersStatus.transpose() << std::endl;
             m_arm_interface->SendError(this->GetName() + ": detected power loss (actuators)");
             SetDesiredState("FAULT");
             return;
@@ -867,7 +867,7 @@ void mtsIntuitiveResearchKitArm::get_robot_data(void)
         if (!(brakeAmplifiersStatus.all())) {
             m_powered = false;
             CMN_LOG_CLASS_RUN_ERROR << GetName() << ": get_robot_data:\n - Brake amp status: "
-                                    << brakeAmplifiersStatus << std::endl;
+                                    << brakeAmplifiersStatus.transpose() << std::endl;
             m_arm_interface->SendError(this->GetName() + ": detected power loss (brakes)");
             SetDesiredState("FAULT");
             return;
@@ -1532,7 +1532,8 @@ void mtsIntuitiveResearchKitArm::control_servo_cs(void)
         CartesianPositionFrm = m_servo_cs.Position();
 
         std::string ik_err_msg;
-        const bool ik_ok = Manipulator->inverseKinematics(CartesianPositionFrm, jp, ik_err_msg);
+        // TODO: make control_servo_cs operate in local frame
+        const bool ik_ok = Manipulator->inverseKinematics(m_base_frame.inverse() * CartesianPositionFrm, jp, ik_err_msg);
         if (!ik_ok) {
                 m_arm_interface->SendError(this->GetName()
                                            + ": unable to solve inverse kinematics ("
@@ -1937,8 +1938,8 @@ void mtsIntuitiveResearchKitArm::servo_jp_internal(const Eigen::VectorXd& jp,
             m_servo_jp_param.Velocity() = m_coupling.JointToActuatorPosition() * m_servo_jp_param.Velocity();
         }
     }
-    PID.servo_jp(m_servo_jp_param);
 
+    PID.servo_jp(m_servo_jp_param);
     apply_feed_forward();
 }
 
@@ -2248,7 +2249,7 @@ void mtsIntuitiveResearchKitArm::inverse_kinematics(const prmInverseKinematicsRe
     response.jp() = request.jp();
 
     std::string ik_err_msg;
-    bool ik_ok = Manipulator->inverseKinematics(request.cp(), response.jp(), ik_err_msg); 
+    bool ik_ok = Manipulator->inverseKinematics(m_base_frame.inverse() * request.cp(), response.jp(), ik_err_msg); 
 
     if (ik_ok) {
         response.result() = true;
@@ -2268,7 +2269,10 @@ void mtsIntuitiveResearchKitArm::forward_kinematics(const prmForwardKinematicsRe
         return;
     }
 
-    Manipulator->forwardKinematics(request.jp(), response.cp());
+    Eigen::VectorXd all_joints = Eigen::VectorXd::Zero(number_of_joints_kinematics());
+    all_joints.head(nb_joints) = request.jp();
+
+    Manipulator->forwardKinematics(all_joints, response.cp(), nb_joints);
     response.cp() = m_base_frame * response.cp();
     response.result() = true;
 }
@@ -2283,7 +2287,10 @@ void mtsIntuitiveResearchKitArm::local_forward_kinematics(const prmForwardKinema
         return;
     }
 
-    Manipulator->forwardKinematics(request.jp(), response.cp());
+    Eigen::VectorXd all_joints = Eigen::VectorXd::Zero(number_of_joints_kinematics());
+    all_joints.head(nb_joints) = request.jp();
+
+    Manipulator->forwardKinematics(all_joints, response.cp(), nb_joints);
     response.result() = true;
 }
 

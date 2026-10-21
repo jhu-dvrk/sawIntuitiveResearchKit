@@ -222,7 +222,7 @@ std::optional<prmConfigurationJoint> loadJointConfig(const Json::Value& config)
 std::optional<KDL::Chain> loadKDLChain(const Json::Value& config)
 {
     const std::string convention = config.get("convention", "").asString();
-    if (convention != "modified" && convention != "standard") {
+    if (!convention.empty() && convention != "modified" && convention != "standard") {
         CMN_LOG_INIT_ERROR << "Unsupported kinematic convention (must be "
                               "\"modified\" or \"standard\"): \""
                            << convention << "\"" << std::endl;
@@ -247,9 +247,10 @@ std::optional<KDL::Chain> loadKDLChain(const Json::Value& config)
                                << " is not an object" << std::endl;
             return {};
         }
+        const std::string link_convention = link.get("convention", convention).asString();
 
         std::unique_ptr<robLinkKinematics> kinematics;
-        if (convention == "modified") {
+        if (link_convention == "modified") {
             const auto value = robModifiedDH::Read(link);
             if (!value.has_value()) {
                 CMN_LOG_INIT_ERROR
@@ -259,7 +260,7 @@ std::optional<KDL::Chain> loadKDLChain(const Json::Value& config)
             }
 
             kinematics = std::make_unique<robModifiedDH>(*value);
-        } else if (convention == "standard") {
+        } else if (link_convention == "standard") {
             const auto value = robStandardDH::Read(link);
             if (!value.has_value()) {
                 CMN_LOG_INIT_ERROR
@@ -269,6 +270,11 @@ std::optional<KDL::Chain> loadKDLChain(const Json::Value& config)
             }
 
             kinematics = std::make_unique<robStandardDH>(*value);
+        } else {
+            CMN_LOG_INIT_ERROR << "Unsupported kinematic convention (must be "
+                                  "\"modified\" or \"standard\"): \""
+                               << link_convention << "\"" << std::endl;
+            return {};
         }
 
         const auto dynamics = robLinkDynamics::Read(link);

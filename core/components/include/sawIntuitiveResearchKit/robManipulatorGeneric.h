@@ -66,7 +66,6 @@ public:
     void computeJacobians(const Eigen::VectorXd& joint_positions) override;
 
 protected:
-    const prmConfigurationJoint joint_config;
     const KDL::Chain chain;
 
     KDL::ChainFkSolverPos_recursive fk_solver;

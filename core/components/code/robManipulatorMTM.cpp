@@ -313,7 +313,9 @@ bool robManipulatorMTM::internalInverseKinematics(
 
     bool position_ok =
         solveShoulderElbowIK(joint_positions, goal_pose.translation());
-    if (!position_ok) { return false; }
+    if (!position_ok) { 
+        return false;
+    }
 
     // Joint 3 (the platform) is redundant for a Cartesian pose.  Resolve
     // this one-dimensional redundancy by evaluating the analytic wrist IK at
@@ -359,7 +361,7 @@ bool robManipulatorMTM::internalInverseKinematics(
         const Eigen::Isometry3d aligned_goal = goal_pose * offset;
 
         Eigen::Isometry3d Rt04;
-        forwardKinematics(joint_positions, 4);
+        forwardKinematics(joint_positions, Rt04, 4);
         const Eigen::Isometry3d wrist_goal = Rt04.inverse() * aligned_goal;
         const Eigen::EulerAnglesZYXd euler(wrist_goal.rotation());
 
@@ -410,7 +412,7 @@ bool robManipulatorMTM::internalInverseKinematics(
     }
 
     joint_positions = best_solution;
-    bool limit_reached = clampJoints(joint_positions);
+    bool limits_ok = clampJoints(joint_positions);
 
-    return !limit_reached;
+    return limits_ok;
 }

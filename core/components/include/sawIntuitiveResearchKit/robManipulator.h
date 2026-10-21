@@ -109,7 +109,7 @@ public:
     // positions. Leave segments=-1 to compute kinematics of full chain,
     // otherwise will compute kinematics only up to specified number of
     // segments/links. This version is thread safe.
-    Eigen::Isometry3d forwardKinematics(
+    [[nodiscard]] Eigen::Isometry3d forwardKinematics(
         const Eigen::VectorXd& joint_positions, int segments = -1
     ) const;
 

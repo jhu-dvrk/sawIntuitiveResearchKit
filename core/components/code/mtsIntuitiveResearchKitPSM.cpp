@@ -692,7 +692,8 @@ bool mtsIntuitiveResearchKitPSM::is_safe_for_cartesian_control(void) const
 {
     if (Manipulator == nullptr) { return false; }
 
-    Eigen::Isometry3d f4 = Manipulator->forwardKinematics(m_kin_measured_js.Position(), 4);
+    Eigen::Isometry3d f4;
+    Manipulator->forwardKinematics(m_kin_measured_js.Position(), f4, 4);
 
     const double distanceToRCM = f4.translation().norm();
     return (distanceToRCM >= (mtsIntuitiveResearchKit::PSM::SafeDistanceFromRCM
@@ -969,6 +970,7 @@ void mtsIntuitiveResearchKitPSM::TransitionHomed(void)
     }
 }
 
+// TODO: add trigger to call this when leaving homed?
 void mtsIntuitiveResearchKitPSM::update_configuration_js_no_tool(const prmConfigurationJoint& joint_config)
 {
     // all vectors used to get data from Manipulator must match the
@@ -1182,9 +1184,11 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
 
         // check if the tool in outside the cannula, measured_cp is
         // not yet computed by get_robot_data so we need to compute
-        // the FK ourselves.  This is fine for instruments with 6 dofs
-        // but is not perfect for a snake-like instrument since we don't have 8 joint values
-        Eigen::Isometry3d _measured_cp = Manipulator->forwardKinematics(m_pid_measured_js.Position(), 6);
+        // the FK ourselves.
+        Eigen::Isometry3d _measured_cp;
+        Manipulator->forwardKinematics(
+            m_pid_measured_js.Position().head(number_of_joints_kinematics()), _measured_cp
+        );
         const double distanceToRCM = _measured_cp.translation().norm();
         double depth = m_cannula_depth;
         if (depth == 0.0) {
@@ -1294,6 +1298,8 @@ void mtsIntuitiveResearchKitPSM::EnterToolEngaged(void)
     m_jaw_setpoint_js.Position() = Eigen::VectorXd::Zero(1);
     m_jaw_setpoint_js.Velocity() = Eigen::VectorXd::Zero(0);
     m_jaw_setpoint_js.Effort() = Eigen::VectorXd::Zero(1);
+
+    // TODO: UpdateStateJointKinematics?
 }
 
 void mtsIntuitiveResearchKitPSM::TransitionToolEngaged(void)
@@ -1414,10 +1420,11 @@ void mtsIntuitiveResearchKitPSM::servo_jp_internal(const Eigen::VectorXd& jp,
         return;
     }
 
-    CMN_ASSERT(m_servo_jp_param.Goal().size() == 7);
+    CMN_ASSERT(m_servo_jp_param.Goal().size() == (Eigen::Index)number_of_joints());
     // first 6 joints, assign positions and check limits
     Eigen::VectorXd jp_clipped(jp.head(number_of_joints_kinematics()));
     clip_jp(jp_clipped);
+
     ToJointsPID(jp_clipped, m_servo_jp_param.Goal());
 
     if (jp.size() == 7) {
@@ -1441,6 +1448,7 @@ void mtsIntuitiveResearchKitPSM::servo_jp_internal(const Eigen::VectorXd& jp,
             m_servo_jp_param.Velocity() = m_coupling.JointToActuatorPosition() * m_servo_jp_param.Velocity();
         }
     }
+
     PID.servo_jp(m_servo_jp_param);
 
     apply_feed_forward();
@@ -1609,7 +1617,9 @@ void mtsIntuitiveResearchKitPSM::set_tool_present_and_configured(const bool & pr
         }
     }
     // update for users
-    update_configuration_js(arm_joints);
+    if (Manipulator) {
+        update_configuration_js(Manipulator->jointConfig());
+    }
     // refresh data to take coupling into account
     get_robot_data();
 

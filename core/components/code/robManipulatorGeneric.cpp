@@ -6,6 +6,7 @@
 #include <kdl/chainfksolverpos_recursive.hpp>
 #include <kdl/jacobian.hpp>
 #include <kdl/jntarray.hpp>
+#include <kdl/solveri.hpp>
 #include <limits>
 
 robManipulatorGeneric::robManipulatorGeneric(
