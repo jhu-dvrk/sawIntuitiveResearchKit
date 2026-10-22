@@ -467,7 +467,7 @@ void mtsIntuitiveResearchKitSUJSi::Configure(const std::string & filename)
                                                             interfaceRequiredIO,
                                                             m_interface);
         m_sarms[index] = std::move(sarm);
-        AddStateTable(&(sarm->m_state_table));
+        AddStateTable(&(m_sarms[index]->m_state_table));
 
         // save which arm is the Reference Arm
         if (name == reference_sarm_name) {
