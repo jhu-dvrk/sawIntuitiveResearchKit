@@ -662,6 +662,9 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
         if (!m_skip_gravity_compensation) {
             // arm specific configuration for gravity compensation
             ConfigureGC(jsonConfig, configPath, filename);
+            double pitch = (m_mounting_pitch < std::numeric_limits<double>::max()) ? m_mounting_pitch : 0.0;
+            Eigen::Vector3d gravity = 9.81 * Eigen::Vector3d(0.0, sin(pitch), cos(pitch));
+            m_rob_gravity_compensation->setGravity(gravity);
         }
 
         // arm specific configuration
@@ -912,9 +915,7 @@ void mtsIntuitiveResearchKitArm::get_robot_data(void)
 
         // updated joint efforts for gravity compensation
         if (m_gravity_compensation && m_rob_gravity_compensation) {
-            double pitch = (m_mounting_pitch < std::numeric_limits<double>::max()) ? m_mounting_pitch : 0.0;
-            Eigen::Vector3d gravity(0.0, sin(pitch) * 9.81, cos(pitch) * 9.81);
-            m_gravity_compensation_setpoint_js.Effort() = m_rob_gravity_compensation->compute(m_kin_measured_js, gravity);
+            m_gravity_compensation_setpoint_js.Effort() = m_rob_gravity_compensation->compute(m_kin_measured_js);
         } else {
             m_gravity_compensation_setpoint_js.Effort().setZero();
         }

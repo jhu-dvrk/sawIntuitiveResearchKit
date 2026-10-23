@@ -26,31 +26,35 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmEventButton.h>
+#include <cisstRobot/kdl_utilities.h>
 
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitRevision.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitConfig.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitPSM.h>
 #include <sawIntuitiveResearchKit/prmActuatorJointCouplingCheck.h>
+#include <sawIntuitiveResearchKit/robManipulatorGeneric.h>
 
 #include <kdl/chainidsolver_recursive_newton_euler.hpp>
 
 #include <Eigen/Core>
 #include <kdl/jntarray.hpp>
-#include "sawIntuitiveResearchKit/robManipulator.h"
-#include "sawIntuitiveResearchKit/robManipulatorGeneric.h"
 
-class GravityCompensationPSM : public robGravityCompensation {
+class GravityCompensationPSM : public robGravityCompensation
+{
 public:
-    static std::unique_ptr<GravityCompensationPSM> configure(std::string physical_dh_file);
+    static std::unique_ptr<GravityCompensationPSM> configure(
+        std::string physical_dh_file
+    );
     std::string error(void);
 
-    Eigen::VectorXd compute(const prmStateJoint& state, Eigen::Vector3d& gravity) override;
+    void setGravity(const Eigen::Vector3d& gravity) override;
+    Eigen::VectorXd compute(const prmStateJoint& state) override;
 
 private:
     GravityCompensationPSM(const KDL::Chain& chain);
 
     KDL::Chain physical_model;
-    KDL::ChainIdSolver_RNE id_solver;
+    std::unique_ptr<KDL::ChainIdSolver_RNE> id_solver;
     std::string error_message;
 
     KDL::JntArray q_in;
@@ -59,12 +63,30 @@ private:
     KDL::JntArray effort_out;
 };
 
-GravityCompensationPSM::GravityCompensationPSM(const KDL::Chain& chain) : physical_model(chain), id_solver(physical_model, KDL::Vector::Zero()) {
+GravityCompensationPSM::GravityCompensationPSM(const KDL::Chain& chain)
+    : physical_model(chain),
+      id_solver(std::make_unique<KDL::ChainIdSolver_RNE>(
+          physical_model, KDL::Vector::Zero()
+      ))
+{
     qdot_in.data.setZero(physical_model.getNrOfJoints());
-    f_ext = std::vector<KDL::Wrench>(physical_model.getNrOfSegments(), KDL::Wrench::Zero());
+    f_ext = std::vector<KDL::Wrench>(
+        physical_model.getNrOfSegments(), KDL::Wrench::Zero()
+    );
+    effort_out = KDL::JntArray(physical_model.getNrOfJoints());
 }
 
-std::unique_ptr<GravityCompensationPSM> GravityCompensationPSM::configure(std::string physical_dh_file)
+void GravityCompensationPSM::setGravity(const Eigen::Vector3d& gravity)
+{
+    // Can't update ID solver's gravity vector, so we re-instantiate instead
+    id_solver = std::make_unique<KDL::ChainIdSolver_RNE>(
+        physical_model, toKDL(gravity)
+    );
+}
+
+std::unique_ptr<GravityCompensationPSM> GravityCompensationPSM::configure(
+    std::string physical_dh_file
+)
 {
     std::ifstream json_stream(physical_dh_file);
 
@@ -89,41 +111,41 @@ std::unique_ptr<GravityCompensationPSM> GravityCompensationPSM::configure(std::s
 
     const auto kdl_chain = loadKDLChain(json_dh);
     if (!kdl_chain.has_value()) {
-        CMN_LOG_INIT_ERROR << "Configure GravityCompensationPSM"
-                           << ": failed to load kinematics parameters from file \""
-                           << physical_dh_file << "\"\n";
+        CMN_LOG_INIT_ERROR
+            << "Configure GravityCompensationPSM"
+            << ": failed to load kinematics parameters from file \""
+            << physical_dh_file << "\"\n";
         return nullptr;
     }
 
     // make sure we have expected number of links
-    if (kdl_chain->getNrOfSegments() != 7) {
+    if (kdl_chain->getNrOfJoints() != 6) {
         CMN_LOG_INIT_ERROR << "Configure GravityCompensationPSM"
-                           << ": PSM GC kinematics does not match expected number of links for Si";
+                           << ": PSM GC kinematics does not match expected "
+                              "number of links for Si";
         return nullptr;
     }
 
-    return std::unique_ptr<GravityCompensationPSM>(new GravityCompensationPSM(*kdl_chain));
+    return std::unique_ptr<GravityCompensationPSM>(
+        new GravityCompensationPSM(*kdl_chain)
+    );
 }
 
-std::string GravityCompensationPSM::error(void)
-{
-    return error_message;
-}
+std::string GravityCompensationPSM::error(void) { return error_message; }
 
-Eigen::VectorXd GravityCompensationPSM::compute(const prmStateJoint& state, Eigen::Vector3d& gravity)
+Eigen::VectorXd GravityCompensationPSM::compute(const prmStateJoint& state)
 {
     const auto& j = state.Position();
     // convert virtual joint positions to physical
-    q_in.data = Eigen::VectorXd({{j[0], 0.0, j[1], -j[1], j[1], 0.5*j[2], 0.5*j[2]}});
+    q_in.data =
+        Eigen::VectorXd({{j[0], j[1], -j[1], j[1], 0.5 * j[2], 0.5 * j[2]}});
 
-    Eigen::Map<Eigen::Vector3d>(f_ext[0].force.data) = gravity;
-
-    id_solver.CartToJnt(q_in, qdot_in, qdot_in, f_ext, effort_out);
+    id_solver->CartToJnt(q_in, qdot_in, qdot_in, f_ext, effort_out);
 
     Eigen::VectorXd efforts = Eigen::VectorXd::Zero(state.Position().size());
     efforts[0] = effort_out(0);
-    efforts[1] = effort_out(2) - effort_out(3) + effort_out(4);
-    efforts[2] = effort_out(6);
+    efforts[1] = effort_out(1) - effort_out(2) + effort_out(3);
+    efforts[2] = effort_out(5);
 
     return efforts;
 }

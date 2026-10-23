@@ -21,6 +21,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <kdl/chainidsolver_recursive_newton_euler.hpp>
 #include <kdl/jntarray.hpp>
 #include <kdl/rigidbodyinertia.hpp>
+#include "sawIntuitiveResearchKit/robManipulator.h"
 #include <time.h>
 
 // cisst
@@ -34,19 +35,23 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/robManipulatorECM.h>
 
 // ECM-specific GC - accesses ECM's Manipulator so knows current endoscope mass
-class GravityCompensationECM : public robGravityCompensation {
+class GravityCompensationECM : public robGravityCompensation
+{
 public:
-    static std::unique_ptr<GravityCompensationECM> configure(std::string physical_dh_file);
+    static std::unique_ptr<GravityCompensationECM> configure(
+        std::string physical_dh_file
+    );
     std::string error(void);
 
     void set_endoscope_mass(double mass);
-    Eigen::VectorXd compute(const prmStateJoint& state, Eigen::Vector3d& gravity) override;
+    void setGravity(const Eigen::Vector3d& gravity) override;
+    Eigen::VectorXd compute(const prmStateJoint& state) override;
 
 private:
     GravityCompensationECM(const KDL::Chain& chain);
 
     KDL::Chain physical_model;
-    KDL::ChainIdSolver_RNE rne_solver;
+    std::unique_ptr<KDL::ChainIdSolver_RNE> id_solver;
     std::string error_message;
 
     KDL::JntArray q_in;
@@ -55,13 +60,30 @@ private:
     KDL::JntArray effort_out;
 };
 
-GravityCompensationECM::GravityCompensationECM(const KDL::Chain& chain) : physical_model(chain), rne_solver(physical_model, KDL::Vector::Zero()) {
+GravityCompensationECM::GravityCompensationECM(const KDL::Chain& chain)
+    : physical_model(chain),
+      id_solver(std::make_unique<KDL::ChainIdSolver_RNE>(
+          physical_model, KDL::Vector::Zero()
+      ))
+{
     qdot_in.data.setZero(physical_model.getNrOfJoints());
-    f_ext = std::vector<KDL::Wrench>(physical_model.getNrOfSegments(), KDL::Wrench::Zero());
+    f_ext = std::vector<KDL::Wrench>(
+        physical_model.getNrOfSegments(), KDL::Wrench::Zero()
+    );
     effort_out = KDL::JntArray(physical_model.getNrOfJoints());
 }
 
-std::unique_ptr<GravityCompensationECM> GravityCompensationECM::configure(std::string physical_dh_file)
+void GravityCompensationECM::setGravity(const Eigen::Vector3d& gravity)
+{
+    // Can't update ID solver's gravity vector, so we re-instantiate instead
+    id_solver = std::make_unique<KDL::ChainIdSolver_RNE>(
+        physical_model, toKDL(gravity)
+    );
+}
+
+std::unique_ptr<GravityCompensationECM> GravityCompensationECM::configure(
+    std::string physical_dh_file
+)
 {
     std::ifstream json_stream(physical_dh_file);
 
@@ -86,29 +108,29 @@ std::unique_ptr<GravityCompensationECM> GravityCompensationECM::configure(std::s
 
     const auto kdl_chain = loadKDLChain(json_dh);
     if (!kdl_chain.has_value()) {
-        CMN_LOG_INIT_ERROR << "Configure GravityCompensationECM"
-                           << ": failed to load kinematics parameters from file \""
-                           << physical_dh_file << "\"\n";
+        CMN_LOG_INIT_ERROR
+            << "Configure GravityCompensationECM"
+            << ": failed to load kinematics parameters from file \""
+            << physical_dh_file << "\"\n";
         return nullptr;
     }
 
     // make sure we have expected number of links so we know which link
     // to put the variable endoscope/camera mass
     const int num_segments = kdl_chain->getNrOfSegments();
-    if (num_segments != 6 && num_segments != 4) {
+    if (num_segments != 5 && num_segments != 4) {
         CMN_LOG_INIT_ERROR << "Configure GravityCompensationECM"
                            << ": does not match Classic or Si number of links, "
                            << physical_dh_file << "\"\n";
         return nullptr;
     }
 
-    return std::unique_ptr<GravityCompensationECM>(new GravityCompensationECM(*kdl_chain));
+    return std::unique_ptr<GravityCompensationECM>(
+        new GravityCompensationECM(*kdl_chain)
+    );
 }
 
-std::string GravityCompensationECM::error(void)
-{
-    return error_message;
-}
+std::string GravityCompensationECM::error(void) { return error_message; }
 
 void GravityCompensationECM::set_endoscope_mass(double mass)
 {
@@ -116,36 +138,37 @@ void GravityCompensationECM::set_endoscope_mass(double mass)
     if (physical_model.segments.size() == 6) {
         // Si
         auto inertia_data = physical_model.segments.at(5).getInertia();
-        KDL::RigidBodyInertia updated_inertia(mass, inertia_data.getCOG(), inertia_data.getRotationalInertia());
+        KDL::RigidBodyInertia updated_inertia(
+            mass, inertia_data.getCOG(), inertia_data.getRotationalInertia()
+        );
         physical_model.segments.at(5).setInertia(updated_inertia);
     } else {
         // Classic
         auto inertia_data = physical_model.segments.at(2).getInertia();
-        KDL::RigidBodyInertia updated_inertia(mass, inertia_data.getCOG(), inertia_data.getRotationalInertia());
+        KDL::RigidBodyInertia updated_inertia(
+            mass, inertia_data.getCOG(), inertia_data.getRotationalInertia()
+        );
         physical_model.segments.at(2).setInertia(updated_inertia);
     }
 }
 
-Eigen::VectorXd GravityCompensationECM::compute(const prmStateJoint& state, Eigen::Vector3d& gravity)
+Eigen::VectorXd GravityCompensationECM::compute(const prmStateJoint& state)
 {
     size_t n_joints = physical_model.getNrOfJoints();
     const auto& j = state.Position();
 
-    Eigen::VectorXd qd = Eigen::VectorXd::Zero(n_joints);
     Eigen::VectorXd efforts = Eigen::VectorXd::Zero(state.Position().size());
 
-    if (n_joints == 6) {
+    if (n_joints == 5) {
         // convert virtual joint positions to physical
-        q_in.data = Eigen::VectorXd({{j[0], 0.0, j[1], -j[1], j[1], j[2]}});
-        f_ext.at(0) = KDL::Wrench(toKDL(gravity), KDL::Vector::Zero());
-        rne_solver.CartToJnt(q_in, qdot_in, qdot_in, f_ext, effort_out);
+        q_in.data = Eigen::VectorXd({{j[0], j[1], -j[1], j[1], j[2]}});
+        id_solver->CartToJnt(q_in, qdot_in, qdot_in, f_ext, effort_out);
         efforts[0] = effort_out(0);
-        efforts[1] = effort_out(2) - effort_out(3) + effort_out(4);
-        efforts[2] = effort_out(5);
+        efforts[1] = effort_out(1) - effort_out(2) + effort_out(3);
+        efforts[2] = effort_out(4);
     } else if (n_joints == 4) {
         q_in.data = Eigen::VectorXd({{j[0], j[1], j[2], 0.0}});
-        f_ext.at(0) = KDL::Wrench(toKDL(gravity), KDL::Vector::Zero());
-        rne_solver.CartToJnt(q_in, qdot_in, qdot_in, f_ext, effort_out);
+        id_solver->CartToJnt(q_in, qdot_in, qdot_in, f_ext, effort_out);
         efforts.head<3>() = effort_out.data.head<3>();
     }
 

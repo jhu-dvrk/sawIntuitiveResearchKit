@@ -17,6 +17,7 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 #include "robGravityCompensationMTM.h"
+#include <Eigen/src/Core/Matrix.h>
 #include <cisstCommon/cmnDataFunctionsJSON.h>
 #include <cisstCommon/cmnLogger.h>
 #include <cisstCommon/cmnConstants.h>
@@ -179,7 +180,9 @@ void robGravityCompensationMTM::AssignRegressor(const Eigen::VectorXd& q, Eigen:
     regressor(5, 39) = q6 * q6 * q6 * q6;
 }
 
-Eigen::VectorXd robGravityCompensationMTM::compute(const prmStateJoint& state, Eigen::Vector3d& CMN_UNUSED(gravity))
+void robGravityCompensationMTM::setGravity(const Eigen::Vector3d& CMN_UNUSED(gravity)) {}
+
+Eigen::VectorXd robGravityCompensationMTM::compute(const prmStateJoint& state)
 {
     AssignRegressor(state.Position(), mRegressor);
     if ( 1 == mVersion ) {

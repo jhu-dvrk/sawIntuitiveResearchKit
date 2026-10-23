@@ -58,7 +58,11 @@ public:
 
     static CreationResult Create(const Json::Value & jsonConfig);
     robGravityCompensationMTM(const Parameters & parameters,int version);
-    Eigen::VectorXd compute(const prmStateJoint& state, Eigen::Vector3d& CMN_UNUSED(gravity)) override;
+
+    // Gravity is ignored by robGravityCompensationMTM
+    void setGravity(const Eigen::Vector3d& CMN_UNUSED(gravity)) override;
+
+    Eigen::VectorXd compute(const prmStateJoint& state) override;
 
 private:
     static void AssignRegressor(const Eigen::VectorXd& q, Eigen::MatrixXd& regressor);
