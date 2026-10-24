@@ -77,7 +77,7 @@ void GravityCompensationECM::setGravity(const Eigen::Vector3d& gravity)
 {
     // Can't update ID solver's gravity vector, so we re-instantiate instead
     id_solver = std::make_unique<KDL::ChainIdSolver_RNE>(
-        physical_model, toKDL(gravity)
+        physical_model, -toKDL(gravity)
     );
 }
 
@@ -135,13 +135,13 @@ std::string GravityCompensationECM::error(void) { return error_message; }
 void GravityCompensationECM::set_endoscope_mass(double mass)
 {
     // Si vs Classic
-    if (physical_model.segments.size() == 6) {
+    if (physical_model.getNrOfSegments() == 5) {
         // Si
-        auto inertia_data = physical_model.segments.at(5).getInertia();
+        auto inertia_data = physical_model.segments.at(4).getInertia();
         KDL::RigidBodyInertia updated_inertia(
             mass, inertia_data.getCOG(), inertia_data.getRotationalInertia()
         );
-        physical_model.segments.at(5).setInertia(updated_inertia);
+        physical_model.segments.at(4).setInertia(updated_inertia);
     } else {
         // Classic
         auto inertia_data = physical_model.segments.at(2).getInertia();
@@ -604,7 +604,7 @@ void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscop
         break;
     }
 
-    if (!m_skip_gravity_compensation) {
+    if (!m_skip_gravity_compensation && m_gc) {
         m_gc->set_endoscope_mass(mass);
     }
 

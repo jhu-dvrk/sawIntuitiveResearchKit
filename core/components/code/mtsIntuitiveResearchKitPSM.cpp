@@ -80,7 +80,7 @@ void GravityCompensationPSM::setGravity(const Eigen::Vector3d& gravity)
 {
     // Can't update ID solver's gravity vector, so we re-instantiate instead
     id_solver = std::make_unique<KDL::ChainIdSolver_RNE>(
-        physical_model, toKDL(gravity)
+        physical_model, -toKDL(gravity)
     );
 }
 

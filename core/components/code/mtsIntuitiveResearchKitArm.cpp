@@ -659,16 +659,22 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
                                            << ": ignoring gravity compensation because skip_gravity_compensation is set to True" << std::endl;
             }
         }
+
         if (!m_skip_gravity_compensation) {
             // arm specific configuration for gravity compensation
             ConfigureGC(jsonConfig, configPath, filename);
-            double pitch = (m_mounting_pitch < std::numeric_limits<double>::max()) ? m_mounting_pitch : 0.0;
-            Eigen::Vector3d gravity = 9.81 * Eigen::Vector3d(0.0, sin(pitch), cos(pitch));
-            m_rob_gravity_compensation->setGravity(gravity);
+           
         }
 
         // arm specific configuration
         PostConfigure(jsonConfig, configPath, filename);
+
+        // Set gravity direction after PostConfigure so we know the mounting_pitch
+        if (!m_skip_gravity_compensation && m_rob_gravity_compensation) {
+            double pitch = (m_mounting_pitch < std::numeric_limits<double>::max()) ? m_mounting_pitch : 0.0;
+            Eigen::Vector3d gravity = 9.81 * Eigen::Vector3d(0.0, sin(pitch), cos(pitch));
+            m_rob_gravity_compensation->setGravity(gravity);
+        }
 
     } catch (std::exception & e) {
         CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": parsing file \""
