@@ -1538,7 +1538,7 @@ void mtsIntuitiveResearchKitArm::control_servo_cs(void)
         // compute desired arm position
         CartesianPositionFrm = safe_cartesian_goal(
             m_base_frame.inverse() * m_servo_cs.Position(),
-            m_setpoint_cp_frame
+            m_local_setpoint_cp_frame
         );
 
         std::string ik_err_msg;
