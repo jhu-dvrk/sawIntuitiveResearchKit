@@ -76,6 +76,14 @@ public:
 
     void ConfigureGC(const Json::Value & armConfig, const cmnPath & configPath, const std::string & filename) override;
 
+    Eigen::Isometry3d safe_cartesian_goal(const Eigen::Isometry3d& raw_goal) const override {
+        return raw_goal;
+    }
+
+    Eigen::Isometry3d safe_cartesian_goal(const Eigen::Isometry3d& raw_goal, const Eigen::Isometry3d& CMN_UNUSED(current_pose)) const override {
+        return raw_goal;
+    }
+
     inline bool is_safe_for_cartesian_control(void) const override {
         return true;
     };

@@ -30,6 +30,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitRevision.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitConfig.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitPSM.h>
 #include <sawIntuitiveResearchKit/prmActuatorJointCouplingCheck.h>
 #include <sawIntuitiveResearchKit/robManipulatorGeneric.h>
@@ -650,66 +651,6 @@ void mtsIntuitiveResearchKitPSM::ToJointsPID(const Eigen::VectorXd& jointsKinema
     }
 }
 
-// !!!!! TODO
-// robManipulator::Errno mtsIntuitiveResearchKitPSM::InverseKinematics(Eigen::VectorXd& jointSet,
-//                                                                     const Eigen::Isometry3d& cartesianGoal) const
-// {
-//     // make sure we are away from RCM point, create a new goal on sphere around RCM point (i.e. origin)
-//     double distanceToRCM = cartesianGoal.translation().norm();
-//     double currentDepth = jointSet(2);
-
-//     // if too close to zero we're going to run into issue in any case
-//     if (distanceToRCM < 1.0 * cmn_mm) {
-//         m_arm_interface->SendWarning(GetName() + ": InverseKinematics, can't solve IK too close to RCM");
-//         return robManipulator::EFAILURE;
-//     }
-
-//     // IK
-//     robManipulator::Errno Err = Manipulator->InverseKinematics(jointSet, cartesianGoal);;
-
-//     // check equality constraint for snake like kinematic
-//     if (m_snake_like) {
-//         // Check for equality Snake joints (4,7) and (5,6)
-//         if (fabs(jointSet(4) - jointSet(7)) > 0.00001 ||
-//             fabs(jointSet(5) - jointSet(6)) > 0.00001) {
-//             m_arm_interface->SendWarning(GetName() + ": InverseKinematics, equality constraint violated");
-//         }
-//     }
-
-//     // Find closest solution mod 2 Pi for roll along shaft
-//     if (Err == robManipulator::ESUCCESS) {
-//         // find closest solution mod 2 pi
-//         const double difference = m_kin_measured_js.Position()(3) - jointSet(3);
-//         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
-//         jointSet(3) = jointSet(3) + differenceInTurns * 2.0 * cmnPI;
-
-//         // project away from RCM if not safe, using axis at end of shaft
-//         vctFrm4x4 f4;
-//         if (Manipulator->links.size() >= 4) {
-//             f4 = Manipulator->ForwardKinematics(jointSet, 4);
-//         } else {
-//             f4 = Manipulator->ForwardKinematics(jointSet);
-//         }
-//         distanceToRCM = f4.Translation().Norm();
-
-//         // if not far enough, distance for axis 4 is fully determine by insertion joint so add to it
-//         if (distanceToRCM < mtsIntuitiveResearchKit::PSM::SafeDistanceFromRCM) {
-//             // two cases based in current depth, were we past min depth or not - to do this we need to compute the minimum depth using j2.
-//             const double minDepth = jointSet(2) + (mtsIntuitiveResearchKit::PSM::SafeDistanceFromRCM - distanceToRCM);
-//             // if we are already too close to RCM, simply prevent to get closer
-//             if (currentDepth <= minDepth) {
-//                 jointSet(2) = std::max(currentDepth, jointSet(2));
-//             } else {
-//                 // else, make sure we don't go deeper
-//                 jointSet(2) = minDepth;
-//             }
-//         }
-//         return robManipulator::ESUCCESS;
-//     }
-
-//     return robManipulator::EFAILURE;
-// }
-
 bool mtsIntuitiveResearchKitPSM::is_safe_for_cartesian_control(void) const
 {
     if (Manipulator == nullptr) { return false; }
@@ -884,6 +825,42 @@ bool mtsIntuitiveResearchKitPSM::is_cartesian_ready(void) const
     return m_powered && m_encoders_biased_from_pots && Tool.IsEngaged && Manipulator != nullptr;
 }
 
+Eigen::Isometry3d mtsIntuitiveResearchKitPSM::safe_cartesian_goal(const Eigen::Isometry3d& raw_goal) const {
+    Eigen::Isometry3d safe_goal = raw_goal;
+
+    // Make sure we're at least 1mm away from RCM to prevent numerical instability in next step
+    if (raw_goal.translation().norm() < 1.0 * cmn_mm) {
+        safe_goal.translation().z() = -1.0 * cmn_mm;
+    }
+
+    // Enforce PSM::SafeDistanceFromRCM minimum insertion
+    if (safe_goal.translation().norm() < mtsIntuitiveResearchKit::PSM::SafeDistanceFromRCM) {
+        safe_goal.translation() = mtsIntuitiveResearchKit::PSM::SafeDistanceFromRCM * safe_goal.translation().normalized();
+    }
+
+    return safe_goal;
+}
+
+Eigen::Isometry3d mtsIntuitiveResearchKitPSM::safe_cartesian_goal(const Eigen::Isometry3d& raw_goal, const Eigen::Isometry3d& current_pose) const {
+    Eigen::Isometry3d safe_goal = raw_goal;
+    
+    // Make sure we're at least 1mm away from RCM to prevent numerical instability in next step
+    if (raw_goal.translation().norm() < 1.0 * cmn_mm) {
+        safe_goal.translation().z() = -1.0 * cmn_mm;
+    }
+
+    // Enforce PSM::SafeDistanceFromRCM minimum insertion, unless robot is currently closer to the RCM
+    const double goal_rcm_distance = safe_goal.translation().norm();
+    if (goal_rcm_distance < mtsIntuitiveResearchKit::PSM::SafeDistanceFromRCM) {
+        const double current_distance = current_pose.translation().norm();
+
+        const double minimum_distance = std::min(current_distance, mtsIntuitiveResearchKit::PSM::SafeDistanceFromRCM);
+        const double safe_goal_distance = std::max(minimum_distance, goal_rcm_distance);
+        safe_goal.translation() = safe_goal_distance * safe_goal.translation().normalized();
+    }
+
+    return safe_goal;
+}
 
 void mtsIntuitiveResearchKitPSM::SetControlSpaceAndMode(const mtsIntuitiveResearchKitControlTypes::ControlSpace space,
                                                         const mtsIntuitiveResearchKitControlTypes::ControlMode mode,
@@ -899,6 +876,7 @@ void mtsIntuitiveResearchKitPSM::SetControlSpaceAndMode(const mtsIntuitiveResear
             m_jaw_servo_jf = 0.0;
         }
     }
+
     mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(space, mode, callback);
 }
 

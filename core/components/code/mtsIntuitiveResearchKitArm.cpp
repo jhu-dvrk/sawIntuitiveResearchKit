@@ -1536,11 +1536,14 @@ void mtsIntuitiveResearchKitArm::control_servo_cs(void)
     Eigen::VectorXd jp = m_kin_measured_js.Position();
     if (m_servo_cs.PositionIsValid()) {
         // compute desired arm position
-        CartesianPositionFrm = m_servo_cs.Position();
+        CartesianPositionFrm = safe_cartesian_goal(
+            m_base_frame.inverse() * m_servo_cs.Position(),
+            m_setpoint_cp_frame
+        );
 
         std::string ik_err_msg;
         // TODO: make control_servo_cs operate in local frame
-        const bool ik_ok = Manipulator->inverseKinematics(m_base_frame.inverse() * CartesianPositionFrm, jp, ik_err_msg);
+        const bool ik_ok = Manipulator->inverseKinematics(CartesianPositionFrm, jp, ik_err_msg);
         if (!ik_ok) {
                 m_arm_interface->SendError(this->GetName()
                                            + ": unable to solve inverse kinematics ("
@@ -2166,10 +2169,10 @@ void mtsIntuitiveResearchKitArm::move_cp(const prmPositionCartesianSet & cp)
     Eigen::VectorXd jp = m_kin_measured_js.Position();
 
     // compute desired position
-    CartesianPositionFrm = cp.Goal();
+    CartesianPositionFrm = safe_cartesian_goal(m_base_frame.inverse() * cp.Goal());
 
     std::string ik_err_msg;
-    bool ik_ok = Manipulator->inverseKinematics(m_base_frame.inverse() * CartesianPositionFrm, jp, ik_err_msg); 
+    bool ik_ok = Manipulator->inverseKinematics(CartesianPositionFrm, jp, ik_err_msg); 
     if (ik_ok) {
         // make sure trajectory is reset
         control_move_jp_on_start();

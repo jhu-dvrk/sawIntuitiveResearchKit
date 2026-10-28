@@ -528,6 +528,7 @@ void mtsIntuitiveResearchKitMTM::control_servo_cf_orientation_locked(void)
     // compute desired position from current position and locked orientation
     CartesianPositionFrm.translation() = m_local_measured_cp_frame.translation();
     CartesianPositionFrm.linear() = mEffortOrientation;
+    CartesianPositionFrm = safe_cartesian_goal(CartesianPositionFrm, m_local_setpoint_cp_frame);
 
     std::string error_message;
     bool ok = Manipulator->inverseKinematics(CartesianPositionFrm, jointSet, error_message);

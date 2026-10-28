@@ -70,6 +70,10 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
         return (m_kin_measured_js.Position()[2] > 50.0 * cmn_mm);
     }
 
+    Eigen::Isometry3d safe_cartesian_goal(const Eigen::Isometry3d& raw_goal) const override;
+
+    Eigen::Isometry3d safe_cartesian_goal(const Eigen::Isometry3d& raw_goal, const Eigen::Isometry3d& current_pose) const override;
+
     void initializeKinematics(const prmConfigurationJoint& joint_config, const KDL::Chain& chain) override;
     void Init(void) override;
     void get_robot_data(void) override;

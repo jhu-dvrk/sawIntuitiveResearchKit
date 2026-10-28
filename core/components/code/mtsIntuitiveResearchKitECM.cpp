@@ -21,16 +21,17 @@ http://www.cisst.org/cisst/license.txt.
 #include <kdl/chainidsolver_recursive_newton_euler.hpp>
 #include <kdl/jntarray.hpp>
 #include <kdl/rigidbodyinertia.hpp>
-#include "sawIntuitiveResearchKit/robManipulator.h"
 #include <time.h>
 
 // cisst
 #include <cisstCommon/cmnPath.h>
+#include <cisstCommon/cmnUnits.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmEventButton.h>
 #include <cisstRobot/kdl_utilities.h>
 
+#include <sawIntuitiveResearchKit/robManipulator.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitECM.h>
 #include <sawIntuitiveResearchKit/robManipulatorECM.h>
 
@@ -388,6 +389,41 @@ bool mtsIntuitiveResearchKitECM::is_joint_ready(void) const
 bool mtsIntuitiveResearchKitECM::is_cartesian_ready(void) const
 {
     return m_powered && m_encoders_biased_from_pots;
+}
+
+Eigen::Isometry3d mtsIntuitiveResearchKitECM::safe_cartesian_goal(const Eigen::Isometry3d& raw_goal) const {
+    Eigen::Isometry3d safe_goal = raw_goal;
+
+    // Make sure we're at least 1mm away from RCM to prevent numerical instability in next step
+    if (raw_goal.translation().norm() < 1.0 * cmn_mm) {
+        safe_goal.translation().z() = -1.0 * cmn_mm;
+    }
+
+    // Enforce a 40mm minimum insertion
+    if (safe_goal.translation().norm() < 40.0 * cmn_mm) {
+        safe_goal.translation() = 40.0 * cmn_mm * safe_goal.translation().normalized();
+    }
+
+    return safe_goal;
+}
+
+Eigen::Isometry3d mtsIntuitiveResearchKitECM::safe_cartesian_goal(const Eigen::Isometry3d& raw_goal, const Eigen::Isometry3d& current_pose) const {
+    Eigen::Isometry3d safe_goal = raw_goal;
+    
+    // Make sure we're at least 1mm away from RCM to prevent numerical instability in next step
+    if (raw_goal.translation().norm() < 1.0 * cmn_mm) {
+        safe_goal.translation().z() = -1.0 * cmn_mm;
+    }
+
+    // Enforce a 40mm minimum insertion
+    const double goal_rcm_distance = raw_goal.translation().norm();
+    if (goal_rcm_distance < 40.0 * cmn_mm) {
+        const double current_rcm_distance = current_pose.translation().norm();
+        const double safe_distance = std::max(current_rcm_distance, goal_rcm_distance);
+        safe_goal.translation() = safe_distance * raw_goal.translation().normalized();
+    }
+
+    return safe_goal;
 }
 
 void mtsIntuitiveResearchKitECM::SetGoalHomingArm(void)

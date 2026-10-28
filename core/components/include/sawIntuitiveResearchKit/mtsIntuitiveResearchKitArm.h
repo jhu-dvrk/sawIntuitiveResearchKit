@@ -257,6 +257,17 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
                                           prmForwardKinematicsResponse & response) const;
     //@}
 
+    /*! Convert raw/unsafe Cartesian goal to a safe goal (e.g. move away from singularities) */
+    /*! Note: goal must be in *local* frame */
+    virtual Eigen::Isometry3d safe_cartesian_goal(const Eigen::Isometry3d& raw_goal) const = 0;
+
+    /*! Convert raw/unsafe Cartesian goal to a safe goal (e.g. move away from singularities).
+        This version requires continuity with current_pose, i.e. rather than moving raw_goal
+        some set threshold away from a singularity, it should be not allowed to be any closer
+        to the singularity than the current_pose already is. */
+    /*! Note: goal and current_pose must both be in *local* frame */
+    virtual Eigen::Isometry3d safe_cartesian_goal(const Eigen::Isometry3d& raw_goal, const Eigen::Isometry3d& current_pose) const = 0;
+
     /*! Each arm has a different homing procedure. */
     virtual bool is_homed(void) const = 0;
     virtual void unhome(void) = 0;

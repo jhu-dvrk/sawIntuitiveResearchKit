@@ -58,7 +58,7 @@ bool robManipulatorECM::internalInverseKinematics(
 {
     if (joint_positions.size() != chain.getNrOfJoints()) {
         std::stringstream ss;
-        ss << "robManipulatorECM::InverseKinematics: expected "
+        ss << "robManipulatorECM::internalInverseKinematics: expected "
            << chain.getNrOfJoints() << " joints values but received "
            << joint_positions.size();
         error_message = ss.str();
@@ -74,7 +74,7 @@ bool robManipulatorECM::internalInverseKinematics(
     // sure it's numerically stable using 1mm
     if (shaft_norm < 0.1 * cmn_mm) {
         error_message =
-            "robManipulatorECM::InverseKinematics: cartesian goal is too close "
+            "robManipulatorECM::internalInverseKinematics: cartesian goal is too close "
             "to RCM point";
         return false;
     }
@@ -100,7 +100,7 @@ bool robManipulatorECM::internalInverseKinematics(
     // mtsIntuitiveReseachKitEcm?
     if (z > cmnTypeTraits<double>::Tolerance()) {
         error_message =
-            "robManipulatorECM::InverseKinematics: z is positive, out of reach";
+            "robManipulatorECM::internalInverseKinematics: z is positive, out of reach";
         return false;
     }
 

@@ -143,8 +143,7 @@ int main(int argc, char * argv[])
     }
 
     minEncoder = Eigen::VectorXd::Constant(nbAxis, std::numeric_limits<double>::max());
-    // TODO - shouldn't this be numeric_limits::lower()
-    maxEncoder = Eigen::VectorXd::Constant(nbAxis, std::numeric_limits<double>::min());
+    maxEncoder = Eigen::VectorXd::Constant(nbAxis, std::numeric_limits<double>::lowest());
     minPotIndex = Eigen::ArrayX<size_t>::Zero(nbAxis);
     maxPotIndex = Eigen::ArrayX<size_t>::Zero(nbAxis);
     zeroPotIndex = Eigen::ArrayX<size_t>::Zero(nbAxis);

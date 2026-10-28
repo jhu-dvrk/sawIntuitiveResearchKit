@@ -85,6 +85,10 @@ protected:
     void UpdateStateJointKinematics(void) override;
     void ToJointsPID(const Eigen::VectorXd& jointsKinematics, Eigen::VectorXd& jointsPID) override;
 
+    Eigen::Isometry3d safe_cartesian_goal(const Eigen::Isometry3d& raw_goal) const override;
+
+    Eigen::Isometry3d safe_cartesian_goal(const Eigen::Isometry3d& raw_goal, const Eigen::Isometry3d& current_pose) const override;
+
     bool is_safe_for_cartesian_control(void) const override;
 
     void initializeKinematics(const prmConfigurationJoint& joint_config, const KDL::Chain& chain) override;
