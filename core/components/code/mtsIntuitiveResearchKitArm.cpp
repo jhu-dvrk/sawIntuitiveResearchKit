@@ -17,18 +17,16 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 // system include
+
 #include <Eigen/QR>
 #include <iostream>
-#include <sawIntuitiveResearchKit/robManipulator.h>
-#include <Eigen/src/Core/util/Constants.h>
-#include <cisstParameterTypes/prmConfigurationJoint.h>
-#include <eigen3/Eigen/src/SVD/JacobiSVD.h>
 #include <time.h>
 
 // cisst
 #include <cisstCommon/cmnPath.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
+#include <cisstParameterTypes/prmConfigurationJoint.h>
 #include <cisstParameterTypes/prmEventButton.h>
 #include <cisstParameterTypes/prmInputData.h>
 #include <sawControllers/osaCartesianImpedanceController.h>
@@ -37,6 +35,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitConfig.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
 #include <sawIntuitiveResearchKit/prmActuatorJointCouplingCheck.h>
+#include <sawIntuitiveResearchKit/robManipulator.h>
 
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitArm, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);

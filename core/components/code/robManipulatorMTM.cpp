@@ -303,7 +303,7 @@ bool robManipulatorMTM::internalInverseKinematics(
 )
 {
     if (joint_positions.size() != chain.getNrOfJoints()) {
-        error_message = "robManipulatorMTM::InverseKinematics: expected " +
+        error_message = "robManipulatorMTM::internalInverseKinematics: expected " +
                         std::to_string(chain.getNrOfJoints()) +
                         " joints values but received " +
                         std::to_string(joint_positions.size());
@@ -314,6 +314,10 @@ bool robManipulatorMTM::internalInverseKinematics(
     bool position_ok =
         solveShoulderElbowIK(joint_positions, goal_pose.translation());
     if (!position_ok) { 
+        std::stringstream ss;
+        ss << "robManipulatorMTM::internalInverseKinematics: failed to solve shoulder-elbow IK for goal"
+           << goal_pose.translation().transpose() << std::endl;
+        error_message = ss.str();
         return false;
     }
 

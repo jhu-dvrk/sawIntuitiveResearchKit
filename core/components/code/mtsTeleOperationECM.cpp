@@ -644,7 +644,7 @@ void mtsTeleOperationECM::RunEnabled(void)
     // -4- Width of image
     const Eigen::Vector3d side = c.cross(up).normalized();
     // -5- find desired position for L and R
-    const Eigen::Vector3d offset = mInitial.w * side -+mInitial.d * directionC;
+    const Eigen::Vector3d offset = mInitial.w * side + mInitial.d * directionC;
     const Eigen::Vector3d goalL = c - offset;
     const Eigen::Vector3d goalR = c + offset;
 
@@ -660,9 +660,9 @@ void mtsTeleOperationECM::RunEnabled(void)
     Eigen::Vector3d force_friction;
     if (m_mtmr_measured_cv_available) {
         force_friction = frictionForceCoeff.cwiseProduct(mMTMR.m_measured_cv.VelocityLinear());
-        wrenchR.Force().head<3>(0) += force_friction;
+        wrenchR.Force().head<3>() += force_friction;
     }
-    wrenchR.Force().head<3>(0) *= m_config.haptic_feedback_ratio;
+    wrenchR.Force().head<3>() *= m_config.haptic_feedback_ratio;
     // apply
     if (m_config.MTM_is_haptic) {
         mMTMR.body_servo_cf(wrenchR);
@@ -671,13 +671,13 @@ void mtsTeleOperationECM::RunEnabled(void)
     // MTML
     // apply force
     force = goalL - mMTML.m_measured_cp.Position().translation();
-    wrenchL.Force().head<3>(0) = distanceForceCoeff * force;
+    wrenchL.Force().head<3>() = distanceForceCoeff * force;
     // add friction force
     if (m_mtml_measured_cv_available) {
         force_friction = frictionForceCoeff.cwiseProduct(mMTML.m_measured_cv.VelocityLinear());
-        wrenchL.Force().head<3>(0) += force_friction;
+        wrenchL.Force().head<3>() += force_friction;
     }
-    wrenchL.Force().head<3>(0) *= m_config.haptic_feedback_ratio;
+    wrenchL.Force().head<3>() *= m_config.haptic_feedback_ratio;
     // apply
     if (m_config.MTM_is_haptic) {
         mMTML.body_servo_cf(wrenchL);

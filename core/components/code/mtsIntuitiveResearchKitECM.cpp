@@ -118,8 +118,8 @@ std::unique_ptr<GravityCompensationECM> GravityCompensationECM::configure(
 
     // make sure we have expected number of links so we know which link
     // to put the variable endoscope/camera mass
-    const int num_segments = kdl_chain->getNrOfSegments();
-    if (num_segments != 5 && num_segments != 4) {
+    const int num_links = kdl_chain->getNrOfSegments();
+    if (num_links != 6 && num_links != 4) {
         CMN_LOG_INIT_ERROR << "Configure GravityCompensationECM"
                            << ": does not match Classic or Si number of links, "
                            << physical_dh_file << "\"\n";
@@ -136,13 +136,13 @@ std::string GravityCompensationECM::error(void) { return error_message; }
 void GravityCompensationECM::set_endoscope_mass(double mass)
 {
     // Si vs Classic
-    if (physical_model.getNrOfSegments() == 5) {
+    if (physical_model.getNrOfSegments() == 6) {
         // Si
-        auto inertia_data = physical_model.segments.at(4).getInertia();
+        auto inertia_data = physical_model.segments.at(5).getInertia();
         KDL::RigidBodyInertia updated_inertia(
             mass, inertia_data.getCOG(), inertia_data.getRotationalInertia()
         );
-        physical_model.segments.at(4).setInertia(updated_inertia);
+        physical_model.segments.at(5).setInertia(updated_inertia);
     } else {
         // Classic
         auto inertia_data = physical_model.segments.at(2).getInertia();
