@@ -461,13 +461,13 @@ void mtsIntuitiveResearchKitSUJSi::Configure(const std::string & filename)
         mtsInterfaceProvided * interfaceProvided = this->AddInterfaceProvided(name);
         mtsInterfaceRequired * interfaceRequired = this->AddInterfaceRequired(name, MTS_OPTIONAL);
         mtsInterfaceRequired * interfaceRequiredIO = this->AddInterfaceRequired(name + "IO", MTS_OPTIONAL);
-        auto sarm = std::make_unique<mtsIntuitiveResearchKitSUJSiArmData>(name, m_simulation_mode,
+        m_sarms[index] = std::make_unique<mtsIntuitiveResearchKitSUJSiArmData>(name, m_simulation_mode,
                                                             interfaceProvided,
                                                             interfaceRequired,
                                                             interfaceRequiredIO,
                                                             m_interface);
-        m_sarms[index] = std::move(sarm);
-        AddStateTable(&(m_sarms[index]->m_state_table));
+        auto& sarm = m_sarms[index];
+        AddStateTable(&(sarm->m_state_table));
 
         // save which arm is the Reference Arm
         if (name == reference_sarm_name) {

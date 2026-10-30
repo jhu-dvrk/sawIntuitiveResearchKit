@@ -1070,7 +1070,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         PID.enforce_position_limits(false);
         servo_jp_internal(m_pid_setpoint_js.Position(), Eigen::VectorXd());
         // turn on PID
-        PID.enable_joints(Eigen::ArrayX<bool>(number_of_joints(), true));
+        PID.enable_joints(Eigen::ArrayX<bool>::Constant(number_of_joints(), true).eval());
         PID.enable_measured_setpoint_check(true);
 
         // make sure we start from current state
@@ -1299,7 +1299,7 @@ void mtsIntuitiveResearchKitPSM::EnterToolEngaged(void)
     m_jaw_setpoint_js.Velocity() = Eigen::VectorXd::Zero(0);
     m_jaw_setpoint_js.Effort() = Eigen::VectorXd::Zero(1);
 
-    // TODO: UpdateStateJointKinematics?
+    UpdateStateJointKinematics();
 }
 
 void mtsIntuitiveResearchKitPSM::TransitionToolEngaged(void)
