@@ -34,8 +34,8 @@ public:
     ~mtsIntuitiveResearchKitMTMQtWidget() {}
 
 protected:
-    void setupUiDerived(void);
-    void timerEventDerived(void);
+    void setupUiDerived(void) override;
+    void timerEventDerived(void) override;
 
     mtsFunctionRead gripper_measured_js;
     QLineEdit * QLEGripperPosition;

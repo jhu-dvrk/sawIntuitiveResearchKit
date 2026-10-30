@@ -38,9 +38,9 @@ public:
     mtsDaVinciEndoscopeFocusQtWidget(const std::string & componentName);
     ~mtsDaVinciEndoscopeFocusQtWidget(){}
 
-    void Configure(const std::string & filename = "");
-    void Startup(void);
-    void Cleanup(void);
+    void Configure(const std::string & filename = "") override;
+    void Startup(void) override;
+    void Cleanup(void) override;
 
 signals:
     void SignalLocked(bool locked);

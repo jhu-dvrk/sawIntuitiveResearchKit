@@ -53,19 +53,19 @@ public:
     mtsIntuitiveResearchKitArmQtWidget(const std::string & componentName, double periodInSeconds = 50.0 * cmn_ms);
     ~mtsIntuitiveResearchKitArmQtWidget() {}
 
-    void Configure(const std::string & filename = "");
-    void Startup(void);
-    void Cleanup(void);
+    void Configure(const std::string & filename = "") override;
+    void Startup(void) override;
+    void Cleanup(void) override;
 
 protected:
-    virtual void closeEvent(QCloseEvent * event);
+    virtual void closeEvent(QCloseEvent * event) override;
 
 signals:
     void SignalDesiredState(QString state);
     void SignalTrajectoryJointRatio(double ratio);
 
 private slots:
-    void timerEvent(QTimerEvent * event);
+    void timerEvent(QTimerEvent * event) override;
     void SlotDesiredStateEventHandler(QString state);
     void SlotTrajectoryJointRatio(double ratio);
     void SlotTrajectoryJointRatioEventHandler(double ratio);
