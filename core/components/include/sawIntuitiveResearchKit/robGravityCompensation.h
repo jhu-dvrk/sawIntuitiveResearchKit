@@ -19,13 +19,15 @@
 #ifndef _robGravityCompensation_h
 #define _robGravityCompensation_h
 
+#include <Eigen/Core>
 #include <cisstParameterTypes/prmStateJoint.h>
-#include <cisstVector/vctTypes.h>
 
 class robGravityCompensation {
 public:
     virtual ~robGravityCompensation() {}
-    virtual vctVec compute(const prmStateJoint& state, vct3 gravity) = 0;
+
+    virtual void setGravity(const Eigen::Vector3d& gravity) = 0;
+    virtual Eigen::VectorXd compute(const prmStateJoint& state) = 0;
 };
 
 #endif // _robGravityCompensation_h

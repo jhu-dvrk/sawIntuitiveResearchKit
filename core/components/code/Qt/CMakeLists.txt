@@ -11,9 +11,7 @@
 
 set (REQUIRED_CISST_LIBRARIES
   cisstCommon
-  cisstVector
   cisstVectorQt
-  cisstNumerical
   cisstOSAbstraction
   cisstMultiTask
   cisstMultiTaskQt

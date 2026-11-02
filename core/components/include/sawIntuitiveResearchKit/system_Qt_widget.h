@@ -51,9 +51,9 @@ namespace dvrk {
         system_Qt_widget(const std::string & componentName);
         inline virtual ~system_Qt_widget() {}
 
-        void Configure(const std::string & filename = "");
-        void Startup(void);
-        void Cleanup(void);
+        void Configure(const std::string & filename = "") override;
+        void Startup(void) override;
+        void Cleanup(void) override;
 
         inline QTabWidget * get_components_tab(void) {
             return QTComponents;
@@ -80,7 +80,7 @@ namespace dvrk {
         void slot_component_viewer(void);
 
     protected:
-        void closeEvent(QCloseEvent * event);
+        void closeEvent(QCloseEvent * event) override;
 
         void setupUi(void);
 

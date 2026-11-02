@@ -19,7 +19,8 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsDaVinciHeadSensor_h
 #define _mtsDaVinciHeadSensor_h
 
-#include <cisstVector/vctFixedSizeVectorTypes.h>
+#include <Eigen/Core>
+
 #include <cisstMultiTask/mtsTaskFromSignal.h>
 #include <cisstParameterTypes/prmEventButton.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
@@ -70,7 +71,7 @@ protected:
     void HeadSensorEventHandler(const size_t sensorNumber,
                                 const prmEventButton & event);
 
-    vctFixedSizeVector<size_t, 4> mSensors;
+    Eigen::Array4<size_t> mSensors;
     bool mOperatorPresent;
 };
 

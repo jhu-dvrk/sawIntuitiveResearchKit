@@ -53,9 +53,9 @@ namespace dvrk {
         console_Qt_widget(const std::string & _component_name, system_Qt_widget * _system_widget);
         inline virtual ~console_Qt_widget() {}
 
-        void Configure(const std::string & filename = "");
-        void Startup(void);
-        void Cleanup(void);
+        void Configure(const std::string & filename = "") override;
+        void Startup(void) override;
+        void Cleanup(void) override;
         void add_teleop_clutch(const std::string & teleop);
 
     signals:

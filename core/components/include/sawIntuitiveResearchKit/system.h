@@ -21,7 +21,6 @@ http://www.cisst.org/cisst/license.txt.
 #define _dvrk_system_h
 
 #include <memory>
-#include <set>
 
 #include <cisstCommon/cmnPath.h>
 #include <cisstMultiTask/mtsTaskFromSignal.h>
@@ -78,16 +77,16 @@ namespace dvrk {
         /*! Configure console using JSON file. To test is the configuration
           succeeded, used method Configured().
         */
-        void Configure(const std::string & filename);
+        void Configure(const std::string & filename) override;
 
         /*! Method to check if the configuration was successful, ideally called
           after a call to Configure.
         */
         const bool & Configured(void) const;
 
-        void Startup(void);
-        void Run(void);
-        void Cleanup(void);
+        void Startup(void) override;
+        void Run(void) override;
+        void Cleanup(void) override;
 
         void AddFootpedalInterfaces(void);
 
@@ -132,7 +131,7 @@ namespace dvrk {
         void disable_faulty_arms(void);
         // void set_scale(const double & scale);
         void set_volume(const double & volume);
-        void beep(const vctDoubleVec & values); // duration, frequency, volume
+        void beep(const Eigen::VectorXd& values); // duration, [ frequency, [ volume ] ]
         void string_to_speech(const std::string & text);
 
         std::shared_ptr<dvrk::arm_proxy> m_SUJ;

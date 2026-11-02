@@ -17,14 +17,16 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 // system include
+
+#include <Eigen/QR>
 #include <iostream>
 #include <time.h>
 
 // cisst
 #include <cisstCommon/cmnPath.h>
-#include <cisstNumerical/nmrIsOrthonormal.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
+#include <cisstParameterTypes/prmConfigurationJoint.h>
 #include <cisstParameterTypes/prmEventButton.h>
 #include <cisstParameterTypes/prmInputData.h>
 #include <sawControllers/osaCartesianImpedanceController.h>
@@ -33,7 +35,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitConfig.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
 #include <sawIntuitiveResearchKit/prmActuatorJointCouplingCheck.h>
-#include <sawIntuitiveResearchKit/prmConfigurationJointFromManipulator.h>
+#include <sawIntuitiveResearchKit/robManipulator.h>
+
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitArm, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
 
@@ -59,20 +62,9 @@ mtsIntuitiveResearchKitArm::mtsIntuitiveResearchKitArm(const mtsTaskPeriodicCons
 
 mtsIntuitiveResearchKitArm::~mtsIntuitiveResearchKitArm()
 {
-    if (Manipulator) {
-        delete Manipulator;
-    }
     if (mCartesianImpedanceController) {
         delete mCartesianImpedanceController;
     }
-}
-
-void mtsIntuitiveResearchKitArm::CreateManipulator(void)
-{
-    if (Manipulator) {
-        delete Manipulator;
-    }
-    Manipulator = new robManipulator();
 }
 
 void mtsIntuitiveResearchKitArm::Init(void)
@@ -200,36 +192,33 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mArmNotReadyTimeLastMessage = 0.0;
 
     // initialize trajectory data
-    m_servo_jp.SetSize(number_of_joints());
-    m_servo_jv.SetSize(number_of_joints());
-    m_servo_jp_param.Goal().SetSize(number_of_joints());
-    m_trajectory_j.v_max.SetSize(number_of_joints());
-    m_trajectory_j.v.SetSize(number_of_joints());
-    m_trajectory_j.a_max.SetSize(number_of_joints());
-    m_trajectory_j.a.SetSize(number_of_joints());
-    m_trajectory_j.goal.SetSize(number_of_joints());
-    m_trajectory_j.goal_v.SetSize(number_of_joints());
-    m_trajectory_j.goal_error.SetSize(number_of_joints());
-    m_trajectory_j.goal_tolerance.SetSize(number_of_joints());
+    m_servo_jp = Eigen::VectorXd::Zero(number_of_joints());
+    m_servo_jv = Eigen::VectorXd::Zero(number_of_joints());
+    m_servo_jp_param.Goal() = Eigen::VectorXd::Zero(number_of_joints());
+    m_trajectory_j.v_max = Eigen::VectorXd::Zero(number_of_joints());
+    m_trajectory_j.v = Eigen::VectorXd::Zero(number_of_joints());
+    m_trajectory_j.a_max = Eigen::VectorXd::Zero(number_of_joints());
+    m_trajectory_j.a = Eigen::VectorXd::Zero(number_of_joints());
+    m_trajectory_j.goal = Eigen::VectorXd::Zero(number_of_joints());
+    m_trajectory_j.goal_v = Eigen::VectorXd::Zero(number_of_joints());
+    m_trajectory_j.goal_error = Eigen::VectorXd::Zero(number_of_joints());
+    m_trajectory_j.goal_tolerance = Eigen::VectorXd::Zero(number_of_joints());
     m_trajectory_j.is_active = false;
 
     // initialize velocity
-    m_local_measured_cv.SetVelocityLinear(vct3(0.0));
-    m_local_measured_cv.SetVelocityAngular(vct3(0.0));
+    m_local_measured_cv.SetVelocityLinear(Eigen::Vector3d::Zero());
+    m_local_measured_cv.SetVelocityAngular(Eigen::Vector3d::Zero());
     m_local_measured_cv.SetValid(false);
-    m_measured_cv.SetVelocityLinear(vct3(0.0));
-    m_measured_cv.SetVelocityAngular(vct3(0.0));
+    m_measured_cv.SetVelocityLinear(Eigen::Vector3d::Zero());
+    m_measured_cv.SetVelocityAngular(Eigen::Vector3d::Zero());
     m_measured_cv.SetValid(false);
 
-    m_local_setpoint_cv.SetVelocityLinear(vct3(0.0));
-    m_local_setpoint_cv.SetVelocityAngular(vct3(0.0));
+    m_local_setpoint_cv.SetVelocityLinear(Eigen::Vector3d::Zero());
+    m_local_setpoint_cv.SetVelocityAngular(Eigen::Vector3d::Zero());
     m_local_setpoint_cv.SetValid(false);
-    m_setpoint_cv.SetVelocityLinear(vct3(0.0));
-    m_setpoint_cv.SetVelocityAngular(vct3(0.0));
+    m_setpoint_cv.SetVelocityLinear(Eigen::Vector3d::Zero());
+    m_setpoint_cv.SetVelocityAngular(Eigen::Vector3d::Zero());
     m_setpoint_cv.SetValid(false);
-
-    // base manipulator class used by most arms (except PSM with snake like tool)
-    CreateManipulator();
 
     // jacobian
     ResizeKinematicsData();
@@ -237,22 +226,19 @@ void mtsIntuitiveResearchKitArm::Init(void)
     this->StateTable.AddData(m_spatial_jacobian, "spatial_jacobian");
 
     // efforts for kinematics
-    m_servo_jf.ForceTorque().SetSize(number_of_joints_kinematics());
-    m_servo_jf.ForceTorque().Zeros();
+    m_servo_jf.ForceTorque() = Eigen::VectorXd::Zero(number_of_joints_kinematics());
     m_body_measured_cf.SetValid(false);
     m_spatial_measured_cf.SetValid(false);
 
     // efforts computed by gravity compensation
-    m_feed_forward_jf_param.ForceTorque().SetSize(number_of_joints());
-    m_feed_forward_jf_param.ForceTorque().Zeros();
-    m_gravity_compensation_setpoint_js.Effort().SetSize(number_of_joints_kinematics());
-    m_gravity_compensation_setpoint_js.Effort().Zeros();
+    m_feed_forward_jf_param.ForceTorque() = Eigen::VectorXd::Zero(number_of_joints());
+    m_gravity_compensation_setpoint_js.Effort() = Eigen::VectorXd::Zero(number_of_joints_kinematics());
     m_gravity_compensation_setpoint_js.SetAutomaticTimestamp(false);
     m_gravity_compensation_setpoint_js.SetValid(false);
     this->StateTable.AddData(m_gravity_compensation_setpoint_js, "gravity_compensation/setpoint_js");
 
     // base frame, mostly for cases where no base frame is set by user
-    m_base_frame = vctFrm4x4::Identity();
+    m_base_frame = Eigen::Isometry3d::Identity();
     m_base_frame_valid = true;
 
     m_measured_cp.SetAutomaticTimestamp(false); // based on PID timestamp
@@ -417,7 +403,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
 
         // Actuator conversion
         m_arm_interface->AddCommandQualifiedRead(&mtsIntuitiveResearchKitArm::actuator_to_joint_position, this,
-                                                 "actuator_to_joint_position", vctDoubleVec(), vctDoubleVec());
+                                                 "actuator_to_joint_position", Eigen::VectorXd(), Eigen::VectorXd());
 
         // Kinematic queries
         m_arm_interface->AddCommandQualifiedRead(&mtsIntuitiveResearchKitArm::forward_kinematics,
@@ -529,44 +515,33 @@ void mtsIntuitiveResearchKitArm::state_command(const std::string & command)
     }
 }
 
-void mtsIntuitiveResearchKitArm::update_configuration_js(void)
+void mtsIntuitiveResearchKitArm::update_configuration_js(const prmConfigurationJoint& joint_config)
 {
-    // get names, types and joint limits for kinematics config from the manipulator
-    // name and types need conversion
     mStateTableConfiguration.Start();
-    prmConfigurationJointFromManipulator(*(this->Manipulator),
-                                         number_of_joints_kinematics(),
-                                         m_configuration_js);
+    m_configuration_js = joint_config;
     cmnDataCopy(m_gravity_compensation_setpoint_js.Name(),
                 m_configuration_js.Name());
     mStateTableConfiguration.Advance();
 }
 
-void mtsIntuitiveResearchKitArm::actuator_to_joint_position(const vctDoubleVec & actuator,
-                                                            vctDoubleVec & joint) const
+void mtsIntuitiveResearchKitArm::actuator_to_joint_position(const Eigen::VectorXd& actuator,
+                                                            Eigen::VectorXd& joint) const
 {
     if (m_has_coupling) {
         joint = m_coupling.ActuatorToJointPosition() * actuator;
     } else {
-        joint.ForceAssign(actuator);
+        joint = actuator;
     }
 }
 
 void mtsIntuitiveResearchKitArm::ResizeKinematicsData(void)
 {
     // jacobians
-    m_body_jacobian.SetSize(6, number_of_joints_kinematics());
-    m_spatial_jacobian.SetSize(6, number_of_joints_kinematics());
-    m_jacobian_pinverse_data.Allocate(m_body_jacobian);
-    // transposes
-    m_body_jacobian_transpose.ForceAssign(m_body_jacobian.Transpose());
-    m_spatial_jacobian_transpose.ForceAssign(m_spatial_jacobian.Transpose());
-    m_jacobian_transpose_pinverse_data.Allocate(m_body_jacobian_transpose);
+    m_body_jacobian = Eigen::Matrix<double, 6, Eigen::Dynamic>::Identity(6, number_of_joints_kinematics());
+    m_spatial_jacobian = Eigen::Matrix<double, 6, Eigen::Dynamic>::Identity(6, number_of_joints_kinematics());
     // servo
-    m_servo_jf.ForceTorque().SetSize(number_of_joints_kinematics());
-    m_servo_jf.ForceTorque().Zeros();
-    m_servo_jf_vector.SetSize(number_of_joints_kinematics());
-    m_servo_jf_vector.Zeros();
+    m_servo_jf.ForceTorque() = Eigen::VectorXd::Zero(number_of_joints_kinematics());
+    m_servo_jf_vector = Eigen::VectorXd::Zero(number_of_joints_kinematics());
 }
 
 void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
@@ -683,13 +658,22 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
                                            << ": ignoring gravity compensation because skip_gravity_compensation is set to True" << std::endl;
             }
         }
+
         if (!m_skip_gravity_compensation) {
             // arm specific configuration for gravity compensation
             ConfigureGC(jsonConfig, configPath, filename);
+           
         }
 
         // arm specific configuration
         PostConfigure(jsonConfig, configPath, filename);
+
+        // Set gravity direction after PostConfigure so we know the mounting_pitch
+        if (!m_skip_gravity_compensation && m_rob_gravity_compensation) {
+            double pitch = (m_mounting_pitch < std::numeric_limits<double>::max()) ? m_mounting_pitch : 0.0;
+            Eigen::Vector3d gravity = 9.81 * Eigen::Vector3d(0.0, sin(pitch), cos(pitch));
+            m_rob_gravity_compensation->setGravity(gravity);
+        }
 
     } catch (std::exception & e) {
         CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": parsing file \""
@@ -707,16 +691,12 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig,
                                              const bool ignoreCoupling)
 {
     // load base offset transform if any (without warning)
-    const Json::Value jsonBase = jsonConfig["base-offset"];
-    if (!jsonBase.isNull()) {
-        // save the transform as Manipulator Rtw0
-        cmnDataJSON<vctFrm4x4>::DeSerializeText(Manipulator->Rtw0, jsonBase);
-        if (!nmrIsOrthonormal(Manipulator->Rtw0.Rotation())) {
+    if (!jsonConfig["base-offset"].isNull()) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureDH " << this->GetName()
-                                     << ": the base offset rotation doesn't seem to be orthonormal"
-                                     << " in " << filename << std::endl;
+                                     << ": in " << filename
+                                     << ", the base offset rotation is deprecated, please use the arm's base frame instead"
+                                     << std::endl;
             exit(EXIT_FAILURE);
-        }
     }
 
     // load DH parameters
@@ -727,29 +707,26 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig,
                                  << filename << "\"" << std::endl;
         exit(EXIT_FAILURE);
     }
-    if (this->Manipulator->LoadRobot(jsonDH) != robManipulator::ESUCCESS) {
+
+    const auto kdl_chain = loadKDLChain(jsonDH);
+    if (!kdl_chain.has_value()) {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureDH " << this->GetName()
-                                 << ": failed to load \"DH\" parameters from file \""
-                                 << filename << "\", error is "
-                                 << this->Manipulator->LastError() << std::endl;
+                                 << ": failed to load kinematics parameters from file \""
+                                 << filename << std::endl;
         exit(EXIT_FAILURE);
     }
-    std::stringstream dhResult;
-    this->Manipulator->PrintKinematics(dhResult);
-    CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureDH " << this->GetName()
-                               << ": loaded kinematics" << std::endl << dhResult.str() << std::endl;
-    // save the base arm configuration file, this is useful for PSM
-    // when changing tool and we need to reload the base arm
-    // configuration
-    if (mConfigurationFile == "") {
-        mConfigurationFile = filename;
-        CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureDH " << this->GetName()
-                                   << ": saved base configuration file name: "
-                                   << mConfigurationFile << std::endl;
-    }
 
+    const auto joint_config = loadJointConfig(jsonDH);
+    if (!joint_config.has_value()) {
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureDH " << this->GetName()
+                                 << ": failed to load joint configuration parameters from file \""
+                                 << filename << std::endl;
+        exit(EXIT_FAILURE);
+    }
     // update configuration joint from manipulator
-    update_configuration_js();
+    update_configuration_js(joint_config.value());
+
+    initializeKinematics(joint_config.value(), kdl_chain.value());
 
     // resize data members using kinematics (jacobians and effort vectors)
     ResizeKinematicsData();
@@ -851,9 +828,7 @@ void mtsIntuitiveResearchKitArm::Cleanup(void)
     IO.PowerOffSequence(false);
     // if in calibration mode, reset encoders to 0
     if (m_calibration_mode) {
-        vctDoubleVec values(number_of_joints());
-        values.Zeros();
-        IO.SetEncoderPosition(values);
+        IO.SetEncoderPosition(Eigen::VectorXd::Zero(number_of_joints()).eval());
     }
     // leave the arm blinking
     set_LED_pattern(mtsIntuitiveResearchKit::Red200,
@@ -883,24 +858,24 @@ void mtsIntuitiveResearchKitArm::get_robot_data(void)
 {
     // check that the robot still has power
     if (m_powered && !(m_simulation_mode == prmSimulationType::KINEMATIC)) {
-        vctBoolVec actuatorAmplifiersStatus(number_of_joints());
+        Eigen::ArrayX<bool> actuatorAmplifiersStatus(number_of_joints());
         IO.GetActuatorAmpStatus(actuatorAmplifiersStatus);
-        vctBoolVec brakeAmplifiersStatus(number_of_brakes());
+        Eigen::ArrayX<bool> brakeAmplifiersStatus = Eigen::ArrayX<bool>::Constant(number_of_brakes(), true);
         if (has_brakes()) {
             IO.GetBrakeAmpStatus(brakeAmplifiersStatus);
         }
-        if (!(actuatorAmplifiersStatus.All())) {
+        if (!(actuatorAmplifiersStatus.all())) {
             m_powered = false;
             CMN_LOG_CLASS_RUN_ERROR << GetName() << ": get_robot_data:\n - Actuator amp status: "
-                                    << actuatorAmplifiersStatus << std::endl;
+                                    << actuatorAmplifiersStatus.transpose() << std::endl;
             m_arm_interface->SendError(this->GetName() + ": detected power loss (actuators)");
             SetDesiredState("FAULT");
             return;
         }
-        if (!(brakeAmplifiersStatus.All())) {
+        if (!(brakeAmplifiersStatus.all())) {
             m_powered = false;
             CMN_LOG_CLASS_RUN_ERROR << GetName() << ": get_robot_data:\n - Brake amp status: "
-                                    << brakeAmplifiersStatus << std::endl;
+                                    << brakeAmplifiersStatus.transpose() << std::endl;
             m_arm_interface->SendError(this->GetName() + ": detected power loss (brakes)");
             SetDesiredState("FAULT");
             return;
@@ -945,24 +920,22 @@ void mtsIntuitiveResearchKitArm::get_robot_data(void)
 
         // updated joint efforts for gravity compensation
         if (m_gravity_compensation && m_rob_gravity_compensation) {
-            double pitch = (m_mounting_pitch < std::numeric_limits<double>::max()) ? m_mounting_pitch : 0.0;
-            vct3 gravity(0.0, sin(pitch) * 9.81, cos(pitch) * 9.81);
-            m_gravity_compensation_setpoint_js.Effort() = m_rob_gravity_compensation->compute(m_kin_measured_js, gravity);
+            m_gravity_compensation_setpoint_js.Effort() = m_rob_gravity_compensation->compute(m_kin_measured_js);
         } else {
-            m_gravity_compensation_setpoint_js.Effort().Zeros();
+            m_gravity_compensation_setpoint_js.Effort().setZero();
         }
         m_gravity_compensation_setpoint_js.SetTimestamp(m_kin_measured_js.Timestamp());
         m_gravity_compensation_setpoint_js.SetValid(true);
     } else {
         // set joint to zeros
-        m_pid_measured_js.Position().Zeros();
-        m_pid_measured_js.Velocity().Zeros();
-        m_pid_measured_js.Effort().Zeros();
+        m_pid_measured_js.Position().setZero();
+        m_pid_measured_js.Velocity().setZero();
+        m_pid_measured_js.Effort().setZero();
         m_pid_measured_js.SetValid(false);
 
-        m_kin_measured_js.Position().Zeros();
-        m_kin_measured_js.Velocity().Zeros();
-        m_kin_measured_js.Effort().Zeros();
+        m_kin_measured_js.Position().setZero();
+        m_kin_measured_js.Velocity().setZero();
+        m_kin_measured_js.Effort().setZero();
         m_kin_measured_js.SetValid(false);
 
         m_gravity_compensation_setpoint_js.SetValid(false);
@@ -972,115 +945,92 @@ void mtsIntuitiveResearchKitArm::get_robot_data(void)
     if (is_cartesian_ready()) {
         CMN_ASSERT(is_joint_ready());
         // update cartesian position
-        m_local_measured_cp_frame = Manipulator->ForwardKinematics(m_kin_measured_js.Position());
+        Manipulator->forwardKinematics(m_kin_measured_js.Position(), m_local_measured_cp_frame);
         m_measured_cp_frame = m_base_frame * m_local_measured_cp_frame;
-        // normalize
-        m_local_measured_cp_frame.Rotation().NormalizedSelf();
-        m_measured_cp_frame.Rotation().NormalizedSelf();
+
         // prm types
-        m_local_measured_cp.Position().From(m_local_measured_cp_frame);
+        m_local_measured_cp.Position() = m_local_measured_cp_frame;
         m_local_measured_cp.SetTimestamp(m_kin_measured_js.Timestamp());
         m_local_measured_cp.SetValid(true);
-        m_measured_cp.Position().From(m_measured_cp_frame);
+        m_measured_cp.Position() = m_measured_cp_frame;
         m_measured_cp.SetTimestamp(m_kin_measured_js.Timestamp());
         m_measured_cp.SetValid(m_base_frame_valid);
 
-        m_measured_cs.Position().From(m_measured_cp_frame);
+        m_measured_cs.Position() = m_measured_cp_frame;
         m_measured_cs.SetTimestamp(m_kin_measured_js.Timestamp());
         m_measured_cs.SetValid(m_base_frame_valid);
         m_measured_cs.PositionIsValid() = true;
 
         // update jacobians
-        Manipulator->JacobianSpatial(m_kin_measured_js.Position(), m_spatial_jacobian);
-        Manipulator->JacobianBody(m_kin_measured_js.Position(), m_body_jacobian);
+        Manipulator->computeJacobians(m_kin_measured_js.Position());
+        m_body_jacobian = Manipulator->bodyJacobian().matrix();
+        m_spatial_jacobian = Manipulator->spatialJacobian().matrix();
 
         // update cartesian velocity using the jacobian and joint
         // velocities.
-        vctDoubleVec cartesianVelocity(6);
-        cartesianVelocity.ProductOf(m_body_jacobian, m_kin_measured_js.Velocity());
-        vct3 relative, absolute;
+        Eigen::Vector<double, 6> cartesianVelocity = Manipulator->bodyJacobian().cartesianVelocity(m_kin_measured_js.Velocity());
         // linear
-        relative.Assign(cartesianVelocity.Ref(3, 0));
-        m_local_measured_cv.SetVelocityLinear(relative);
-        m_measured_cp_frame.Rotation().ApplyTo(relative, absolute);
-        m_measured_cv.SetVelocityLinear(absolute);
+        m_local_measured_cv.SetVelocityLinear(cartesianVelocity.head<3>());
+        m_measured_cv.SetVelocityLinear(m_measured_cp_frame.linear() * cartesianVelocity.head<3>());
         // angular
-        relative.Assign(cartesianVelocity.Ref(3, 3));
-        m_local_measured_cv.SetVelocityAngular(relative);
-        m_measured_cp_frame.Rotation().ApplyTo(relative, absolute);
-        m_measured_cv.SetVelocityAngular(absolute);
+        m_local_measured_cv.SetVelocityAngular(cartesianVelocity.tail<3>());
+        m_measured_cv.SetVelocityAngular(m_measured_cp_frame.linear() * cartesianVelocity.tail<3>());
         // valid/timestamp
         m_local_measured_cv.SetValid(true);
         m_local_measured_cv.SetTimestamp(m_kin_measured_js.Timestamp());
         m_measured_cv.SetValid(true);
         m_measured_cv.SetTimestamp(m_kin_measured_js.Timestamp());
 
-        m_measured_cs.Velocity().Ref<3>(0) = m_measured_cv.VelocityLinear();
-        m_measured_cs.Velocity().Ref<3>(3) = m_measured_cv.VelocityAngular();
+        m_measured_cs.Velocity().head<3>() = m_measured_cv.VelocityLinear();
+        m_measured_cs.Velocity().tail<3>() = m_measured_cv.VelocityAngular();
         m_measured_cs.VelocityIsValid() = true;
 
         // update wrench based on measured joint current efforts
-        m_body_jacobian_transpose.Assign(m_body_jacobian.Transpose());
-        nmrPInverse(m_body_jacobian_transpose, m_jacobian_transpose_pinverse_data);
-        vctDoubleVec wrench(6);
-        wrench.ProductOf(m_jacobian_transpose_pinverse_data.PInverse(), m_kin_measured_js.Effort());
+        Eigen::Vector<double, 6> wrench = Manipulator->bodyJacobian().cartesianForce(m_kin_measured_js.Effort());
 
-        vct6 absolute_wrench;
-        relative.Assign(wrench.Ref(3, 0));
-        m_measured_cp_frame.Rotation().ApplyTo(relative, absolute); // forces
-        absolute_wrench.Ref<3>(0) = absolute;
-        relative.Assign(wrench.Ref(3, 3));
-        m_measured_cp_frame.Rotation().ApplyTo(relative, absolute); // torques
-        absolute_wrench.Ref<3>(3) = absolute;
+        Eigen::Vector<double, 6> absolute_wrench;
+        absolute_wrench.head<3>().noalias() = m_measured_cp_frame.linear() * wrench.head<3>();
+        absolute_wrench.tail<3>().noalias() = m_measured_cp_frame.linear() * wrench.tail<3>();
 
         m_measured_cs.Force() = absolute_wrench;
         m_measured_cs.ForceIsValid() = true;
 
         if (m_body_cf_orientation_absolute) {
-            m_body_measured_cf.Force().Assign(absolute_wrench);
+            m_body_measured_cf.Force() = absolute_wrench;
         } else {
-            m_body_measured_cf.Force().Assign(wrench);
+            m_body_measured_cf.Force() = wrench;
         }
 
         // valid/timestamp
         m_body_measured_cf.SetValid(true);
         m_body_measured_cf.SetTimestamp(m_kin_measured_js.Timestamp());
 
-        m_spatial_jacobian_transpose.Assign(m_spatial_jacobian.Transpose());
-        nmrPInverse(m_spatial_jacobian_transpose, m_jacobian_transpose_pinverse_data);
-        wrench.ProductOf(m_jacobian_transpose_pinverse_data.PInverse(), m_kin_measured_js.Effort());
-        m_spatial_measured_cf.Force().Assign(wrench);
+        wrench = Manipulator->spatialJacobian().cartesianForce(m_kin_measured_js.Effort());
+        m_spatial_measured_cf.Force() = wrench;
         // valid/timestamp
         m_spatial_measured_cf.SetValid(true);
         m_spatial_measured_cf.SetTimestamp(m_kin_measured_js.Timestamp());
 
         // update cartesian position desired based on joint desired
-        m_local_setpoint_cp_frame = Manipulator->ForwardKinematics(m_kin_setpoint_js.Position());
+        Manipulator->forwardKinematics(m_kin_setpoint_js.Position(), m_local_setpoint_cp_frame);
         m_setpoint_cp_frame = m_base_frame * m_local_setpoint_cp_frame;
-        // normalize
-        m_local_setpoint_cp_frame.Rotation().NormalizedSelf();
-        m_setpoint_cp_frame.Rotation().NormalizedSelf();
         // prm type
-        m_local_setpoint_cp.Position().From(m_local_setpoint_cp_frame);
+        m_local_setpoint_cp.Position() = m_local_setpoint_cp_frame;
         m_local_setpoint_cp.SetTimestamp(m_kin_setpoint_js.Timestamp());
         m_local_setpoint_cp.SetValid(true);
-        m_setpoint_cp.Position().From(m_setpoint_cp_frame);
+        m_setpoint_cp.Position() = m_setpoint_cp_frame;
         m_setpoint_cp.SetTimestamp(m_kin_setpoint_js.Timestamp());
         m_setpoint_cp.SetValid(m_base_frame_valid);
 
         // update cartesian velocity using the jacobian and joint
         // velocities.
-        cartesianVelocity.ProductOf(m_body_jacobian, m_kin_setpoint_js.Velocity());
+        cartesianVelocity.noalias() = Manipulator->bodyJacobian().cartesianVelocity(m_kin_setpoint_js.Velocity());
         // linear
-        relative.Assign(cartesianVelocity.Ref(3, 0));
-        m_local_setpoint_cv.SetVelocityLinear(relative);
-        m_setpoint_cp_frame.Rotation().ApplyTo(relative, absolute);
-        m_setpoint_cv.SetVelocityLinear(absolute);
+        m_local_setpoint_cv.SetVelocityLinear(cartesianVelocity.head<3>());
+        m_setpoint_cv.SetVelocityLinear(m_setpoint_cp_frame.linear() * cartesianVelocity.head<3>());
         // angular
-        relative.Assign(cartesianVelocity.Ref(3, 3));
-        m_local_setpoint_cv.SetVelocityAngular(relative);
-        m_setpoint_cp_frame.Rotation().ApplyTo(relative, absolute);
-        m_setpoint_cv.SetVelocityAngular(absolute);
+        m_local_setpoint_cv.SetVelocityAngular(cartesianVelocity.tail<3>());
+        m_setpoint_cv.SetVelocityAngular(m_setpoint_cp_frame.linear() * cartesianVelocity.tail<3>());
         // valid/timestamp
         m_local_setpoint_cv.SetValid(true);
         m_local_setpoint_cv.SetTimestamp(m_kin_setpoint_js.Timestamp());
@@ -1088,8 +1038,8 @@ void mtsIntuitiveResearchKitArm::get_robot_data(void)
         m_setpoint_cv.SetTimestamp(m_kin_setpoint_js.Timestamp());
     } else {
         // set cartesian data to "zero"
-        m_local_measured_cp_frame.Assign(vctFrm4x4::Identity());
-        m_measured_cp_frame.Assign(vctFrm4x4::Identity());
+        m_local_measured_cp_frame.setIdentity();
+        m_measured_cp_frame = Eigen::Isometry3d::Identity();
         m_local_measured_cp.SetValid(false);
         m_measured_cp.SetValid(false);
         // velocities and wrench
@@ -1098,8 +1048,8 @@ void mtsIntuitiveResearchKitArm::get_robot_data(void)
         m_body_measured_cf.SetValid(false);
         m_spatial_measured_cf.SetValid(false);
         // update cartesian position desired
-        m_local_setpoint_cp_frame.Assign(vctFrm4x4::Identity());
-        m_setpoint_cp_frame.Assign(vctFrm4x4::Identity());
+        m_local_setpoint_cp_frame = Eigen::Isometry3d::Identity();
+        m_setpoint_cp_frame = Eigen::Isometry3d::Identity();
         m_local_setpoint_cp.SetValid(false);
         m_setpoint_cp.SetValid(false);
         // velocities and wrench
@@ -1108,6 +1058,9 @@ void mtsIntuitiveResearchKitArm::get_robot_data(void)
         // composite cartesian state
         m_measured_cs.SetValid(false);
     }
+
+    Eigen::MatrixXd test;
+    test.setIdentity();
 }
 
 void mtsIntuitiveResearchKitArm::UpdateStateJointKinematics(void)
@@ -1116,9 +1069,9 @@ void mtsIntuitiveResearchKitArm::UpdateStateJointKinematics(void)
     m_kin_setpoint_js = m_pid_setpoint_js;
 }
 
-void mtsIntuitiveResearchKitArm::ToJointsPID(const vctDoubleVec & jointsKinematics, vctDoubleVec & jointsPID)
+void mtsIntuitiveResearchKitArm::ToJointsPID(const Eigen::VectorXd& jointsKinematics, Eigen::VectorXd& jointsPID)
 {
-    jointsPID.Assign(jointsKinematics);
+    jointsPID = jointsKinematics;
 }
 
 void mtsIntuitiveResearchKitArm::UpdateOperatingStateAndBusy(const prmOperatingState::StateType & state,
@@ -1188,7 +1141,7 @@ void mtsIntuitiveResearchKitArm::EnterDisabled(void)
     }
 
     IO.UsePotsForSafetyCheck(false);
-    IO.SetActuatorCurrent(vctDoubleVec(number_of_joints(), 0.0));
+    IO.SetActuatorCurrent(Eigen::VectorXd::Zero(number_of_joints()).eval());
     IO.PowerOffSequence(false); // do not open safety relays
     PID.enable(false);
     PID.enforce_position_limits(true);
@@ -1216,10 +1169,9 @@ void mtsIntuitiveResearchKitArm::EnterPowering(void)
     if (m_simulation_mode == prmSimulationType::KINEMATIC) {
         PID.enable_measured_setpoint_check(false);
         PID.enable(true);
-        PID.enable_joints(vctBoolVec(number_of_joints(), true));
-        vctDoubleVec goal(number_of_joints());
-        goal.Zeros();
-        mtsIntuitiveResearchKitArm::servo_jp_internal(goal, vctDoubleVec());
+        PID.enable_joints(Eigen::ArrayX<bool>::Constant(number_of_joints(), true).eval());
+        Eigen::VectorXd goal = Eigen::VectorXd::Zero(number_of_joints());
+        mtsIntuitiveResearchKitArm::servo_jp_internal(goal, Eigen::VectorXd());
         return;
     }
 
@@ -1234,7 +1186,7 @@ void mtsIntuitiveResearchKitArm::EnterPowering(void)
     // make sure the PID is not sending currents
     PID.enable(false);
     // pre-load the boards with zero current
-    IO.SetActuatorCurrent(vctDoubleVec(number_of_joints(), 0.0));
+    IO.SetActuatorCurrent(Eigen::VectorXd::Zero(number_of_joints()).eval());
     // enable power
     IO.PowerOnSequence();
     m_arm_interface->SendStatus(this->GetName() + ": power requested");
@@ -1250,13 +1202,13 @@ void mtsIntuitiveResearchKitArm::TransitionPowering(void)
     const double currentTime = this->StateTable.GetTic();
 
     // check power status
-    vctBoolVec actuatorAmplifiersStatus(number_of_joints());
+    Eigen::ArrayX<bool> actuatorAmplifiersStatus(number_of_joints());
     IO.GetActuatorAmpStatus(actuatorAmplifiersStatus);
-    vctBoolVec brakeAmplifiersStatus(number_of_brakes());
+    Eigen::ArrayX<bool> brakeAmplifiersStatus = Eigen::ArrayX<bool>::Constant(number_of_brakes(), true);
     if (has_brakes()) {
         IO.GetBrakeAmpStatus(brakeAmplifiersStatus);
     }
-    if (actuatorAmplifiersStatus.All() && brakeAmplifiersStatus.All()) {
+    if (actuatorAmplifiersStatus.all() && brakeAmplifiersStatus.all()) {
         m_arm_interface->SendStatus(this->GetName() + ": power on");
         mArmState.SetCurrentState("ENABLED");
     } else {
@@ -1282,7 +1234,7 @@ void mtsIntuitiveResearchKitArm::EnterEnabled(void)
                     false, false);
 
     // disable PID for fallback
-    IO.SetActuatorCurrent(vctDoubleVec(number_of_joints(), 0.0));
+    IO.SetActuatorCurrent(Eigen::VectorXd::Zero(number_of_joints()).eval());
     PID.enable(false);
     SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::UNDEFINED_SPACE,
                            mtsIntuitiveResearchKitControlTypes::UNDEFINED_MODE);
@@ -1396,17 +1348,17 @@ void mtsIntuitiveResearchKitArm::EnterHoming(void)
     // compute joint goal position
     this->SetGoalHomingArm();
     // initialize trajectory with current position and velocities
-    m_servo_jp.Assign(m_pid_setpoint_js.Position());
-    m_servo_jv.Assign(m_pid_measured_js.Velocity());
-    m_trajectory_j.goal_v.Zeros();
+    m_servo_jp = m_pid_setpoint_js.Position();
+    m_servo_jv = m_pid_measured_js.Velocity();
+    m_trajectory_j.goal_v.setZero();
     m_trajectory_j.end_time = 0.0;
     SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::JOINT_SPACE,
                            mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE);
 
     // enable PID on all joints
-    mtsIntuitiveResearchKitArm::servo_jp_internal(m_servo_jp, vctDoubleVec());
+    mtsIntuitiveResearchKitArm::servo_jp_internal(m_servo_jp, Eigen::VectorXd());
     PID.enable(true);
-    PID.enable_joints(vctBoolVec(number_of_joints(), true));
+    PID.enable_joints(Eigen::ArrayX<bool>::Constant(number_of_joints(), true).eval());
 }
 
 void mtsIntuitiveResearchKitArm::RunHoming(void)
@@ -1425,7 +1377,7 @@ void mtsIntuitiveResearchKitArm::RunHoming(void)
 
     switch (trajectoryResult) {
 
-    case robReflexxes::Reflexxes_WORKING:
+    case robReflexxes::ResultType::WORKING:
         // if this is the first evaluation, we can't calculate expected completion time
         if (m_trajectory_j.end_time == 0.0) {
             m_trajectory_j.end_time = currentTime + m_trajectory_j.Reflexxes.Duration();
@@ -1433,11 +1385,10 @@ void mtsIntuitiveResearchKitArm::RunHoming(void)
         }
         break;
 
-    case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
+    case robReflexxes::ResultType::FINAL_STATE_REACHED:
         // check position
-        m_trajectory_j.goal_error.DifferenceOf(m_trajectory_j.goal, m_pid_measured_js.Position());
-        m_trajectory_j.goal_error.AbsSelf();
-        isHomed = !m_trajectory_j.goal_error.ElementwiseGreaterOrEqual(m_trajectory_j.goal_tolerance).Any();
+        m_trajectory_j.goal_error = (m_trajectory_j.goal - m_pid_measured_js.Position()).cwiseAbs();
+        isHomed = (m_trajectory_j.goal_error.array() < m_trajectory_j.goal_tolerance.array()).all();
         if (isHomed) {
             m_operating_state.IsHomed() = true;
             PID.enforce_position_limits(true);
@@ -1476,9 +1427,9 @@ void mtsIntuitiveResearchKitArm::EnterHomed(void)
     }
 
     // enable PID and start from current position
-    servo_jp_internal(m_pid_setpoint_js.Position(), vctDoubleVec());
+    servo_jp_internal(m_pid_setpoint_js.Position(), Eigen::VectorXd());
     PID.enable_measured_setpoint_check(should_use_measured_setpoint_check());
-    PID.enable_joints(vctBoolVec(number_of_joints(), true));
+    PID.enable_joints(Eigen::ArrayX<bool>::Constant(number_of_joints(), true).eval());
     PID.enforce_position_limits(true);
     PID.enable(true);
 }
@@ -1518,28 +1469,15 @@ void mtsIntuitiveResearchKitArm::set_LED_pattern(uint32_t color1, uint32_t color
                                                  bool blink1, bool blink2)
 {
     prmInputData pattern;
-    pattern.AnalogInputs().SetSize(2);
-    pattern.DigitalInputs().SetSize(2);
-    pattern.AnalogInputs().at(0) = color1;
-    pattern.AnalogInputs().at(1) = color2;
-    pattern.DigitalInputs().at(0) = blink1;
-    pattern.DigitalInputs().at(1) = blink2;
+    pattern.AnalogInputs() = Eigen::ArrayXd({{(double)color1, (double)color2}});
+    pattern.DigitalInputs() = Eigen::ArrayX<bool>({{blink1, blink2}});
     IO.set_LED_pattern(pattern);
 }
 
-void mtsIntuitiveResearchKitArm::clip_jp(vctDoubleVec & jp) const
+void mtsIntuitiveResearchKitArm::clip_jp(Eigen::VectorXd& jp) const
 {
-    auto upper = m_configuration_js.PositionMax().cbegin();
-    auto lower = m_configuration_js.PositionMin().cbegin();
-    auto desired = jp.begin();
-    const auto end = jp.end();
-    for (; desired != end; ++desired, ++upper, ++lower) {
-        if (*desired > *upper) {
-            *desired = *upper;
-        } else if (*desired < *lower) {
-            *desired = *lower;
-        }
-    }
+    jp.array() = jp.array().cwiseMax(m_configuration_js.PositionMin())
+                           .cwiseMin(m_configuration_js.PositionMax());
 }
 
 void mtsIntuitiveResearchKitArm::control_servo_jp(void)
@@ -1568,13 +1506,13 @@ void mtsIntuitiveResearchKitArm::control_move_jp(void)
     const double currentTime = this->StateTable.GetTic();
 
     switch (trajectoryResult) {
-    case robReflexxes::Reflexxes_WORKING:
+    case robReflexxes::ResultType::WORKING:
         // if this is the first evaluation, we can't calculate expected completion time
         if (m_trajectory_j.end_time == 0.0) {
             m_trajectory_j.end_time = currentTime + m_trajectory_j.Reflexxes.Duration();
         }
         break;
-    case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
+    case robReflexxes::ResultType::FINAL_STATE_REACHED:
         control_move_jp_on_stop(true); // goal reached
         break;
     default:
@@ -1594,63 +1532,51 @@ void mtsIntuitiveResearchKitArm::control_servo_cs(void)
     m_pid_new_goal = false;
 
     // position
-    vctDoubleVec jp(m_kin_measured_js.Position());
+    Eigen::VectorXd jp = m_kin_measured_js.Position();
     if (m_servo_cs.PositionIsValid()) {
         // compute desired arm position
-        CartesianPositionFrm.From(m_servo_cs.Position());
+        CartesianPositionFrm = safe_cartesian_goal(
+            m_base_frame.inverse() * m_servo_cs.Position(),
+            m_local_setpoint_cp_frame
+        );
 
-        auto ik_errno = this->InverseKinematics(jp, m_base_frame.Inverse() * CartesianPositionFrm);
-        if (ik_errno != robManipulator::ESUCCESS) {
-            // shows robManipulator error if used
-            if (this->Manipulator) {
+        std::string ik_err_msg;
+        // TODO: make control_servo_cs operate in local frame
+        const bool ik_ok = Manipulator->inverseKinematics(CartesianPositionFrm, jp, ik_err_msg);
+        if (!ik_ok) {
                 m_arm_interface->SendError(this->GetName()
                                            + ": unable to solve inverse kinematics ("
-                                           + this->Manipulator->LastError() + ")");
-            } else {
-                m_arm_interface->SendError(this->GetName() + ": unable to solve inverse kinematics");
-            }
+                                           + ik_err_msg + ")");
             return;
         }
     } else if (m_servo_cs.VelocityIsValid()) {
         jp = m_kin_measured_js.Position();
     } else {
-        jp.Zeros();
+        jp.setZero();
     }
 
     // velocity
-    vctDoubleVec jv(number_of_joints_kinematics(), 0.0);
+    Eigen::VectorXd jv = Eigen::VectorXd::Zero(number_of_joints_kinematics());
     if (m_servo_cs.VelocityIsValid()) {
-        auto transform = m_measured_cp.Position().Rotation();
+        auto& R = m_measured_cp.Position().rotation();
 
-        vctDouble6 body_velocity;
-        body_velocity.Ref<3>(0) = transform.ApplyInverseTo(m_servo_cs.Velocity().Ref<3>(0));
-        body_velocity.Ref<3>(3) = transform.ApplyInverseTo(m_servo_cs.Velocity().Ref<3>(3));
+        Eigen::Vector<double, 6> body_velocity;
+        body_velocity.head<3>().noalias() = R.transpose() * m_servo_cs.Velocity().head<3>();
+        body_velocity.tail<3>().noalias() = R.transpose() * m_servo_cs.Velocity().tail<3>();
 
-        // compute the jacobian pseudo inverse
-        vctDoubleMat jacobian_copy(m_body_jacobian.rows(), m_body_jacobian.cols());
-        jacobian_copy.Assign(m_body_jacobian);
-        nmrPInverse(jacobian_copy, m_jacobian_pinverse_data);
-
-        // compute joint velocities
-        vctDoubleVec v(6);
-        v.Assign(body_velocity);
-        jv.ProductOf(m_jacobian_pinverse_data.PInverse(), v);
-    } else {
-        jv.Zeros();
+        jv.noalias() = Manipulator->bodyJacobian().jointVelocity(body_velocity);
     }
 
     // effort
-    vctDoubleVec jf(number_of_joints_kinematics(), 0.0);
+    Eigen::VectorXd jf = Eigen::VectorXd::Zero(number_of_joints_kinematics());
     if (m_servo_cs.ForceIsValid()) {
-        auto transform = m_measured_cp.Position().Rotation();
+        auto& R = m_measured_cp.Position().rotation();
 
-        vctDoubleVec local_force(6);
-        local_force.Ref(3, 0).Assign(transform.ApplyInverseTo(m_servo_cs.Force().Ref<3>(0)));
-        local_force.Ref(3, 3).Assign(transform.ApplyInverseTo(m_servo_cs.Force().Ref<3>(3)));
+        Eigen::Vector<double, 6> body_force;
+        body_force.head<3>().noalias() = R.transpose() * m_servo_cs.Force().head<3>();
+        body_force.tail<3>().noalias() = R.transpose() * m_servo_cs.Force().tail<3>();
 
-        jf.ProductOf(m_body_jacobian.Transpose(), local_force);
-    } else {
-        jf.Zeros();
+        jf.noalias() = Manipulator->bodyJacobian().jointForce(body_force);
     }
 
     prmStateJoint js;
@@ -1753,14 +1679,12 @@ void mtsIntuitiveResearchKitArm::trajectory_j_update_ratio(void)
 
 void mtsIntuitiveResearchKitArm::trajectory_j_update_reflexxes(void)
 {
-    m_trajectory_j.v.ProductOf(m_trajectory_j.ratio_v,
-                               m_trajectory_j.v_max);
-    m_trajectory_j.a.ProductOf(m_trajectory_j.ratio_a,
-                               m_trajectory_j.a_max);
+    m_trajectory_j.v = m_trajectory_j.ratio_v * m_trajectory_j.v_max;
+    m_trajectory_j.a = m_trajectory_j.ratio_a * m_trajectory_j.a_max;
     m_trajectory_j.Reflexxes.Set(m_trajectory_j.v,
                                  m_trajectory_j.a,
                                  StateTable.PeriodStats.PeriodAvg(),
-                                 robReflexxes::Reflexxes_TIME);
+                                 robReflexxes::SynchronizationType::TIME);
 }
 
 void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResearchKitControlTypes::ControlSpace space,
@@ -1809,36 +1733,35 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
         case mtsIntuitiveResearchKitControlTypes::POSITION_MODE:
             // configure PID
             PID.enable_measured_setpoint_check(should_use_measured_setpoint_check());
-            PID.EnableTorqueMode(vctBoolVec(number_of_joints(), false));
+            PID.EnableTorqueMode(Eigen::ArrayX<bool>::Constant(number_of_joints(), false).eval());
             m_pid_new_goal = false;
-            mCartesianRelative = vctFrm3::Identity();
-            m_servo_jp.Assign(m_pid_setpoint_js.Position(), number_of_joints());
-            m_servo_jv.Zeros();
+            mCartesianRelative = Eigen::Isometry3d::Identity();
+            m_servo_jp.head(number_of_joints()) = m_pid_setpoint_js.Position().head(number_of_joints());
+            m_servo_jv.setZero();
             m_effort_orientation_locked = false;
             break;
         case mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE:
             // configure PID
             PID.enable_measured_setpoint_check(should_use_measured_setpoint_check());
-            PID.EnableTorqueMode(vctBoolVec(number_of_joints(), false));
+            PID.EnableTorqueMode(Eigen::ArrayX<bool>::Constant(number_of_joints(), false).eval());
             m_effort_orientation_locked = false;
             // initialize trajectory
-            m_servo_jp.Assign(m_pid_setpoint_js.Position(), number_of_joints());
+            m_servo_jp.head(number_of_joints()) = m_pid_setpoint_js.Position().head(number_of_joints());
             if (m_control_mode == mtsIntuitiveResearchKitControlTypes::POSITION_MODE) {
-                m_servo_jv.Assign(m_pid_measured_js.Velocity(), number_of_joints());
+                m_servo_jv.head(number_of_joints()) = m_pid_measured_js.Velocity().head(number_of_joints());
             } else {
                 // we're switching from effort or no mode
-                m_servo_jv.SetSize(number_of_joints());
-                m_servo_jv.Zeros();
+                m_servo_jv = Eigen::VectorXd::Zero(number_of_joints());
             }
             m_trajectory_j.Reflexxes.Set(m_trajectory_j.v,
                                          m_trajectory_j.a,
                                          StateTable.PeriodStats.PeriodAvg(),
-                                         robReflexxes::Reflexxes_TIME);
+                                         robReflexxes::SynchronizationType::TIME);
             break;
         case mtsIntuitiveResearchKitControlTypes::EFFORT_MODE:
             // configure PID
             PID.enable_measured_setpoint_check(false);
-            m_servo_jf_vector.Assign(vctDoubleVec(number_of_joints_kinematics(), 0.0));
+            m_servo_jf_vector = Eigen::VectorXd::Zero(number_of_joints_kinematics());
             SetControlEffortActiveJoints();
             break;
         default:
@@ -1928,20 +1851,20 @@ void mtsIntuitiveResearchKitArm::control_servo_cf_orientation_locked(void)
 
 void mtsIntuitiveResearchKitArm::SetControlEffortActiveJoints(void)
 {
-    PID.EnableTorqueMode(vctBoolVec(number_of_joints(), true));
+    PID.EnableTorqueMode(Eigen::ArrayX<bool>::Constant(number_of_joints(), true).eval());
 }
 
-void mtsIntuitiveResearchKitArm::control_servo_cf_preload(vctDoubleVec & effortPreload,
-                                                          vctDoubleVec & wrenchPreload)
+void mtsIntuitiveResearchKitArm::control_servo_cf_preload(Eigen::VectorXd& effortPreload,
+                                                          Eigen::Vector<double, 6>& wrenchPreload)
 {
-    effortPreload.Zeros();
-    wrenchPreload.Zeros();
+    effortPreload.setZero();
+    wrenchPreload.setZero();
 }
 
 void mtsIntuitiveResearchKitArm::control_servo_jf(void)
 {
     // effort required
-    m_servo_jf_vector.Assign(m_servo_jf.ForceTorque());
+    m_servo_jf_vector = m_servo_jf.ForceTorque();
     // convert to cisstParameterTypes
     servo_jf_internal(m_servo_jf_vector);
 }
@@ -1949,11 +1872,11 @@ void mtsIntuitiveResearchKitArm::control_servo_jf(void)
 void mtsIntuitiveResearchKitArm::control_servo_cf(void)
 {
     // update torques based on wrench
-    vctDoubleVec wrench(6);
+    Eigen::Vector<double, 6> wrench;
 
     // get force preload from derived classes, in most cases 0, platform control for MTM
-    vctDoubleVec effortPreload(number_of_joints_kinematics());
-    vctDoubleVec wrenchPreload(6);
+    Eigen::VectorXd effortPreload(number_of_joints_kinematics());
+    Eigen::Vector<double, 6> wrenchPreload;
 
     control_servo_cf_preload(effortPreload, wrenchPreload);
 
@@ -1965,32 +1888,23 @@ void mtsIntuitiveResearchKitArm::control_servo_cf(void)
                                                   m_measured_cv,
                                                   m_servo_cf,
                                                   m_body_cf_orientation_absolute);
-            wrench.Assign(m_servo_cf.Force());
+            wrench = m_servo_cf.Force();
         } else {
             // user provided wrench
             if (m_body_cf_orientation_absolute) {
                 // use forward kinematics orientation to have constant wrench orientation
-                vct3 relative, absolute;
-                // force
-                relative.Assign(m_servo_cf.Force().Ref<3>(0));
-                m_measured_cp_frame.Rotation().ApplyInverseTo(relative, absolute);
-                wrench.Ref(3, 0).Assign(absolute);
-                // torque
-                relative.Assign(m_servo_cf.Force().Ref<3>(3));
-                m_measured_cp_frame.Rotation().ApplyInverseTo(relative, absolute);
-                wrench.Ref(3, 3).Assign(absolute);
+                wrench.head<3>().noalias() = m_measured_cp_frame.rotation().transpose() * m_servo_cf.Force().head<3>();
+                wrench.tail<3>().noalias() = m_measured_cp_frame.rotation().transpose() * m_servo_cf.Force().tail<3>();
             } else {
-                wrench.Assign(m_servo_cf.Force());
+                wrench = m_servo_cf.Force();
             }
         }
-        m_servo_jf_vector.ProductOf(m_body_jacobian.Transpose(), wrench + wrenchPreload);
-        m_servo_jf_vector.Add(effortPreload);
+        m_servo_jf_vector.noalias() = m_body_jacobian.transpose() * (wrench + wrenchPreload) + effortPreload;
     }
     // spatial wrench
     else if (m_servo_cf_type == WRENCH_SPATIAL) {
-        wrench.Assign(m_servo_cf.Force());
-        m_servo_jf_vector.ProductOf(m_spatial_jacobian.Transpose(), wrench + wrenchPreload);
-        m_servo_jf_vector.Add(effortPreload);
+        wrench = m_servo_cf.Force();
+        m_servo_jf_vector.noalias() = m_spatial_jacobian.transpose() * (wrench + wrenchPreload) + effortPreload;
     }
 
     // send to PID
@@ -2002,7 +1916,7 @@ void mtsIntuitiveResearchKitArm::control_servo_cf(void)
     }
 }
 
-void mtsIntuitiveResearchKitArm::servo_jf_internal(const vctDoubleVec & jf)
+void mtsIntuitiveResearchKitArm::servo_jf_internal(const Eigen::VectorXd& jf)
 {
     // convert to cisstParameterTypes
     m_servo_jf_param.SetForceTorque(jf);
@@ -2015,17 +1929,17 @@ void mtsIntuitiveResearchKitArm::servo_jf_internal(const vctDoubleVec & jf)
     apply_feed_forward();
 }
 
-void mtsIntuitiveResearchKitArm::servo_jp_internal(const vctDoubleVec & jp,
-                                                   const vctDoubleVec & jv)
+void mtsIntuitiveResearchKitArm::servo_jp_internal(const Eigen::VectorXd& jp,
+                                                   const Eigen::VectorXd& jv)
 {
     // assign positions and check limits
-    m_servo_jp_param.Goal().Assign(jp);
+    m_servo_jp_param.Goal() = jp;
     if (is_homed()) {
         clip_jp(m_servo_jp_param.Goal());
     }
 
     // assign velocities
-    m_servo_jp_param.Velocity().ForceAssign(jv);
+    m_servo_jp_param.Velocity() = jv;
     m_servo_jp_param.SetTimestamp(StateTable.GetTic());
     if (m_has_coupling) {
         m_servo_jp_param.Goal() = m_coupling.JointToActuatorPosition() * m_servo_jp_param.Goal();
@@ -2033,8 +1947,8 @@ void mtsIntuitiveResearchKitArm::servo_jp_internal(const vctDoubleVec & jp,
             m_servo_jp_param.Velocity() = m_coupling.JointToActuatorPosition() * m_servo_jp_param.Velocity();
         }
     }
-    PID.servo_jp(m_servo_jp_param);
 
+    PID.servo_jp(m_servo_jp_param);
     apply_feed_forward();
 }
 
@@ -2046,10 +1960,10 @@ bool mtsIntuitiveResearchKitArm::should_use_gravity_compensation(void)
 void mtsIntuitiveResearchKitArm::apply_feed_forward(void)
 {
     auto& jf = m_feed_forward_jf_param.ForceTorque();
-    jf.Zeros(); // reset feed forward
+    jf.setZero(); // reset feed forward
     if (should_use_gravity_compensation()) {
         const auto& gc_jf = m_gravity_compensation_setpoint_js.Effort();
-        jf.Ref(gc_jf.size()).Assign(gc_jf);
+        jf.head(gc_jf.size()) = gc_jf;
     }
 
     if (m_has_coupling) {
@@ -2066,12 +1980,12 @@ void mtsIntuitiveResearchKitArm::servo_js_internal(const prmStateJoint & js)
     feed_forward_jf_internal(js.Effort());
 }
 
-void mtsIntuitiveResearchKitArm::feed_forward_jf_internal(const vctDoubleVec & jf)
+void mtsIntuitiveResearchKitArm::feed_forward_jf_internal(const Eigen::VectorXd& jf)
 {
-    m_feed_forward_jf_param.ForceTorque().Zeros();
+    m_feed_forward_jf_param.ForceTorque().setZero();
     if (m_has_coupling && jf.size() > 0) {
-        vctDoubleVec actuator_efforts = m_coupling.JointToActuatorEffort() * jf;
-        m_feed_forward_jf_param.ForceTorque().Add(actuator_efforts);
+        Eigen::VectorXd actuator_efforts = m_coupling.JointToActuatorEffort() * jf;
+        m_feed_forward_jf_param.ForceTorque() += actuator_efforts;
     }
 
     m_feed_forward_jf_param.SetTimestamp(StateTable.GetTic());
@@ -2088,11 +2002,11 @@ void mtsIntuitiveResearchKitArm::hold(void)
     SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::JOINT_SPACE,
                            mtsIntuitiveResearchKitControlTypes::POSITION_MODE);
     // set goal
-    m_servo_jp.Assign(m_pid_setpoint_js.Position());
+    m_servo_jp = m_pid_setpoint_js.Position();
     m_pid_new_goal = true;
 
     // turn off feedfoward in case it is set
-    m_feed_forward_jf_param.ForceTorque().Zeros();
+    m_feed_forward_jf_param.ForceTorque().setZero();
 }
 
 void mtsIntuitiveResearchKitArm::free(void)
@@ -2103,8 +2017,7 @@ void mtsIntuitiveResearchKitArm::free(void)
 
     // request zero effort in joint space
     prmForceTorqueJointSet jf;
-    jf.ForceTorque().SetSize(number_of_joints_kinematics());
-    jf.ForceTorque().Zeros();
+    jf.ForceTorque() = Eigen::VectorXd::Zero(number_of_joints_kinematics());
     this->servo_jf(jf);
     // for MTMs
     m_effort_orientation_locked = false;
@@ -2120,8 +2033,8 @@ void mtsIntuitiveResearchKitArm::servo_jp(const prmPositionJointSet & jp)
     SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::JOINT_SPACE,
                            mtsIntuitiveResearchKitControlTypes::POSITION_MODE);
     // set goal
-    m_servo_jp.Assign(jp.Goal(), number_of_joints_kinematics());
-    m_servo_jv.Assign(jp.Velocity(), jp.Velocity().size());
+    m_servo_jp.head(number_of_joints_kinematics()) = jp.Goal().head(number_of_joints_kinematics());
+    m_servo_jv.head(jp.Velocity().size()) = jp.Velocity();
     m_pid_new_goal = true;
 }
 
@@ -2136,9 +2049,9 @@ void mtsIntuitiveResearchKitArm::servo_jr(const prmPositionJointSet & difference
                            mtsIntuitiveResearchKitControlTypes::POSITION_MODE);
     // if there's no current goal, reset it
     if (!m_pid_new_goal) {
-        m_servo_jp.Assign(m_pid_setpoint_js.Position());
+        m_servo_jp = m_pid_setpoint_js.Position();
     }
-    m_servo_jp.Ref(number_of_joints_kinematics()).Add(difference.Goal());
+    m_servo_jp.head(number_of_joints_kinematics()) += difference.Goal();
     m_pid_new_goal = true;
 }
 
@@ -2154,10 +2067,10 @@ void mtsIntuitiveResearchKitArm::move_jp(const prmPositionJointSet & jp)
     // make sure trajectory is reset
     control_move_jp_on_start();
     // new goal
-    vctDoubleVec new_jp(jp.Goal());
+    Eigen::VectorXd new_jp = jp.Goal();
     clip_jp(new_jp);
     ToJointsPID(new_jp, m_trajectory_j.goal);
-    m_trajectory_j.goal_v.Zeros();
+    m_trajectory_j.goal_v.setZero();
 }
 
 void mtsIntuitiveResearchKitArm::move_jr(const prmPositionJointSet & jp)
@@ -2173,17 +2086,17 @@ void mtsIntuitiveResearchKitArm::move_jr(const prmPositionJointSet & jp)
     UpdateIsBusy(true);
     // if trajectory is active, add to existing goal
     if (m_trajectory_j.is_active) {
-        vctDoubleVec relative(m_trajectory_j.goal.size());
+        Eigen::VectorXd relative(m_trajectory_j.goal.size());
         ToJointsPID(jp.Goal(), relative);
-        m_trajectory_j.goal.Add(relative);
+        m_trajectory_j.goal += relative;
     } else {
         // new goal, goal + setpoint
         ToJointsPID(jp.Goal(), m_trajectory_j.goal);
-        m_trajectory_j.goal.Add(m_pid_setpoint_js.Position());
+        m_trajectory_j.goal += m_pid_setpoint_js.Position();
     }
     // reset trajectory time
     control_move_jp_on_start();
-    m_trajectory_j.goal_v.Zeros();
+    m_trajectory_j.goal_v.setZero();
 }
 
 void mtsIntuitiveResearchKitArm::servo_cp(const prmPositionCartesianSet & cp)
@@ -2198,9 +2111,9 @@ void mtsIntuitiveResearchKitArm::servo_cp(const prmPositionCartesianSet & cp)
     // set goal
     m_servo_cs.Position() = cp.Goal();
     m_servo_cs.PositionIsValid() = true;
-    m_servo_cs.Velocity().Ref<3>(0) = cp.Velocity();
-    m_servo_cs.Velocity().Ref<3>(3) = cp.VelocityAngular();
-    m_servo_cs.VelocityIsValid() =  m_servo_cs.Velocity().Any();
+    m_servo_cs.Velocity().head<3>() = cp.Velocity();
+    m_servo_cs.Velocity().tail<3>() = cp.VelocityAngular();
+    m_servo_cs.VelocityIsValid() = (m_servo_cs.Velocity().array() != 0.0).any();
     m_servo_cs.ForceIsValid() = false;
 
     m_pid_new_goal = true;
@@ -2227,7 +2140,7 @@ void mtsIntuitiveResearchKitArm::servo_cs(const prmStateCartesian & cs)
     }
 
     if (!cs.PositionIsValid() && !cs.VelocityIsValid() && !cs.ForceIsValid()) {
-        m_servo_cf.Force().Zeros();
+        m_servo_cf.Force().setZero();
         body_servo_cf(m_servo_cf);
         return;
     }
@@ -2252,27 +2165,25 @@ void mtsIntuitiveResearchKitArm::move_cp(const prmPositionCartesianSet & cp)
                            mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE);
 
     // copy current position
-    vctDoubleVec jp(m_kin_measured_js.Position());
+    Eigen::VectorXd jp = m_kin_measured_js.Position();
 
-    // compute desired slave position
-    CartesianPositionFrm.From(cp.Goal());
+    // compute desired position
+    CartesianPositionFrm = safe_cartesian_goal(m_base_frame.inverse() * cp.Goal());
 
-    if (this->InverseKinematics(jp, m_base_frame.Inverse() * CartesianPositionFrm) == robManipulator::ESUCCESS) {
+    std::string ik_err_msg;
+    bool ik_ok = Manipulator->inverseKinematics(CartesianPositionFrm, jp, ik_err_msg); 
+    if (ik_ok) {
         // make sure trajectory is reset
         control_move_jp_on_start();
         // new goal
         clip_jp(jp);
         ToJointsPID(jp, m_trajectory_j.goal);
-        m_trajectory_j.goal_v.Zeros();
+        m_trajectory_j.goal_v.setZero();
     } else {
         // shows robManipulator error if used
-        if (this->Manipulator) {
-            m_arm_interface->SendError(this->GetName()
-                                       + ": unable to solve inverse kinematics ("
-                                       + this->Manipulator->LastError() + ")");
-        } else {
-            m_arm_interface->SendError(this->GetName() + ": unable to solve inverse kinematics");
-        }
+        m_arm_interface->SendError(this->GetName()
+                                    + ": unable to solve inverse kinematics ("
+                                    + ik_err_msg + ")");
         m_trajectory_j.goal_reached_event(false);
         UpdateIsBusy(false);
     }
@@ -2280,15 +2191,21 @@ void mtsIntuitiveResearchKitArm::move_cp(const prmPositionCartesianSet & cp)
 
 void mtsIntuitiveResearchKitArm::set_base_frame(const prmPositionCartesianSet & newBaseFrame)
 {
-    if (newBaseFrame.Valid()) {
-        this->m_base_frame.FromNormalized(newBaseFrame.Goal());
-        this->m_base_frame_valid = true;
-        this->m_measured_cp.SetReferenceFrame(newBaseFrame.ReferenceFrame());
-        this->m_setpoint_cp.SetReferenceFrame(newBaseFrame.ReferenceFrame());
-        this->m_measured_cs.SetReferenceFrame(newBaseFrame.ReferenceFrame());
-    } else {
-        this->m_base_frame_valid = false;
+    if (!newBaseFrame.Valid()) {
+        m_base_frame_valid = false;
+        return;
     }
+
+    m_base_frame_valid = true;
+
+    // orthonormalize rotation
+    Eigen::JacobiSVD<Eigen::Matrix3d> svd(newBaseFrame.Goal().rotation(), Eigen::ComputeFullU | Eigen::ComputeFullV);
+    m_base_frame.linear() = svd.matrixU() * svd.matrixV().transpose();
+    m_base_frame.translation() = newBaseFrame.Goal().translation();
+
+    this->m_measured_cp.SetReferenceFrame(newBaseFrame.ReferenceFrame());
+    this->m_setpoint_cp.SetReferenceFrame(newBaseFrame.ReferenceFrame());
+    this->m_measured_cs.SetReferenceFrame(newBaseFrame.ReferenceFrame());
 }
 
 void mtsIntuitiveResearchKitArm::ErrorEventHandler(const mtsMessage & message)
@@ -2297,7 +2214,7 @@ void mtsIntuitiveResearchKitArm::ErrorEventHandler(const mtsMessage & message)
     SetDesiredState("FAULT");
 }
 
-void mtsIntuitiveResearchKitArm::PositionLimitEventHandler(const vctBoolVec & CMN_UNUSED(flags))
+void mtsIntuitiveResearchKitArm::PositionLimitEventHandler(const Eigen::ArrayX<bool>& CMN_UNUSED(flags))
 {
     m_arm_interface->SendWarning(this->GetName() + ": PID position limit");
 }
@@ -2333,17 +2250,21 @@ void mtsIntuitiveResearchKitArm::BiasEncoderEventHandler(const int & nbSamples)
 void mtsIntuitiveResearchKitArm::inverse_kinematics(const prmInverseKinematicsRequest & request,
                                                     prmInverseKinematicsResponse & response) const
 {
-    if (request.jp().size() != number_of_joints_kinematics()) {
+    if (request.jp().size() != (Eigen::Index)number_of_joints_kinematics()) {
         response.result() = false;
         response.message() = "incorrect number of joints";
         return;
     }
-    response.jp().ForceAssign(request.jp());
-    if (this->InverseKinematics(response.jp(), request.cp()) == robManipulator::ESUCCESS) {
+    response.jp() = request.jp();
+
+    std::string ik_err_msg;
+    bool ik_ok = Manipulator->inverseKinematics(m_base_frame.inverse() * request.cp(), response.jp(), ik_err_msg); 
+
+    if (ik_ok) {
         response.result() = true;
     } else {
         response.result() = false;
-        response.message() = "inverse kinematics failed";
+        response.message() = "inverse kinematics failed: " + ik_err_msg;
     }
 }
 
@@ -2356,7 +2277,12 @@ void mtsIntuitiveResearchKitArm::forward_kinematics(const prmForwardKinematicsRe
         response.message() = "too many joints";
         return;
     }
-    response.cp() = m_base_frame * Manipulator->ForwardKinematics(request.jp(), nb_joints);
+
+    Eigen::VectorXd all_joints = Eigen::VectorXd::Zero(number_of_joints_kinematics());
+    all_joints.head(nb_joints) = request.jp();
+
+    Manipulator->forwardKinematics(all_joints, response.cp(), nb_joints);
+    response.cp() = m_base_frame * response.cp();
     response.result() = true;
 }
 
@@ -2369,7 +2295,11 @@ void mtsIntuitiveResearchKitArm::local_forward_kinematics(const prmForwardKinema
         response.message() = "too many joints";
         return;
     }
-    response.cp() = Manipulator->ForwardKinematics(request.jp(), nb_joints);
+
+    Eigen::VectorXd all_joints = Eigen::VectorXd::Zero(number_of_joints_kinematics());
+    all_joints.head(nb_joints) = request.jp();
+
+    Manipulator->forwardKinematics(all_joints, response.cp(), nb_joints);
     response.result() = true;
 }
 
@@ -2384,7 +2314,7 @@ void mtsIntuitiveResearchKitArm::servo_jf(const prmForceTorqueJointSet & effort)
                            mtsIntuitiveResearchKitControlTypes::EFFORT_MODE);
 
     // set new effort
-    m_servo_jf.ForceTorque().Assign(effort.ForceTorque());
+    m_servo_jf.ForceTorque() = effort.ForceTorque();
 }
 
 void mtsIntuitiveResearchKitArm::body_servo_cf(const prmForceCartesianSet & cf)

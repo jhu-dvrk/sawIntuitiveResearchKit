@@ -21,62 +21,132 @@ http://www.cisst.org/cisst/license.txt.
 #include <time.h>
 
 // cisst
-#include <sawIntuitiveResearchKit/robManipulatorPSMSnake.h>
-
+#include <cisstCommon/cmnJointType.h>
 #include <cisstCommon/cmnPath.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmEventButton.h>
+#include <cisstRobot/kdl_utilities.h>
 
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitRevision.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitConfig.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitPSM.h>
 #include <sawIntuitiveResearchKit/prmActuatorJointCouplingCheck.h>
+#include <sawIntuitiveResearchKit/robManipulatorGeneric.h>
 
-class GravityCompensationPSM : public robGravityCompensation {
+#include <kdl/chainidsolver_recursive_newton_euler.hpp>
+
+#include <Eigen/Core>
+#include <kdl/jntarray.hpp>
+
+class GravityCompensationPSM : public robGravityCompensation
+{
 public:
-    bool configure(std::string physical_dh_file);
+    static std::unique_ptr<GravityCompensationPSM> configure(
+        std::string physical_dh_file
+    );
     std::string error(void);
 
-    vctVec compute(const prmStateJoint& state, vct3 gravity) override;
+    void setGravity(const Eigen::Vector3d& gravity) override;
+    Eigen::VectorXd compute(const prmStateJoint& state) override;
+
 private:
-    robManipulator physical_model;
+    GravityCompensationPSM(const KDL::Chain& chain);
+
+    KDL::Chain physical_model;
+    std::unique_ptr<KDL::ChainIdSolver_RNE> id_solver;
     std::string error_message;
+
+    KDL::JntArray q_in;
+    KDL::JntArray qdot_in;
+    KDL::Wrenches f_ext;
+    KDL::JntArray effort_out;
 };
 
-bool GravityCompensationPSM::configure(std::string physical_dh_file)
+GravityCompensationPSM::GravityCompensationPSM(const KDL::Chain& chain)
+    : physical_model(chain),
+      id_solver(std::make_unique<KDL::ChainIdSolver_RNE>(
+          physical_model, KDL::Vector::Zero()
+      ))
 {
-    robManipulator::Errno err = physical_model.LoadRobot(physical_dh_file);
-    if (err != robManipulator::ESUCCESS) {
-        error_message = physical_model.mLastError;
-        return false;
+    qdot_in.data.setZero(physical_model.getNrOfJoints());
+    f_ext = std::vector<KDL::Wrench>(
+        physical_model.getNrOfSegments(), KDL::Wrench::Zero()
+    );
+    effort_out = KDL::JntArray(physical_model.getNrOfJoints());
+}
+
+void GravityCompensationPSM::setGravity(const Eigen::Vector3d& gravity)
+{
+    // Can't update ID solver's gravity vector, so we re-instantiate instead
+    id_solver = std::make_unique<KDL::ChainIdSolver_RNE>(
+        physical_model, -toKDL(gravity)
+    );
+}
+
+std::unique_ptr<GravityCompensationPSM> GravityCompensationPSM::configure(
+    std::string physical_dh_file
+)
+{
+    std::ifstream json_stream(physical_dh_file);
+
+    Json::Reader json_reader;
+    Json::Value json_config;
+
+    if (!json_reader.parse(json_stream, json_config)) {
+        CMN_LOG_INIT_ERROR << "Configure GravityCompensationPSM"
+                           << ": failed to parse configuration file \""
+                           << physical_dh_file << "\"\n"
+                           << json_reader.getFormattedErrorMessages();
+        return nullptr;
+    }
+
+    const Json::Value json_dh = json_config["DH"];
+    if (json_dh.isNull() || !json_dh.isObject()) {
+        CMN_LOG_INIT_ERROR << "Configure GravityCompensationPSM"
+                           << ": failed to load find DH parameters in \""
+                           << physical_dh_file << "\"\n";
+        return nullptr;
+    }
+
+    const auto kdl_chain = loadKDLChain(json_dh);
+    if (!kdl_chain.has_value()) {
+        CMN_LOG_INIT_ERROR
+            << "Configure GravityCompensationPSM"
+            << ": failed to load kinematics parameters from file \""
+            << physical_dh_file << "\"\n";
+        return nullptr;
     }
 
     // make sure we have expected number of links
-    if (physical_model.links.size() == 7) {
-        return true;
-    } else {
-        error_message = "PSM GC kinematics does not match expected number of links for Si";
-        return false;
+    if (kdl_chain->getNrOfJoints() != 6) {
+        CMN_LOG_INIT_ERROR << "Configure GravityCompensationPSM"
+                           << ": PSM GC kinematics does not match expected "
+                              "number of links for Si";
+        return nullptr;
     }
+
+    return std::unique_ptr<GravityCompensationPSM>(
+        new GravityCompensationPSM(*kdl_chain)
+    );
 }
 
-std::string GravityCompensationPSM::error(void)
-{
-    return error_message;
-}
+std::string GravityCompensationPSM::error(void) { return error_message; }
 
-vctVec GravityCompensationPSM::compute(const prmStateJoint& state, vct3 gravity)
+Eigen::VectorXd GravityCompensationPSM::compute(const prmStateJoint& state)
 {
-    vctDoubleVec qd(7, 0.0);
-    auto j = state.Position();
+    const auto& j = state.Position();
     // convert virtual joint positions to physical
-    vctDoubleVec q(7, j[0], 0.0, j[1], -j[1], j[1], 0.5*j[2], 0.5*j[2]);
-    vctDoubleVec predicted_efforts = physical_model.CCG_MDH(q, qd, gravity);
-    vctDoubleVec efforts(state.Position().size(), 0.0);
-    efforts[0] = predicted_efforts[0];
-    efforts[1] = predicted_efforts[2] - predicted_efforts[3] + predicted_efforts[4];
-    efforts[2] = predicted_efforts[6];
+    q_in.data =
+        Eigen::VectorXd({{j[0], j[1], -j[1], j[1], 0.5 * j[2], 0.5 * j[2]}});
+
+    id_solver->CartToJnt(q_in, qdot_in, qdot_in, f_ext, effort_out);
+
+    Eigen::VectorXd efforts = Eigen::VectorXd::Zero(state.Position().size());
+    efforts[0] = effort_out(0);
+    efforts[1] = effort_out(1) - effort_out(2) + effort_out(3);
+    efforts[2] = effort_out(5);
 
     return efforts;
 }
@@ -270,25 +340,22 @@ void mtsIntuitiveResearchKitPSM::ConfigureGC(const Json::Value & jsonConfig,
         exit(EXIT_FAILURE);
     }
 
-    m_gc = std::make_unique<GravityCompensationPSM>();
-    bool ok = m_gc->configure(physical_dh);
-    if (ok) {
+    m_gc = GravityCompensationPSM::configure(physical_dh);
+    if (m_gc) {
         m_rob_gravity_compensation = m_gc.get();
     } else {
-        CMN_LOG_CLASS_INIT_ERROR << "ConfigureGC: " << this->GetName()
-                                 << " using GC kinematics file \"" << physical_dh << "\", got error \""
-                                 << m_gc->error() << "\"" << std::endl;
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureGC: failed to configure using GC kinematics file \"" << physical_dh << "\"";
         exit(EXIT_FAILURE);
     }
 }
 
 bool mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
 {
-    std::string fullFilename;
+    std::string absolute_tool_path;
 
     // try to locate the file based on tool type
     if (cmnPath::Exists(filename)) {
-        fullFilename = filename;
+        absolute_tool_path = filename;
     } else {
         // construct path using working directory and share/arm
         cmnPath path(cmnPath::GetWorkingDirectory());
@@ -299,9 +366,9 @@ bool mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
         // finally, default installation directory
         path.Add(mtsIntuitiveResearchKit::DefaultInstallationDirectory + "/tool", cmnPath::TAIL);
 
-        fullFilename = path.Find(filename);
+        absolute_tool_path = path.Find(filename);
         // still not found, try to add suffix to search again
-        if (fullFilename == "") {
+        if (absolute_tool_path == "") {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
                                      << ": failed to locate tool file for \""
                                      << filename << "\"" << std::endl;
@@ -310,21 +377,20 @@ bool mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
     }
 
     try {
-        std::ifstream jsonStream;
         Json::Value jsonConfig;
         Json::Reader jsonReader;
 
-        jsonStream.open(fullFilename.c_str());
+        std::ifstream jsonStream = std::ifstream(absolute_tool_path.c_str());
         if (!jsonReader.parse(jsonStream, jsonConfig)) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
                                      << ": failed to parse configuration file \""
-                                     << fullFilename << "\"\n"
+                                     << absolute_tool_path << "\"\n"
                                      << jsonReader.getFormattedErrorMessages();
             return false;
         }
 
         CMN_LOG_CLASS_INIT_VERBOSE << "Configure: " << this->GetName()
-                                   << " using file \"" << fullFilename << "\"" << std::endl
+                                   << " using file \"" << absolute_tool_path << "\"" << std::endl
                                    << "----> content of configuration file: " << std::endl
                                    << jsonConfig << std::endl
                                    << "<----" << std::endl;
@@ -335,59 +401,14 @@ bool mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
             m_snake_like = snakeLike.asBool();
         }
 
-        // snake require the derived manipulator class so we might
-        // have to delete create manipulator
-
-        // preserve Rtw0 just in case we need to create a new instance
-        // of robManipulator
-        CMN_ASSERT(Manipulator);
-        vctFrm4x4 oldRtw0 = Manipulator->Rtw0;
-        bool newInstance = false;
-
-        if (m_snake_like) {
-            // maybe we already have it?
-            if (!dynamic_cast<robManipulatorPSMSnake *>(this->Manipulator)) {
-                delete this->Manipulator;
-                this->Manipulator = new robManipulatorPSMSnake();
-                newInstance = true;
-            }
-        } else {
-            // make sure we have the base robManipulator class
-            if (dynamic_cast<robManipulatorPSMSnake *>(this->Manipulator)) {
-                delete this->Manipulator;
-                this->Manipulator = new robManipulator();
-                newInstance = true;
-            }
-        }
-
-        // configure new instance and restore Rtw0 in case user have
-        // overriden the content of config file
-        if (newInstance) {
-            ConfigureDH(mConfigurationFile);
-            Manipulator->Rtw0.Assign(oldRtw0);
-        }
-
-        // remove tool tip offset
-        Manipulator->DeleteTools();
-        // in any case, we just need the first 3 links
-        Manipulator->Truncate(3);
-
         // now configure the links specific to the tool
-        ConfigureDH(jsonConfig, fullFilename, true /* ignore coupling, we load this later */);
+        ConfigureToolDH(jsonConfig, absolute_tool_path);
 
         // check that the kinematic chain length makes sense
-        size_t expectedNumberOfJoint;
-        if (m_snake_like) {
-            expectedNumberOfJoint = 8;
-        } else {
-            expectedNumberOfJoint = 6;
-        }
-        size_t numberOfJointsLoaded = this->Manipulator->links.size();
-
-        if (expectedNumberOfJoint != numberOfJointsLoaded) {
+        if (Manipulator->numJoints() != 6) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
                                      << ": incorrect number of joints (DH), found "
-                                     << numberOfJointsLoaded << ", expected " << expectedNumberOfJoint
+                                     << Manipulator->numJoints() << ", expected " << 6
                                      << std::endl;
             return false;
         }
@@ -396,28 +417,17 @@ bool mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
         const Json::Value jsonToolTip = jsonConfig["tooltip_offset"];
         if (jsonToolTip.isNull()) {
             CMN_LOG_CLASS_INIT_WARNING << "ConfigureTool " << this->GetName()
-                                       << ": can find \"tooltip_offset\" data in \"" << fullFilename << "\"" << std::endl;
+                                       << ": can find \"tooltip_offset\" data in \"" << absolute_tool_path << "\"" << std::endl;
         } else {
-            cmnDataJSON<vctFrm4x4>::DeSerializeText(ToolOffsetTransformation, jsonToolTip);
-            ToolOffset = new robManipulator(ToolOffsetTransformation);
-            Manipulator->Attach(ToolOffset);
+            cmnDataJSON<Eigen::Isometry3d>::DeSerializeText(ToolOffsetTransformation, jsonToolTip);
+            Manipulator->setEndEffectorOffset(ToolOffsetTransformation);
         }
-
-        // keep info in log
-        std::stringstream dhResult;
-        this->Manipulator->PrintKinematics(dhResult);
-        CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureTool " << this->GetName()
-                                   << ": loaded kinematics" << std::endl << dhResult.str() << std::endl;
-        // update ConfigurationJointKinematic from manipulator
-        update_configuration_js();
-        // resize data members using kinematics (jacobians and effort vectors)
-        ResizeKinematicsData();
 
         // load coupling information (required)
         const Json::Value jsonCoupling = jsonConfig["coupling"];
         if (jsonCoupling.isNull()) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
-                                     << ": can find \"coupling\" data in \"" << fullFilename << "\"" << std::endl;
+                                     << ": can find \"coupling\" data in \"" << absolute_tool_path << "\"" << std::endl;
             return false;
         }
 
@@ -426,9 +436,9 @@ bool mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
         cmnDataJSON<prmActuatorJointCoupling>::DeSerializeText(toolCoupling,
                                                                jsonCoupling);
         // build a coupling matrix for all 7 actuators/dofs
-        armCoupling.ActuatorToJointPosition().ForceAssign(vctDynamicMatrix<double>::Eye(number_of_joints()));
+        armCoupling.ActuatorToJointPosition() = Eigen::MatrixXd::Identity(number_of_joints(), number_of_joints());
         // assign 4x4 matrix starting at position 3, 3
-        armCoupling.ActuatorToJointPosition().Ref(4, 4, 3, 3).Assign(toolCoupling.ActuatorToJointPosition());
+        armCoupling.ActuatorToJointPosition().block(3, 3, 4, 4) = toolCoupling.ActuatorToJointPosition();
         // update coupling matrix
         prmActuatorJointCouplingCheck(number_of_joints(),
                                       number_of_joints(),
@@ -439,79 +449,116 @@ bool mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
         const Json::Value jsonJaw = jsonConfig["jaw"];
         if (jsonJaw.isNull()) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
-                                     << ": can find \"jaw\" data in \"" << fullFilename << "\"" << std::endl;
+                                     << ": can find \"jaw\" data in \"" << absolute_tool_path << "\"" << std::endl;
             return false;
         }
         const Json::Value jsonJawQMin = jsonJaw["qmin"];
         if (jsonJawQMin.isNull()) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
-                                     << ": can find \"jaw::qmin\" data in \"" << fullFilename << "\"" << std::endl;
+                                     << ": can find \"jaw::qmin\" data in \"" << absolute_tool_path << "\"" << std::endl;
             return false;
         } else {
-            m_jaw_configuration_js.PositionMin().SetSize(1);
-            m_jaw_configuration_js.PositionMin().at(0) = jsonJawQMin.asDouble();
+            m_jaw_configuration_js.PositionMin() = Eigen::ArrayXd({{jsonJawQMin.asDouble()}});
         }
         const Json::Value jsonJawQMax = jsonJaw["qmax"];
         if (jsonJawQMax.isNull()) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
-                                     << ": can find \"jaw::qmax\" data in \"" << fullFilename << "\"" << std::endl;
+                                     << ": can find \"jaw::qmax\" data in \"" << absolute_tool_path << "\"" << std::endl;
             return false;
         } else {
-            m_jaw_configuration_js.PositionMax().SetSize(1);
-            m_jaw_configuration_js.PositionMax().at(0) = jsonJawQMax.asDouble();
+            m_jaw_configuration_js.PositionMax() = Eigen::ArrayXd({{jsonJawQMax.asDouble()}});
         }
         const Json::Value jsonJawFTMax = jsonJaw["ftmax"];
         if (jsonJawFTMax.isNull()) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
-                                     << ": can find \"jaw::ftmax\" data in \"" << fullFilename << "\"" << std::endl;
+                                     << ": can find \"jaw::ftmax\" data in \"" << absolute_tool_path << "\"" << std::endl;
             return false;
         } else {
-            m_jaw_configuration_js.EffortMin().SetSize(1);
-            m_jaw_configuration_js.EffortMax().SetSize(1);
-            m_jaw_configuration_js.EffortMax().at(0) = jsonJawFTMax.asDouble();
-            m_jaw_configuration_js.EffortMin().at(0) = -jsonJawFTMax.asDouble();
+            m_jaw_configuration_js.EffortMin() = Eigen::ArrayXd({{-jsonJawFTMax.asDouble()}});
+            m_jaw_configuration_js.EffortMax() = Eigen::ArrayXd({{jsonJawFTMax.asDouble()}});
         }
 
-        m_jaw_configuration_js.Name().resize(1);
-        m_jaw_configuration_js.Name().at(0) = "jaw";
-        m_jaw_configuration_js.Type().SetSize(1);
-        m_jaw_configuration_js.Type().at(0) = CMN_JOINT_REVOLUTE;
+        m_jaw_configuration_js.Name() = { "jaw" };
+        m_jaw_configuration_js.Type() = { CMN_JOINT_REVOLUTE };
 
         // load lower/upper position used to engage the tool(required)
         const Json::Value jsonEngagePosition = jsonConfig["tool_engage_position"];
         if (jsonEngagePosition.isNull()) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
-                                     << ": can find \"tool_engage_position\" data in \"" << fullFilename << "\"" << std::endl;
+                                     << ": can find \"tool_engage_position\" data in \"" << absolute_tool_path << "\"" << std::endl;
             return false;
         }
         // lower
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(m_tool_engage_lower_position,
+        cmnDataJSON<Eigen::VectorXd>::DeSerializeText(m_tool_engage_lower_position,
                                                    jsonEngagePosition["lower"]);
         if (m_tool_engage_lower_position.size() != 4) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
                                      << ": \"tool_engage_position\" : \"lower\" must contain 4 elements in \""
-                                     << fullFilename << "\"" << std::endl;
+                                     << absolute_tool_path << "\"" << std::endl;
             return false;
         }
         // upper
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(m_tool_engage_upper_position,
+        cmnDataJSON<Eigen::VectorXd>::DeSerializeText(m_tool_engage_upper_position,
                                                    jsonEngagePosition["upper"]);
         if (m_tool_engage_upper_position.size() != 4) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
                                      << ": \"tool_engage_position\" : \"upper\" must contain 4 elements in \""
-                                     << fullFilename << "\"" << std::endl;
+                                     << absolute_tool_path << "\"" << std::endl;
             return false;
         }
 
     } catch (...) {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName() << ": make sure the file \""
-                                 << fullFilename << "\" is in JSON format" << std::endl;
+                                 << absolute_tool_path << "\" is in JSON format" << std::endl;
         return false;
     }
 
     return true;
 }
 
+void mtsIntuitiveResearchKitPSM::ConfigureToolDH(
+    const Json::Value& json_config,
+    const std::string& filename
+)
+{
+    // load DH parameters
+    const Json::Value jsonDH = json_config["DH"];
+    if (jsonDH.isNull()) {
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureToolDH " << this->GetName()
+                                 << ": can find \"DH\" data in configuration file \""
+                                 << filename << "\"" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    const auto tool_chain = loadKDLChain(jsonDH);
+    if (!tool_chain.has_value()) {
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureToolDH " << this->GetName()
+                                 << ": failed to load kinematics parameters from file \""
+                                 << filename << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    const auto tool_joints = loadJointConfig(jsonDH);
+    if (!tool_joints.has_value()) {
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureToolDH " << this->GetName()
+                                 << ": failed to load joint configuration parameters from file \""
+                                 << filename << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    KDL::Chain full_chain = arm_chain;
+    full_chain.addChain(tool_chain.value());
+
+    prmConfigurationJoint combined_joints = arm_joints.append(tool_joints.value());
+
+    // update configuration joint from manipulator
+    update_configuration_js(combined_joints);
+
+    Manipulator = std::make_unique<robManipulatorGeneric>(combined_joints, full_chain);
+
+    // resize data members using kinematics (jacobians and effort vectors)
+    ResizeKinematicsData();
+}
 
 void mtsIntuitiveResearchKitPSM::UpdateStateJointKinematics(void)
 {
@@ -524,14 +571,14 @@ void mtsIntuitiveResearchKitPSM::UpdateStateJointKinematics(void)
     const size_t nbPIDJoints = m_pid_measured_js.Name().size();
     const size_t jaw_index = nbPIDJoints - 1;
 
-    m_jaw_measured_js.Position().at(0) = m_pid_measured_js.Position().at(jaw_index);
-    m_jaw_measured_js.Velocity().at(0) = m_pid_measured_js.Velocity().at(jaw_index);
-    m_jaw_measured_js.Effort().at(0)   = m_pid_measured_js.Effort().at(jaw_index);
+    m_jaw_measured_js.Position() = Eigen::VectorXd({{m_pid_measured_js.Position()(jaw_index)}});
+    m_jaw_measured_js.Velocity() = Eigen::VectorXd({{m_pid_measured_js.Velocity()(jaw_index)}});
+    m_jaw_measured_js.Effort() = Eigen::VectorXd({{m_pid_measured_js.Effort()(jaw_index)}});
     m_jaw_measured_js.Timestamp() = m_pid_measured_js.Timestamp();
     m_jaw_measured_js.Valid() = m_pid_measured_js.Valid();
 
-    m_jaw_setpoint_js.Position().at(0) = m_pid_setpoint_js.Position().at(jaw_index);
-    m_jaw_setpoint_js.Effort().at(0)   = m_pid_setpoint_js.Effort().at(jaw_index);
+    m_jaw_setpoint_js.Position() = Eigen::VectorXd({{m_pid_setpoint_js.Position()(jaw_index)}});
+    m_jaw_setpoint_js.Effort() = Eigen::VectorXd({{m_pid_setpoint_js.Effort()(jaw_index)}});
     m_jaw_setpoint_js.Timestamp() = m_pid_setpoint_js.Timestamp();
     m_jaw_setpoint_js.Valid() = m_pid_setpoint_js.Timestamp();
 
@@ -539,141 +586,87 @@ void mtsIntuitiveResearchKitPSM::UpdateStateJointKinematics(void)
 
         // most tool, copy first n joints (6) from PID for kinematics
         // measured p/v/e
-        m_kin_measured_js.Position().Assign(m_pid_measured_js.Position().Ref(number_of_joints_kinematics()));
-        m_kin_measured_js.Velocity().Assign(m_pid_measured_js.Velocity().Ref(number_of_joints_kinematics()));
-        m_kin_measured_js.Effort().Assign(m_pid_measured_js.Effort().Ref(number_of_joints_kinematics()));
+        m_kin_measured_js.Position() = m_pid_measured_js.Position().head(number_of_joints_kinematics());
+        m_kin_measured_js.Velocity() = m_pid_measured_js.Velocity().head(number_of_joints_kinematics());
+        m_kin_measured_js.Effort() = m_pid_measured_js.Effort().head(number_of_joints_kinematics());
         m_kin_measured_js.Timestamp() = m_pid_measured_js.Timestamp();
         m_kin_measured_js.Valid() = m_pid_measured_js.Valid();
 
         // setpoint p/e
-        m_kin_setpoint_js.Position().Assign(m_pid_setpoint_js.Position().Ref(number_of_joints_kinematics()));
-        m_kin_setpoint_js.Velocity().Assign(m_pid_setpoint_js.Velocity().Ref(number_of_joints_kinematics()));
-        m_kin_setpoint_js.Effort().Assign(m_pid_setpoint_js.Effort().Ref(number_of_joints_kinematics()));
+        m_kin_setpoint_js.Position() = m_pid_setpoint_js.Position().head(number_of_joints_kinematics());
+        m_kin_setpoint_js.Velocity() = m_pid_setpoint_js.Velocity().head(number_of_joints_kinematics());
+        m_kin_setpoint_js.Effort() = m_pid_setpoint_js.Effort().head(number_of_joints_kinematics());
         m_kin_setpoint_js.Timestamp() = m_pid_setpoint_js.Timestamp();
         m_kin_setpoint_js.Valid() = m_pid_setpoint_js.Valid();
 
     } else {
 
         // measured p/v/e
-        m_kin_measured_js.Position().Assign(m_pid_measured_js.Position(), 4);
-        m_kin_measured_js.Position().at(4) = m_kin_measured_js.Position().at(7) = m_pid_measured_js.Position().at(4) / 2.0;
-        m_kin_measured_js.Position().at(5) = m_kin_measured_js.Position().at(6) = m_pid_measured_js.Position().at(5) / 2.0;
+        m_kin_measured_js.Position().head(4) = m_pid_measured_js.Position().head(4);
+        m_kin_measured_js.Position()(4) = m_kin_measured_js.Position()(7) = m_pid_measured_js.Position()(4) / 2.0;
+        m_kin_measured_js.Position()(5) = m_kin_measured_js.Position()(6) = m_pid_measured_js.Position()(5) / 2.0;
 
-        m_kin_measured_js.Velocity().Assign(m_pid_measured_js.Velocity(), 4);
-        m_kin_measured_js.Velocity().at(4) = m_kin_measured_js.Velocity().at(7) = m_pid_measured_js.Velocity().at(4) / 2.0;
-        m_kin_measured_js.Velocity().at(5) = m_kin_measured_js.Velocity().at(6) = m_pid_measured_js.Velocity().at(5) / 2.0;
+        m_kin_measured_js.Velocity().head(4) = m_pid_measured_js.Velocity().head(4);
+        m_kin_measured_js.Velocity()(4) = m_kin_measured_js.Velocity()(7) = m_pid_measured_js.Velocity()(4) / 2.0;
+        m_kin_measured_js.Velocity()(5) = m_kin_measured_js.Velocity()(6) = m_pid_measured_js.Velocity()(5) / 2.0;
 
-        m_kin_measured_js.Effort().Assign(m_pid_measured_js.Effort(), 4);
-        m_kin_measured_js.Effort().at(4) = m_kin_measured_js.Effort().at(7) = m_pid_measured_js.Effort().at(4) / 2.0;
-        m_kin_measured_js.Effort().at(5) = m_kin_measured_js.Effort().at(6) = m_pid_measured_js.Effort().at(5) / 2.0;
+        m_kin_measured_js.Effort().head(4) = m_pid_measured_js.Effort().head(4);
+        m_kin_measured_js.Effort()(4) = m_kin_measured_js.Effort()(7) = m_pid_measured_js.Effort()(4) / 2.0;
+        m_kin_measured_js.Effort()(5) = m_kin_measured_js.Effort()(6) = m_pid_measured_js.Effort()(5) / 2.0;
         m_kin_measured_js.Timestamp() = m_pid_measured_js.Timestamp();
         m_kin_measured_js.Valid() = m_pid_measured_js.Valid();
 
         // setpoint p/e
-        m_kin_setpoint_js.Position().Assign(m_pid_setpoint_js.Position(), 4);
-        m_kin_setpoint_js.Position().at(4) = m_kin_setpoint_js.Position().at(7) = m_pid_setpoint_js.Position().at(4) / 2.0;
-        m_kin_setpoint_js.Position().at(5) = m_kin_setpoint_js.Position().at(6) = m_pid_setpoint_js.Position().at(5) / 2.0;
+        m_kin_setpoint_js.Position().head(4) = m_pid_setpoint_js.Position().head(4);
+        m_kin_setpoint_js.Position()(4) = m_kin_setpoint_js.Position()(7) = m_pid_setpoint_js.Position()(4) / 2.0;
+        m_kin_setpoint_js.Position()(5) = m_kin_setpoint_js.Position()(6) = m_pid_setpoint_js.Position()(5) / 2.0;
         std::cerr << CMN_LOG_DETAILS << " ------- need to add code to generate setpoint_js.Velocity " << std::endl;
-        m_kin_setpoint_js.Effort().Assign(m_pid_measured_js.Effort(), 4);
-        m_kin_setpoint_js.Effort().at(4) = m_kin_setpoint_js.Effort().at(7) = m_pid_setpoint_js.Effort().at(4) / 2.0;
-        m_kin_setpoint_js.Effort().at(5) = m_kin_setpoint_js.Effort().at(6) = m_pid_setpoint_js.Effort().at(5) / 2.0;
+        m_kin_setpoint_js.Effort().head(4) = m_pid_measured_js.Effort().head(4);
+        m_kin_setpoint_js.Effort()(4) = m_kin_setpoint_js.Effort()(7) = m_pid_setpoint_js.Effort()(4) / 2.0;
+        m_kin_setpoint_js.Effort()(5) = m_kin_setpoint_js.Effort()(6) = m_pid_setpoint_js.Effort()(5) / 2.0;
         m_kin_setpoint_js.Timestamp() = m_pid_setpoint_js.Timestamp();
         m_kin_setpoint_js.Valid() = m_pid_setpoint_js.Valid();
     }
 }
 
-void mtsIntuitiveResearchKitPSM::ToJointsPID(const vctDoubleVec & jointsKinematics, vctDoubleVec & jointsPID)
+void mtsIntuitiveResearchKitPSM::ToJointsPID(const Eigen::VectorXd& jointsKinematics, Eigen::VectorXd& jointsPID)
 {
     if (is_cartesian_ready()) {
         // tool is present
         if (m_snake_like) {
             CMN_ASSERT(jointsKinematics.size() == 8);
-            jointsPID.Assign(jointsKinematics, 4);
+            jointsPID.head<4>() = jointsKinematics.head<4>();
             // Test if position 4 and 7 are very much apart; throw error maybe ?
-            jointsPID.at(4) = jointsKinematics.at(4) + jointsKinematics.at(7);
+            jointsPID(4) = jointsKinematics(4) + jointsKinematics(7);
             // Same goes for 5 and 6
-            jointsPID.at(5) = jointsKinematics.at(5) + jointsKinematics.at(6);
+            jointsPID(5) = jointsKinematics(5) + jointsKinematics(6);
         } else {
             CMN_ASSERT(jointsKinematics.size() >= 6);
-            jointsPID.Assign(jointsKinematics, 6);
+            jointsPID.head<6>() = jointsKinematics.head<6>();
         }
     } else {
         // joint space, no tool yet so we can control all 7 actuators
         CMN_ASSERT(jointsKinematics.size() == 7);
-        jointsPID.Assign(jointsKinematics);
+        jointsPID.head<7>() = jointsKinematics.head<7>();
     }
-}
-
-robManipulator::Errno mtsIntuitiveResearchKitPSM::InverseKinematics(vctDoubleVec & jointSet,
-                                                                    const vctFrm4x4 & cartesianGoal) const
-{
-    // make sure we are away from RCM point, create a new goal on sphere around RCM point (i.e. origin)
-    double distanceToRCM = cartesianGoal.Translation().Norm();
-    double currentDepth = jointSet.at(2);
-
-    // if too close to zero we're going to run into issue in any case
-    if (distanceToRCM < 1.0 * cmn_mm) {
-        m_arm_interface->SendWarning(GetName() + ": InverseKinematics, can't solve IK too close to RCM");
-        return robManipulator::EFAILURE;
-    }
-
-    // IK
-    robManipulator::Errno Err = Manipulator->InverseKinematics(jointSet, cartesianGoal);;
-
-    // check equality constraint for snake like kinematic
-    if (m_snake_like) {
-        // Check for equality Snake joints (4,7) and (5,6)
-        if (fabs(jointSet.at(4) - jointSet.at(7)) > 0.00001 ||
-            fabs(jointSet.at(5) - jointSet.at(6)) > 0.00001) {
-            m_arm_interface->SendWarning(GetName() + ": InverseKinematics, equality constraint violated");
-        }
-    }
-
-    // Find closest solution mod 2 Pi for roll along shaft
-    if (Err == robManipulator::ESUCCESS) {
-        // find closest solution mod 2 pi
-        const double difference = m_kin_measured_js.Position().at(3) - jointSet.at(3);
-        const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
-        jointSet.at(3) = jointSet.at(3) + differenceInTurns * 2.0 * cmnPI;
-
-        // project away from RCM if not safe, using axis at end of shaft
-        vctFrm4x4 f4;
-        if (Manipulator->links.size() >= 4) {
-            f4 = Manipulator->ForwardKinematics(jointSet, 4);
-        } else {
-            f4 = Manipulator->ForwardKinematics(jointSet);
-        }
-        distanceToRCM = f4.Translation().Norm();
-
-        // if not far enough, distance for axis 4 is fully determine by insertion joint so add to it
-        if (distanceToRCM < mtsIntuitiveResearchKit::PSM::SafeDistanceFromRCM) {
-            // two cases based in current depth, were we past min depth or not - to do this we need to compute the minimum depth using j2.
-            const double minDepth = jointSet.at(2) + (mtsIntuitiveResearchKit::PSM::SafeDistanceFromRCM - distanceToRCM);
-            // if we are already too close to RCM, simply prevent to get closer
-            if (currentDepth <= minDepth) {
-                jointSet.at(2) = std::max(currentDepth, jointSet.at(2));
-            } else {
-                // else, make sure we don't go deeper
-                jointSet.at(2) = minDepth;
-            }
-        }
-        return robManipulator::ESUCCESS;
-    }
-
-    return robManipulator::EFAILURE;
 }
 
 bool mtsIntuitiveResearchKitPSM::is_safe_for_cartesian_control(void) const
 {
-    vctFrm4x4 f4;
-    if (Manipulator->links.size() >= 4) {
-        f4 = Manipulator->ForwardKinematics(m_kin_measured_js.Position(), 4);
-    } else {
-        f4 = Manipulator->ForwardKinematics(m_kin_measured_js.Position());
-    }
-    const double distanceToRCM = f4.Translation().Norm();
-    return (distanceToRCM >=  (mtsIntuitiveResearchKit::PSM::SafeDistanceFromRCM
-                               - mtsIntuitiveResearchKit::PSM::SafeDistanceFromRCMBuffer));
+    if (Manipulator == nullptr) { return false; }
+
+    Eigen::Isometry3d f4;
+    Manipulator->forwardKinematics(m_kin_measured_js.Position(), f4, 4);
+
+    const double distanceToRCM = f4.translation().norm();
+    return (distanceToRCM >= (mtsIntuitiveResearchKit::PSM::SafeDistanceFromRCM
+                              - mtsIntuitiveResearchKit::PSM::SafeDistanceFromRCMBuffer));
+}
+
+void mtsIntuitiveResearchKitPSM::initializeKinematics(const prmConfigurationJoint& joint_config, const KDL::Chain& chain) {
+    // Store base arm kinematics, so we can combined with tool kinematics
+    arm_joints = joint_config;
+    arm_chain = chain;
 }
 
 void mtsIntuitiveResearchKitPSM::Init(void)
@@ -723,13 +716,13 @@ void mtsIntuitiveResearchKitPSM::Init(void)
                                this);
 
     // initialize trajectory data, last 4 tweaked for engage procedures
-    m_trajectory_j.v_max.Ref(2, 0).SetAll(90.0 * cmnPI_180); // degrees per second
-    m_trajectory_j.v_max.Element(2) = 0.2; // m per second
-    m_trajectory_j.v_max.Ref(4, 3).SetAll(3.0 * 360.0 * cmnPI_180);
-    m_trajectory_j.a_max.Ref(2, 0).SetAll(90.0 * cmnPI_180);
-    m_trajectory_j.a_max.Element(2) = 0.2; // m per second ^ 2
-    m_trajectory_j.a_max.Ref(4, 3).SetAll(2.0 * 360.0 * cmnPI_180);
-    m_trajectory_j.goal_tolerance.SetAll(3.0 * cmnPI_180); // hard coded to 3 degrees
+    m_trajectory_j.v_max.segment(0, 2).fill(90.0 * cmnPI_180); // degrees per second
+    m_trajectory_j.v_max(2) = 0.2; // m per second
+    m_trajectory_j.v_max.segment(3, 4).fill(3.0 * 360.0 * cmnPI_180);
+    m_trajectory_j.a_max.segment(0, 2).fill(90.0 * cmnPI_180);
+    m_trajectory_j.a_max(2) = 0.2; // m per second ^ 2
+    m_trajectory_j.a_max.segment(3, 4).fill(2.0 * 360.0 * cmnPI_180);
+    m_trajectory_j.goal_tolerance.fill(3.0 * cmnPI_180); // hard coded to 3 degrees
 
     mtsInterfaceRequired * interfaceRequired;
 
@@ -829,9 +822,45 @@ bool mtsIntuitiveResearchKitPSM::is_joint_ready(void) const
 
 bool mtsIntuitiveResearchKitPSM::is_cartesian_ready(void) const
 {
-    return m_powered && m_encoders_biased_from_pots && Tool.IsEngaged;
+    return m_powered && m_encoders_biased_from_pots && Tool.IsEngaged && Manipulator != nullptr;
 }
 
+Eigen::Isometry3d mtsIntuitiveResearchKitPSM::safe_cartesian_goal(const Eigen::Isometry3d& raw_goal) const {
+    Eigen::Isometry3d safe_goal = raw_goal;
+
+    // Make sure we're at least 1mm away from RCM to prevent numerical instability in next step
+    if (raw_goal.translation().norm() < 1.0 * cmn_mm) {
+        safe_goal.translation().z() = -1.0 * cmn_mm;
+    }
+
+    // Enforce PSM::SafeDistanceFromRCM minimum insertion
+    if (safe_goal.translation().norm() < mtsIntuitiveResearchKit::PSM::SafeDistanceFromRCM) {
+        safe_goal.translation() = mtsIntuitiveResearchKit::PSM::SafeDistanceFromRCM * safe_goal.translation().normalized();
+    }
+
+    return safe_goal;
+}
+
+Eigen::Isometry3d mtsIntuitiveResearchKitPSM::safe_cartesian_goal(const Eigen::Isometry3d& raw_goal, const Eigen::Isometry3d& current_pose) const {
+    Eigen::Isometry3d safe_goal = raw_goal;
+    
+    // Make sure we're at least 1mm away from RCM to prevent numerical instability in next step
+    if (raw_goal.translation().norm() < 1.0 * cmn_mm) {
+        safe_goal.translation().z() = -1.0 * cmn_mm;
+    }
+
+    // Enforce PSM::SafeDistanceFromRCM minimum insertion, unless robot is currently closer to the RCM
+    const double goal_rcm_distance = safe_goal.translation().norm();
+    if (goal_rcm_distance < mtsIntuitiveResearchKit::PSM::SafeDistanceFromRCM) {
+        const double current_distance = current_pose.translation().norm();
+
+        const double minimum_distance = std::min(current_distance, mtsIntuitiveResearchKit::PSM::SafeDistanceFromRCM);
+        const double safe_goal_distance = std::max(minimum_distance, goal_rcm_distance);
+        safe_goal.translation() = safe_goal_distance * safe_goal.translation().normalized();
+    }
+
+    return safe_goal;
+}
 
 void mtsIntuitiveResearchKitPSM::SetControlSpaceAndMode(const mtsIntuitiveResearchKitControlTypes::ControlSpace space,
                                                         const mtsIntuitiveResearchKitControlTypes::ControlMode mode,
@@ -841,12 +870,13 @@ void mtsIntuitiveResearchKitPSM::SetControlSpaceAndMode(const mtsIntuitiveResear
         if ((mode == mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE)
             || (mode == mtsIntuitiveResearchKitControlTypes::POSITION_MODE)) {
             const size_t jaw_index = m_pid_measured_js.Name().size() - 1;
-            m_jaw_servo_jp = m_pid_setpoint_js.Position().at(jaw_index);
+            m_jaw_servo_jp = m_pid_setpoint_js.Position()(jaw_index);
         }
         if (m_control_mode == mtsIntuitiveResearchKitControlTypes::EFFORT_MODE) {
             m_jaw_servo_jf = 0.0;
         }
     }
+
     mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(space, mode, callback);
 }
 
@@ -855,8 +885,8 @@ void mtsIntuitiveResearchKitPSM::SetGoalHomingArm(void)
 {
     // if simulated, start at zero but insert tool so it can be used in cartesian mode
     if (m_simulation_mode == prmSimulationType::KINEMATIC) {
-        m_trajectory_j.goal.SetAll(0.0);
-        m_trajectory_j.goal.at(2) = 12.0 * cmn_cm;
+        m_trajectory_j.goal.fill(0.0);
+        m_trajectory_j.goal(2) = 12.0 * cmn_cm;
         return;
     }
 
@@ -865,10 +895,10 @@ void mtsIntuitiveResearchKitPSM::SetGoalHomingArm(void)
     if (m_homing_goes_to_zero
         && !(Tool.IsPresent || Tool.IsEmulated)) {
         // move to zero position only there is no tool present
-        m_trajectory_j.goal.SetAll(0.0);
+        m_trajectory_j.goal.fill(0.0);
     } else {
         // stay at current position by default
-        m_trajectory_j.goal.Assign(m_pid_setpoint_js.Position());
+        m_trajectory_j.goal = m_pid_setpoint_js.Position();
     }
 }
 
@@ -941,56 +971,54 @@ void mtsIntuitiveResearchKitPSM::TransitionHomed(void)
     }
 }
 
-void mtsIntuitiveResearchKitPSM::update_configuration_js_no_tool(void)
+// TODO: add trigger to call this when leaving homed?
+void mtsIntuitiveResearchKitPSM::update_configuration_js_no_tool(const prmConfigurationJoint& joint_config)
 {
     // all vectors used to get data from Manipulator must match the
     // manipulator size, potentially 3, 6 or 8 (snake).  we can then
     // picj the first 3 elements to set the configuration_js.
 
     // names
-    const size_t manipulator_size = Manipulator->links.size();
     m_configuration_js.Name().resize(number_of_joints());
-    std::vector<std::string> name_tmp(manipulator_size);
-    Manipulator->GetJointNames(name_tmp);
-    // copy first 3 names to config vector
+
     for (size_t i = 0; i < 3; ++i) {
-        m_configuration_js.Name().at(i) = name_tmp.at(i);
+        m_configuration_js.Name().at(i) = joint_config.Name().at(i);
     }
     // overwrite last 4
     for (size_t i = 3; i < 7; ++i) {
         m_configuration_js.Name().at(i) = "disc_" + std::to_string(i - 2);
     }
+
     // for type, we can even ignore values loaded from config file
-    m_configuration_js.Type().SetSize(number_of_joints());
-    m_configuration_js.Type().SetAll(CMN_JOINT_REVOLUTE);
+    m_configuration_js.Type() = std::vector<cmnJointType>(number_of_joints(), CMN_JOINT_REVOLUTE);
     m_configuration_js.Type().at(2) = CMN_JOINT_PRISMATIC;
+
     // position limits
-    m_configuration_js.PositionMin().SetSize(number_of_joints());
-    m_configuration_js.PositionMax().SetSize(number_of_joints());
-    vctDoubleVec min_tmp(manipulator_size);
-    vctDoubleVec max_tmp(manipulator_size);
-    Manipulator->GetJointLimits(min_tmp, max_tmp);
-    m_configuration_js.PositionMin().Ref(3, 0).Assign(min_tmp.Ref(3, 0));
-    m_configuration_js.PositionMax().Ref(3, 0).Assign(max_tmp.Ref(3, 0));
-    m_configuration_js.PositionMin().Ref(4, 3).SetAll(-mtsIntuitiveResearchKit::PSM::AdapterActuatorLimit);
-    m_configuration_js.PositionMax().Ref(4, 3).SetAll( mtsIntuitiveResearchKit::PSM::AdapterActuatorLimit);
+    m_configuration_js.PositionMin() = Eigen::VectorXd::Zero(number_of_joints());
+    m_configuration_js.PositionMax() = Eigen::VectorXd::Zero(number_of_joints());
+    m_configuration_js.PositionMin().segment(0, 3) = joint_config.PositionMin().segment(0, 3);
+    m_configuration_js.PositionMax().segment(0, 3) = joint_config.PositionMax().segment(0, 3);
+    m_configuration_js.PositionMin().segment(3, 4).fill(-mtsIntuitiveResearchKit::PSM::AdapterActuatorLimit);
+    m_configuration_js.PositionMax().segment(3, 4).fill( mtsIntuitiveResearchKit::PSM::AdapterActuatorLimit);
+
     // efforts
-    m_configuration_js.EffortMin().SetSize(number_of_joints());
-    m_configuration_js.EffortMax().SetSize(number_of_joints());
-    Manipulator->GetFTMaximums(max_tmp);
-    m_configuration_js.EffortMax().Ref(3, 0).Assign(max_tmp.Ref(3, 0));
-    m_configuration_js.EffortMax().Ref(4, 3).SetAll(mtsIntuitiveResearchKit::PSM::DiskMaxTorque);
-    m_configuration_js.EffortMin().Assign(-m_configuration_js.EffortMax());
+    m_configuration_js.EffortMin() = Eigen::VectorXd::Zero(number_of_joints());
+    m_configuration_js.EffortMax() = Eigen::VectorXd::Zero(number_of_joints());
+    m_configuration_js.EffortMin().segment(0, 3) = joint_config.EffortMin().segment(0, 3);
+    m_configuration_js.EffortMax().segment(0, 3) = joint_config.EffortMax().segment(0, 3);
+    m_configuration_js.EffortMin().segment(3, 4).fill(-mtsIntuitiveResearchKit::PSM::DiskMaxTorque);
+    m_configuration_js.EffortMax().segment(3, 4).fill(mtsIntuitiveResearchKit::PSM::DiskMaxTorque);
 }
 
-void mtsIntuitiveResearchKitPSM::update_configuration_js(void)
+void mtsIntuitiveResearchKitPSM::update_configuration_js(const prmConfigurationJoint& joint_config)
 {
     mStateTableConfiguration.Start();
     if (m_tool_present && m_tool_configured) {
-        mtsIntuitiveResearchKitArm::update_configuration_js();
+        mtsIntuitiveResearchKitArm::update_configuration_js(joint_config);
     } else {
-        update_configuration_js_no_tool();
+        update_configuration_js_no_tool(joint_config);
     }
+
     mStateTableConfiguration.Advance();
 }
 
@@ -1053,28 +1081,30 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         const bool return_disks_to_zero = m_return_disks_to_zero;
         // configure PID to fail in case of tracking error
         PID.enforce_position_limits(false);
-        servo_jp_internal(m_pid_setpoint_js.Position(), vctDoubleVec());
+        servo_jp_internal(m_pid_setpoint_js.Position(), Eigen::VectorXd());
         // turn on PID
-        PID.enable_joints(vctBoolVec(number_of_joints(), true));
+        PID.enable_joints(Eigen::ArrayX<bool>::Constant(number_of_joints(), true).eval());
         PID.enable_measured_setpoint_check(true);
 
         // make sure we start from current state
-        m_servo_jp.Assign(m_pid_setpoint_js.Position());
-        m_servo_jv.Assign(m_pid_setpoint_js.Velocity());
+        m_servo_jp = m_pid_setpoint_js.Position();
+        m_servo_jv = m_pid_setpoint_js.Velocity();
 
         if (return_disks_to_zero) {
             // Hold the arm while returning the four adapter disks to zero.
-            m_trajectory_j.goal.Ref(3, 0).Assign(m_pid_setpoint_js.Position().Ref(3, 0));
-            m_trajectory_j.goal.Ref(4, 3).SetAll(0.0);
+            m_trajectory_j.goal.head<3>() = m_pid_setpoint_js.Position().head<3>();
+            m_trajectory_j.goal.segment(3, 4).fill(0.0);
         } else {
             // keep first two joint values as is
-            m_trajectory_j.goal.Ref(2, 0).Assign(m_pid_setpoint_js.Position().Ref(2, 0));
+            m_trajectory_j.goal.head<2>() = m_pid_setpoint_js.Position().head<2>();
             // sterile adapter should be raised up
             m_trajectory_j.goal[2] = 0.0;
             // set last 4 to -170.0
-            m_trajectory_j.goal.Ref(4, 3).SetAll(-mtsIntuitiveResearchKit::PSM::AdapterEngageRange);
+            m_trajectory_j.goal.segment(3, 4).fill(-mtsIntuitiveResearchKit::PSM::AdapterEngageRange);
+            m_trajectory_j.goal_v.fill(0.0);
         }
-        m_trajectory_j.goal_v.SetAll(0.0);
+        m_trajectory_j.goal_v.fill(0.0);
+
         SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::JOINT_SPACE,
                                mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE);
         control_move_jp_on_start();
@@ -1092,7 +1122,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
 
     switch (trajectoryResult) {
 
-    case robReflexxes::Reflexxes_WORKING:
+    case robReflexxes::ResultType::WORKING:
         // if this is the first evaluation, we can't calculate expected completion time
         if (m_trajectory_j.end_time == 0.0) {
             m_trajectory_j.end_time = currentTime + m_trajectory_j.Reflexxes.Duration();
@@ -1100,7 +1130,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         }
         break;
 
-    case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
+    case robReflexxes::ResultType::FINAL_STATE_REACHED:
         {
             // check if we were in last phase
             if (EngagingStage > LastEngagingStage) {
@@ -1114,9 +1144,9 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
                 mArmState.SetCurrentState("HOMED");
             } else {
                 if (EngagingStage != LastEngagingStage) {
-                    m_trajectory_j.goal.Ref(4, 3) *= -1.0; // toggle back and forth
+                    m_trajectory_j.goal.segment(3, 4) *= -1.0; // toggle back and forth
                 } else {
-                    m_trajectory_j.goal.Ref(4, 3).SetAll(0.0); // back to zero position
+                    m_trajectory_j.goal.segment(3, 4).fill(0.0); // back to zero position
                 }
                 m_trajectory_j.end_time = 0.0;
                 std::stringstream message;
@@ -1165,21 +1195,23 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
     if (EngagingStage == 1) {
         // configure PID to fail in case of tracking error
         PID.enforce_position_limits(false);
-        servo_jp_internal(m_pid_setpoint_js.Position(), vctDoubleVec());
+        servo_jp_internal(m_pid_setpoint_js.Position(), Eigen::VectorXd());
         // turn on PID
-        PID.enable_joints(vctBoolVec(number_of_joints(), true));
+        PID.enable_joints(Eigen::ArrayX<bool>::Constant(number_of_joints(), true).eval());
         PID.enable_measured_setpoint_check(true);
 
         // make sure we start from current state
-        m_servo_jp.Assign(m_pid_setpoint_js.Position());
-        m_servo_jv.Assign(m_pid_setpoint_js.Velocity());
+        m_servo_jp = m_pid_setpoint_js.Position();
+        m_servo_jv = m_pid_setpoint_js.Velocity();
 
         // check if the tool in outside the cannula, measured_cp is
         // not yet computed by get_robot_data so we need to compute
-        // the FK ourselves.  This is fine for instruments with 6 dofs
-        // but is not perfect for a snake-like instrument since we don't have 8 joint values
-        vctFrm4x4 _measured_cp = Manipulator->ForwardKinematics(m_pid_measured_js.Position(), 6);
-        const double distanceToRCM = _measured_cp.Translation().Norm();
+        // the FK ourselves.
+        Eigen::Isometry3d _measured_cp;
+        Manipulator->forwardKinematics(
+            m_pid_measured_js.Position().head(number_of_joints_kinematics()), _measured_cp
+        );
+        const double distanceToRCM = _measured_cp.translation().norm();
         double depth = m_cannula_depth;
         if (depth == 0.0) {
             if (m_snake_like) {
@@ -1199,10 +1231,10 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         }
 
         // keep first three joint values as is
-        m_trajectory_j.goal.Ref(3, 0).Assign(m_pid_setpoint_js.Position().Ref(3, 0));
+        m_trajectory_j.goal.segment(0, 3) = m_pid_setpoint_js.Position().segment(0, 3);
         // set last 4 to user preferences
-        m_trajectory_j.goal.Ref(4, 3).Assign(m_tool_engage_lower_position);
-        m_trajectory_j.goal_v.SetAll(0.0);
+        m_trajectory_j.goal.segment(3, 4) = m_tool_engage_lower_position;
+        m_trajectory_j.goal_v.setZero();
         SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::JOINT_SPACE,
                                mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE);
         control_move_jp_on_start();
@@ -1220,7 +1252,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
 
     switch (trajectoryResult) {
 
-    case robReflexxes::Reflexxes_WORKING:
+    case robReflexxes::ResultType::WORKING:
         // if this is the first evaluation, we can't calculate expected completion time
         if (m_trajectory_j.end_time == 0.0) {
             m_trajectory_j.end_time = currentTime + m_trajectory_j.Reflexxes.Duration();
@@ -1228,7 +1260,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         }
         break;
 
-    case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
+    case robReflexxes::ResultType::FINAL_STATE_REACHED:
         {
             // check if we were in last phase
             if (EngagingStage > LastEngagingStage) {
@@ -1239,12 +1271,12 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
                 if (EngagingStage != LastEngagingStage) {
                     // toggle between lower and upper
                     if (EngagingStage % 2 == 0) {
-                        m_trajectory_j.goal.Ref(4, 3).Assign(m_tool_engage_upper_position);
+                        m_trajectory_j.goal.segment(3, 4) = m_tool_engage_upper_position;
                     } else {
-                        m_trajectory_j.goal.Ref(4, 3).Assign(m_tool_engage_lower_position);
+                        m_trajectory_j.goal.segment(3, 4) = m_tool_engage_lower_position;
                     }
                 } else {
-                    m_trajectory_j.goal.Ref(4, 3).SetAll(0.0); // back to zero position
+                    m_trajectory_j.goal.segment(3, 4).setZero(); // back to zero position
                 }
                 m_trajectory_j.end_time = 0.0;
                 std::stringstream message;
@@ -1272,22 +1304,24 @@ void mtsIntuitiveResearchKitPSM::EnterToolEngaged(void)
 
     // resize kinematics vectors
     cmnDataCopy(m_kin_measured_js.Name(), m_configuration_js.Name());
-    m_kin_measured_js.Position().SetSize(number_of_joints_kinematics());
-    m_kin_measured_js.Velocity().SetSize(number_of_joints_kinematics());
-    m_kin_measured_js.Effort().SetSize(number_of_joints_kinematics());
+    m_kin_measured_js.Position() = Eigen::VectorXd::Zero(number_of_joints_kinematics());
+    m_kin_measured_js.Velocity() = Eigen::VectorXd::Zero(number_of_joints_kinematics());
+    m_kin_measured_js.Effort() = Eigen::VectorXd::Zero(number_of_joints_kinematics());
     cmnDataCopy(m_kin_setpoint_js.Name(), m_configuration_js.Name());
-    m_kin_setpoint_js.Position().SetSize(number_of_joints_kinematics());
-    m_kin_setpoint_js.Velocity().SetSize(number_of_joints_kinematics());
-    m_kin_setpoint_js.Effort().SetSize(number_of_joints_kinematics());
+    m_kin_setpoint_js.Position() = Eigen::VectorXd::Zero(number_of_joints_kinematics());
+    m_kin_setpoint_js.Velocity() = Eigen::VectorXd::Zero(number_of_joints_kinematics());
+    m_kin_setpoint_js.Effort() = Eigen::VectorXd::Zero(number_of_joints_kinematics());
     // jaw
     cmnDataCopy(m_jaw_measured_js.Name(), m_jaw_configuration_js.Name());
-    m_jaw_measured_js.Position().SetSize(1);
-    m_jaw_measured_js.Velocity().SetSize(1);
-    m_jaw_measured_js.Effort().SetSize(1);
+    m_jaw_measured_js.Position() = Eigen::VectorXd::Zero(1);
+    m_jaw_measured_js.Velocity() = Eigen::VectorXd::Zero(1);
+    m_jaw_measured_js.Effort() = Eigen::VectorXd::Zero(1);
     cmnDataCopy(m_jaw_setpoint_js.Name(), m_jaw_configuration_js.Name());
-    m_jaw_setpoint_js.Position().SetSize(1);
-    m_jaw_setpoint_js.Velocity().SetSize(0);
-    m_jaw_setpoint_js.Effort().SetSize(1);
+    m_jaw_setpoint_js.Position() = Eigen::VectorXd::Zero(1);
+    m_jaw_setpoint_js.Velocity() = Eigen::VectorXd::Zero(0);
+    m_jaw_setpoint_js.Effort() = Eigen::VectorXd::Zero(1);
+
+    UpdateStateJointKinematics();
 }
 
 void mtsIntuitiveResearchKitPSM::TransitionToolEngaged(void)
@@ -1320,10 +1354,10 @@ void mtsIntuitiveResearchKitPSM::LeaveManual(void)
 
 double mtsIntuitiveResearchKitPSM::clip_jaw_jp(double jp)
 {
-    if (jp > m_jaw_configuration_js.PositionMax().at(0)) {
-        jp = m_jaw_configuration_js.PositionMax().at(0);
-    } else if (jp < m_jaw_configuration_js.PositionMin().at(0)) {
-        jp = m_jaw_configuration_js.PositionMin().at(0);
+    if (jp > m_jaw_configuration_js.PositionMax()(0)) {
+        jp = m_jaw_configuration_js.PositionMax()(0);
+    } else if (jp < m_jaw_configuration_js.PositionMin()(0)) {
+        jp = m_jaw_configuration_js.PositionMin()(0);
     }
 
     return jp;
@@ -1344,7 +1378,7 @@ void mtsIntuitiveResearchKitPSM::jaw_servo_jp(const prmPositionJointSet & jawPos
                                    mtsIntuitiveResearchKitControlTypes::POSITION_MODE);
             // make sure all other joints have a reasonable cartesian
             // goal for all other joints
-            m_servo_cs.Position().Assign(m_setpoint_cp.Position());
+            m_servo_cs.Position() = m_setpoint_cp.Position();
             m_servo_cs.PositionIsValid() = true;
             m_servo_cs.VelocityIsValid() = false;
             m_servo_cs.ForceIsValid() = false;
@@ -1356,13 +1390,13 @@ void mtsIntuitiveResearchKitPSM::jaw_servo_jp(const prmPositionJointSet & jawPos
             SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::JOINT_SPACE,
                                    mtsIntuitiveResearchKitControlTypes::POSITION_MODE);
             // make sure all other joints have a reasonable goal
-            m_servo_jp.Assign(m_pid_setpoint_js.Position(), number_of_joints());
+            m_servo_jp.head(number_of_joints()) = m_pid_setpoint_js.Position().head(number_of_joints());
         }
     }
 
     // save goal
-    m_jaw_servo_jp = jawPosition.Goal().at(0);
-    m_servo_jp.at(6) = m_jaw_servo_jp;
+    m_jaw_servo_jp = jawPosition.Goal()(0);
+    m_servo_jp(6) = m_jaw_servo_jp;
     m_pid_new_goal = true;
 }
 
@@ -1381,7 +1415,7 @@ void mtsIntuitiveResearchKitPSM::jaw_move_jp(const prmPositionJointSet & jawPosi
             SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE,
                                    mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE);
             // make sure all other joints have a reasonable goal
-            m_trajectory_j.goal.Assign(m_pid_setpoint_js.Position(), number_of_joints_kinematics());
+            m_trajectory_j.goal.head(number_of_joints_kinematics()) = m_pid_setpoint_js.Position().head(number_of_joints_kinematics());
         }
         break;
     default:
@@ -1390,25 +1424,25 @@ void mtsIntuitiveResearchKitPSM::jaw_move_jp(const prmPositionJointSet & jawPosi
             SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::JOINT_SPACE,
                                    mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE);
             // make sure all other joints have a reasonable goal
-            m_trajectory_j.goal.Assign(m_pid_setpoint_js.Position());
+            m_trajectory_j.goal = m_pid_setpoint_js.Position();
         }
     }
 
     // force trajectory re-evaluation with new goal for last joint
     control_move_jp_on_start();
-    m_jaw_servo_jp = jawPosition.Goal().at(0);
+    m_jaw_servo_jp = jawPosition.Goal()(0);
     m_trajectory_j.goal[6] = m_jaw_servo_jp;
 }
 
-void mtsIntuitiveResearchKitPSM::servo_jp_internal(const vctDoubleVec & jp,
-                                                   const vctDoubleVec & jv)
+void mtsIntuitiveResearchKitPSM::servo_jp_internal(const Eigen::VectorXd& jp,
+                                                   const Eigen::VectorXd& jv)
 {
     if (m_return_disks_to_zero && (mArmState.CurrentState() == "ENGAGING_ADAPTER")) {
         // The adapter is still engaged, but its disks may be outside the
         // no-tool limits.  Avoid clipping the starting actuator positions.
         CMN_ASSERT(!m_has_coupling);
-        m_servo_jp_param.Goal().Assign(jp);
-        m_servo_jp_param.Velocity().ForceAssign(jv);
+        m_servo_jp_param.Goal() = jp;
+        m_servo_jp_param.Velocity() = jv;
         m_servo_jp_param.SetTimestamp(StateTable.GetTic());
         PID.servo_jp(m_servo_jp_param);
         apply_feed_forward();
@@ -1420,25 +1454,26 @@ void mtsIntuitiveResearchKitPSM::servo_jp_internal(const vctDoubleVec & jp,
         return;
     }
 
-    CMN_ASSERT(m_servo_jp_param.Goal().size() == 7);
+    CMN_ASSERT(m_servo_jp_param.Goal().size() == (Eigen::Index)number_of_joints());
     // first 6 joints, assign positions and check limits
-    vctDoubleVec jp_clipped(jp.Ref(number_of_joints_kinematics()));
+    Eigen::VectorXd jp_clipped(jp.head(number_of_joints_kinematics()));
     clip_jp(jp_clipped);
+
     ToJointsPID(jp_clipped, m_servo_jp_param.Goal());
 
     if (jp.size() == 7) {
-        m_jaw_servo_jp = clip_jaw_jp(jp.at(6));
+        m_jaw_servo_jp = clip_jaw_jp(jp(6));
     }
 
     // velocity - current code only support jaw_servo_jv if servo_jp has a velocity goal
     const size_t jv_size = jv.size();
-    m_servo_jp_param.Velocity().SetSize(7);
+    m_servo_jp_param.Velocity() = Eigen::VectorXd::Zero(7);
     if (jv_size != 0) {
         ToJointsPID(jv, m_servo_jp_param.Velocity());
     }
-    m_servo_jp_param.Goal().at(6) = m_jaw_servo_jp;
+    m_servo_jp_param.Goal()(6) = m_jaw_servo_jp;
     if (jv_size != 0) {
-        m_servo_jp_param.Velocity().at(6) = 0.0;
+        m_servo_jp_param.Velocity()(6) = 0.0;
     }
     m_servo_jp_param.SetTimestamp(StateTable.GetTic());
     if (m_has_coupling) {
@@ -1447,6 +1482,7 @@ void mtsIntuitiveResearchKitPSM::servo_jp_internal(const vctDoubleVec & jp,
             m_servo_jp_param.Velocity() = m_coupling.JointToActuatorPosition() * m_servo_jp_param.Velocity();
         }
     }
+
     PID.servo_jp(m_servo_jp_param);
 
     apply_feed_forward();
@@ -1467,7 +1503,7 @@ void mtsIntuitiveResearchKitPSM::jaw_servo_jf(const prmForceTorqueJointSet & eff
                                    mtsIntuitiveResearchKitControlTypes::EFFORT_MODE);
             // make sure all other joints have a reasonable cartesian
             // goal
-            m_servo_cf.Force().SetAll(0.0);
+            m_servo_cf.Force().setZero();
         }
         break;
     default:
@@ -1475,30 +1511,30 @@ void mtsIntuitiveResearchKitPSM::jaw_servo_jf(const prmForceTorqueJointSet & eff
         SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE,
                                mtsIntuitiveResearchKitControlTypes::EFFORT_MODE);
         // make sure all other joints have a reasonable goal
-        m_servo_jf.ForceTorque().SetAll(0.0);
+        m_servo_jf.ForceTorque().setZero();
     }
 
     // save the desired effort
-    m_jaw_servo_jf = effort.ForceTorque().at(0);
+    m_jaw_servo_jf = effort.ForceTorque()(0);
 }
 
 
-void mtsIntuitiveResearchKitPSM::servo_jf_internal(const vctDoubleVec & newEffort)
+void mtsIntuitiveResearchKitPSM::servo_jf_internal(const Eigen::VectorXd& newEffort)
 {
 
     // pad array for PID
-    vctDoubleVec torqueDesired(number_of_joints(), 0.0); // for PID
+    Eigen::VectorXd torqueDesired = Eigen::VectorXd::Zero(number_of_joints()); // for PID
     if (m_snake_like) {
         std::cerr << CMN_LOG_DETAILS << " need to convert 8 joints from snake to 6 for force control" << std::endl;
     } else {
-        torqueDesired.Assign(newEffort, number_of_joints_kinematics());
+        torqueDesired.head(number_of_joints_kinematics()) = newEffort.head(number_of_joints_kinematics());
     }
     // add torque for jaws
-    torqueDesired.at(6) = m_jaw_servo_jf;
+    torqueDesired(6) = m_jaw_servo_jf;
 
     if (!is_cartesian_ready()) {
         // set all tool joints to have zero effort
-        torqueDesired.Ref(torqueDesired.size() - 3, 3).Zeros();
+        torqueDesired.segment(3, torqueDesired.size() - 3).setZero();
     }
 
     // convert to cisstParameterTypes
@@ -1512,7 +1548,7 @@ void mtsIntuitiveResearchKitPSM::servo_jf_internal(const vctDoubleVec & newEffor
     apply_feed_forward();
 }
 
-void mtsIntuitiveResearchKitPSM::feed_forward_jf_internal(const vctDoubleVec & jf)
+void mtsIntuitiveResearchKitPSM::feed_forward_jf_internal(const Eigen::VectorXd& jf)
 {
     if (!is_cartesian_ready()) {
         mtsIntuitiveResearchKitArm::feed_forward_jf_internal(jf);
@@ -1520,21 +1556,21 @@ void mtsIntuitiveResearchKitPSM::feed_forward_jf_internal(const vctDoubleVec & j
     }
 
     // pad array for PID
-    vctDoubleVec joint_efforts(number_of_joints(), 0.0); // for PID
-    joint_efforts.at(6) = m_jaw_servo_jf;
+    Eigen::VectorXd joint_efforts = Eigen::VectorXd::Zero(number_of_joints()); // for PID
+    joint_efforts(6) = m_jaw_servo_jf;
 
     if (m_snake_like) {
         std::cerr << CMN_LOG_DETAILS << " need to convert 8 joints from snake to 6 for force control" << std::endl;
     } else if (jf.size() > 0) {
-        joint_efforts.Ref(number_of_joints_kinematics()).Assign(jf);
+        joint_efforts.head(number_of_joints_kinematics()) = jf;
     }
 
-    m_feed_forward_jf_param.ForceTorque().Zeros();
+    m_feed_forward_jf_param.ForceTorque().setZero();
 
     if (m_has_coupling) {
-        m_feed_forward_jf_param.ForceTorque().Add(m_coupling.JointToActuatorEffort() * joint_efforts);
+        m_feed_forward_jf_param.ForceTorque().noalias() += m_coupling.JointToActuatorEffort() * joint_efforts;
     } else {
-        m_feed_forward_jf_param.ForceTorque().Add(joint_efforts);
+        m_feed_forward_jf_param.ForceTorque().noalias() += joint_efforts;
     }
 
     // convert to cisstParameterTypes
@@ -1548,7 +1584,7 @@ void mtsIntuitiveResearchKitPSM::control_move_jp_on_stop(const bool goal_reached
 {
     if (is_cartesian_ready()) {
         // save end position as starting servo for jaws
-        m_jaw_servo_jp = m_servo_jp_param.Goal().at(6);
+        m_jaw_servo_jp = m_servo_jp_param.Goal()(6);
     }
     mtsIntuitiveResearchKitArm::control_move_jp_on_stop(goal_reached);
 }
@@ -1600,6 +1636,7 @@ void mtsIntuitiveResearchKitPSM::set_tool_present_and_configured(const bool & pr
             m_arm_interface->SendStatus(this->GetName() + ": tool detected");
         } else {
             // assumes this is called when tool is not present anymore
+            Tool.IsEngaged = false;
             ToolEvents.tool_type(std::string());
             m_arm_interface->SendStatus(this->GetName() + ": no tool detected");
         }
@@ -1607,12 +1644,8 @@ void mtsIntuitiveResearchKitPSM::set_tool_present_and_configured(const bool & pr
     // tool configured change
     if (configured != m_tool_configured) {
         m_tool_configured = configured;
-        if (m_tool_configured) {
-        } else {
-            // remove tool tip offset
-            Manipulator->DeleteTools();
-            // in any case, we just need the first 3 links
-            Manipulator->Truncate(3);
+        if (!m_tool_configured) {
+            Manipulator = nullptr;
             // and no coupling
             m_has_coupling = false;
         }
@@ -1621,7 +1654,9 @@ void mtsIntuitiveResearchKitPSM::set_tool_present_and_configured(const bool & pr
         m_has_coupling = false;
     }
     // update for users
-    update_configuration_js();
+    if (Manipulator) {
+        update_configuration_js(Manipulator->jointConfig());
+    }
     // refresh data to take coupling into account
     get_robot_data();
 
@@ -1720,7 +1755,7 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
             case mtsIntuitiveResearchKitToolTypes::AUTOMATIC:
             case mtsIntuitiveResearchKitToolTypes::MANUAL:
             case mtsIntuitiveResearchKitToolTypes::FIXED:
-                Manipulator->Truncate(3);
+                Manipulator = nullptr;
                 set_tool_present_and_configured(false, false);
                 break;
             default:

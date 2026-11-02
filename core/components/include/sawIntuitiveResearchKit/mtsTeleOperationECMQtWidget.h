@@ -42,12 +42,12 @@ public:
     mtsTeleOperationECMQtWidget(const std::string & componentName, double periodInSeconds = 50.0 * cmn_ms);
     ~mtsTeleOperationECMQtWidget(){}
 
-    void Configure(const std::string & filename = "");
-    void Startup(void);
-    void Cleanup(void);
+    void Configure(const std::string & filename = "") override;
+    void Startup(void) override;
+    void Cleanup(void) override;
 
 protected:
-    virtual void closeEvent(QCloseEvent * event);
+    virtual void closeEvent(QCloseEvent * event) override;
 
 signals:
     void SignalDesiredState(QString state);
@@ -56,7 +56,7 @@ signals:
     void SignalScale(double scale);
 
 private slots:
-    void timerEvent(QTimerEvent * event);
+    void timerEvent(QTimerEvent * event) override;
     void SlotLogEnabled(void);
     // to set from the GUI
     void SlotDesiredStateEventHandler(QString state);

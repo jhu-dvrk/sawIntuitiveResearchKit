@@ -77,17 +77,17 @@ protected:
     bool m_mtmr_measured_cv_available = false;
 
     struct TeleopState {
-        vct3 C;     // center
-        vct3 Up;    // up direction
-        vct3 Lr;    // left/right movement, ie. c vector projected on the XZ plane
-        vct3 Ud;    // up/down movement, ie. c vector projected on the YZ plane
-        vct3 Cw;   // cw vector, ie. up vector projected on the XY plane
+        Eigen::Vector3d C;     // center
+        Eigen::Vector3d Up;    // up direction
+        Eigen::Vector3d Lr;    // left/right movement, ie. c vector projected on the XZ plane
+        Eigen::Vector3d Ud;    // up/down movement, ie. c vector projected on the YZ plane
+        Eigen::Vector3d Cw;   // cw vector, ie. up vector projected on the XY plane
         double w;   // width of image
         double d;   // depth of R along C, depth of L is opposite
-        vctMatRot3 MTMLRot; //initial rotation of MTML
-        vctMatRot3 MTMRRot; //initial rotation of MTMR
-        vctMatrixRotation3<double> ECMRotEuler; //initial rotation of ECM calc using Euler angles
-        vctVec ECMPositionJoint;
+        Eigen::Matrix3d MTMLRot; //initial rotation of MTML
+        Eigen::Matrix3d MTMRRot; //initial rotation of MTMR
+        Eigen::Matrix3d ECMRotEuler; //initial rotation of ECM calc using Euler angles
+        Eigen::VectorXd ECMPositionJoint;
     } mInitial;
 };
 

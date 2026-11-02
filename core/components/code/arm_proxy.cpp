@@ -137,8 +137,8 @@ void dvrk::arm_proxy::create_arm()
         }
     }
 
-
     mtsManagerLocal * component_manager = mtsManagerLocal::GetInstance();
+
     // for research kit arms, create, add to manager and connect to
     // extra IO, PID, etc.  For generic arms, do nothing.
     switch (m_config->type) {
@@ -455,7 +455,7 @@ void dvrk::arm_proxy::set_base_frame_if_needed(void)
 {
     // use reference_name to determine if we're using a fixed base frame
     if (m_config->base_frame.reference_frame != "") {
-        m_base_frame.Goal().From(m_config->base_frame.transform);
+        m_base_frame.Goal() = m_config->base_frame.transform;
         m_base_frame.ReferenceFrame() = m_config->base_frame.reference_frame;
         m_base_frame.Valid() = true;
 

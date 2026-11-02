@@ -74,7 +74,7 @@ dvrk::system::system(const std::string & componentName):
         m_interface->AddCommandWrite(&system::set_volume, this,
                                      "set_volume", m_audio_volume);
         m_interface->AddCommandWrite(&system::beep, this,
-                                     "beep", vctDoubleVec());
+                                     "beep", Eigen::VectorXd());
         m_interface->AddCommandWrite(&system::string_to_speech, this,
                                      "string_to_speech", std::string());
         m_interface->AddEventWrite(audio.volume,
@@ -981,23 +981,22 @@ void dvrk::system::set_volume(const double & volume)
 }
 
 
-void dvrk::system::beep(const vctDoubleVec & values)
+void dvrk::system::beep(const Eigen::VectorXd& values)
 {
-    const size_t size = values.size();
+    const Eigen::Index size = values.size();
     if ((size == 0) || (size > 3)) {
         m_interface->SendError(this->GetName() + ": beep expect up to 3 values (duration, frequency, volume)");
         return;
     }
-    vctDoubleVec result(3);
-    result.Assign(0.3, 3000.0, m_audio_volume);
-    result.Ref(size).Assign(values); // overwrite with data sent
+    Eigen::Vector3d beep_value(0.3, 3000.0, m_audio_volume);
+    beep_value.head(size) = values; // overwrite with data sent
     // check duration
     bool durationError = false;
-    if (result[0] < 0.1) {
-        result[0] = 0.1;
+    if (beep_value[0] < 0.1) {
+        beep_value[0] = 0.1;
         durationError = true;
-    } else if (result[0] > 60.0) {
-        result[0] = 60.0;
+    } else if (beep_value[0] > 60.0) {
+        beep_value[0] = 60.0;
         durationError = true;
     }
     if (durationError) {
@@ -1005,18 +1004,18 @@ void dvrk::system::beep(const vctDoubleVec & values)
     }
     // check volume
     bool volumeError = false;
-    if (result[2] < 0.0) {
-        result[2] = 0.0;
+    if (beep_value[2] < 0.0) {
+        beep_value[2] = 0.0;
         volumeError = true;
-    } else if (result[2] > 1.0) {
-        result[2] = 1.0;
+    } else if (beep_value[2] > 1.0) {
+        beep_value[2] = 1.0;
         volumeError = true;
     }
     if (volumeError) {
         m_interface->SendWarning(this->GetName() + ": beep, volume must be between 0 and 1");
     }
     // convert to fixed size vector and send
-    audio.beep(vct3(result));
+    audio.beep(beep_value);
 }
 
 
@@ -1037,7 +1036,7 @@ void dvrk::system::error_event_handler(const mtsMessage & message)
     // throttle error beeps
     double currentTime = mtsManagerLocal::GetInstance()->GetTimeServer().GetRelativeTime();
     if ((currentTime - mTimeOfLastErrorBeep) > 2.0 * cmn_s) {
-        audio.beep(vct3(0.3, 3000.0, m_audio_volume));
+        audio.beep(Eigen::Vector3d(0.3, 3000.0, m_audio_volume));
         mTimeOfLastErrorBeep = currentTime;
     }
 }

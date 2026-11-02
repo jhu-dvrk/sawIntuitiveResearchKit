@@ -19,7 +19,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsTeleOperationECMOneHand.h>
 
 #include <cisstCommon/cmnUnits.h>
-#include <cisstVector/vctBoundingBox3.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmOperatingState.h>
@@ -91,8 +90,8 @@ void mtsTeleOperationECMOneHand::set_scale(const double & scale)
 
     // prevent jumps if following
     if (m_following) {
-        mInitial.MTMPosition = mMTM.m_measured_cp.Position().Translation();
-        mInitial.MTMRotation = mMTM.m_measured_cp.Position().Rotation();
+        mInitial.MTMPosition = mMTM.m_measured_cp.Position().translation();
+        mInitial.MTMRotation = mMTM.m_measured_cp.Position().rotation();
         mInitial.ECMPositionJoint = mECM_OneHand.m_setpoint_js.Position();
     }
 }
@@ -204,22 +203,18 @@ void mtsTeleOperationECMOneHand::EnterEnabled(void)
     }
 
     // Nominal handlebar geometry
-    mInitial.C.Assign(0.0, 0.0, 0.35);
-    mInitial.vectorLR.Assign(1.0, 0.0, 0.0);
-    mInitial.Up.CrossProductOf(mInitial.vectorLR, mInitial.C);
-    mInitial.Up.NormalizedSelf();
+    mInitial.C = Eigen::Vector3d(0.0, 0.0, 0.35);
+    mInitial.vectorLR = Eigen::Vector3d::UnitX();
+    mInitial.Up = mInitial.vectorLR.cross(mInitial.C).normalized();
 
     // Projections
-    mInitial.Lr.Assign(mInitial.C[0], 0.0, mInitial.C[2]);
-    mInitial.Lr.NormalizedSelf();
-    mInitial.Ud.Assign(0.0, mInitial.C[1], mInitial.C[2]);
-    mInitial.Ud.NormalizedSelf();
-    mInitial.Cw.Assign(mInitial.Up[0], mInitial.Up[1], 0.0);
-    mInitial.Cw.NormalizedSelf();
+    mInitial.Lr = Eigen::Vector3d(mInitial.C[0], 0, mInitial.C[2]).normalized();
+    mInitial.Ud = Eigen::Vector3d(0, mInitial.C[1], mInitial.C[2]).normalized();
+    mInitial.Cw = Eigen::Vector3d(mInitial.Up[0], mInitial.Up[1], 0).normalized();
 
     // Snapshot master pose and ECM joint position
-    mInitial.MTMPosition = mMTM.m_measured_cp.Position().Translation();
-    mInitial.MTMRotation = mMTM.m_measured_cp.Position().Rotation();
+    mInitial.MTMPosition = mMTM.m_measured_cp.Position().translation();
+    mInitial.MTMRotation = mMTM.m_measured_cp.Position().rotation();
     mInitial.ECMPositionJoint = mECM_OneHand.m_setpoint_js.Position();
 
     if (m_clutched) {
@@ -235,77 +230,73 @@ void mtsTeleOperationECMOneHand::RunEnabled(void)
         return;
     }
 
-    const vct3 currentMTMPos = mMTM.m_measured_cp.Position().Translation();
-    const vctMatRot3 currentMTMRot = mMTM.m_measured_cp.Position().Rotation();
+    const Eigen::Vector3d currentMTMPos = mMTM.m_measured_cp.Position().translation();
+    const Eigen::Matrix3d currentMTMRot = mMTM.m_measured_cp.Position().rotation();
 
     // 1. Center of virtual handlebar
-    vct3 deltaP = (currentMTMPos - mInitial.MTMPosition) * m_config.scale;
-    vct3 c = mInitial.C + deltaP;
+    Eigen::Vector3d deltaP = (currentMTMPos - mInitial.MTMPosition) * m_config.scale;
+    Eigen::Vector3d c = mInitial.C + deltaP;
 
     // 2. Orientation of virtual handlebar
-    vctMatRot3 deltaR = currentMTMRot * mInitial.MTMRotation.Inverse();
-    vct3 vLR = deltaR * mInitial.vectorLR;
+    Eigen::Matrix3d deltaR = currentMTMRot * mInitial.MTMRotation.transpose();
+    Eigen::Vector3d vLR = deltaR * mInitial.vectorLR;
 
     // 3. Virtual up vector
-    vct3 up;
-    vct3 crossLR_C = vctCrossProduct(vLR, c);
-    if (crossLR_C.Norm() > 1e-6) {
-        up = crossLR_C.Normalized();
+    Eigen::Vector3d up;
+    Eigen::Vector3d crossLR_C = vLR.cross(c);
+    if (crossLR_C.norm() > 1e-6) {
+        up = crossLR_C.normalized();
     } else {
         up = mInitial.Up;
     }
 
     // 4. Joint computations
-    static const vct3 normXZ(0.0, 1.0, 0.0);
-    static const vct3 normYZ(1.0, 0.0, 0.0);
-    static const vct3 normXY(0.0, 0.0, 1.0);
+    static const Eigen::Vector3d normXZ(0.0, 1.0, 0.0);
+    static const Eigen::Vector3d normYZ(1.0, 0.0, 0.0);
+    static const Eigen::Vector3d normXY(0.0, 0.0, 1.0);
 
-    vctVec goalJoints(mInitial.ECMPositionJoint);
-    vctVec changeJoints(4);
-    vctVec changeDir(4, 0.0);
-    vct3 crossN;
+    Eigen::VectorXd goalJoints = mInitial.ECMPositionJoint;
+    Eigen::VectorXd changeJoints = Eigen::VectorXd::Zero(4);
+    Eigen::VectorXd changeDir = Eigen::VectorXd::Zero(4);
 
     // - Direction 0 - left/right, movement in the XZ plane
-    vct3 lr(c[0], 0.0, c[2]);
-    lr.NormalizedSelf();
-    if (mInitial.Lr.AlmostEqual(lr)) {
+    Eigen::Vector3d lr = Eigen::Vector3d(c[0], 0.0, c[2]).normalized();
+    if (mInitial.Lr.isApprox(lr)) {
         changeDir[0] = 0.0;
     } else {
-        double dot = std::max(-1.0, std::min(1.0, vctDotProduct(mInitial.Lr, lr)));
+        double dot = std::max(-1.0, std::min(1.0, mInitial.Lr.dot(lr)));
         changeDir[0] = -acos(dot);
-        crossN = vctCrossProduct(mInitial.Lr, lr);
-        if (vctDotProduct(normXZ, crossN) < 0.0) {
+        Eigen::Vector3d crossN = mInitial.Lr.cross(lr);
+        if (normXZ.dot(crossN) < 0.0) {
             changeDir[0] = -changeDir[0];
         }
     }
 
     // - Direction 1 - up/down, movement in the YZ plane
-    vct3 ud(0.0, c[1], c[2]);
-    ud.NormalizedSelf();
-    if (mInitial.Ud.AlmostEqual(ud)) {
+    Eigen::Vector3d ud = Eigen::Vector3d(0.0, c[1], c[2]).normalized();
+    if (mInitial.Ud.isApprox(ud)) {
         changeDir[1] = 0.0;
     } else {
-        double dot = std::max(-1.0, std::min(1.0, vctDotProduct(mInitial.Ud, ud)));
+        double dot = std::max(-1.0, std::min(1.0, mInitial.Ud.dot(ud)));
         changeDir[1] = acos(dot);
-        crossN = vctCrossProduct(mInitial.Ud, ud);
-        if (vctDotProduct(normYZ, crossN) < 0.0) {
+        Eigen::Vector3d crossN = mInitial.Ud.cross(ud);
+        if (normYZ.dot(crossN) < 0.0) {
             changeDir[1] = -changeDir[1];
         }
     }
 
     // - Direction 2 - in/out
-    changeDir[2] = mInitial.C.Norm() - c.Norm();
+    changeDir[2] = mInitial.C.norm() - c.norm();
 
     // - Direction 3 - cc/ccw, movement in the XY plane
-    vct3 cw(up[0], up[1], 0.0);
-    cw.NormalizedSelf();
-    if (mInitial.Cw.AlmostEqual(cw)) {
+    Eigen::Vector3d cw = Eigen::Vector3d(up[0], up[1], 0.0).normalized();
+    if (mInitial.Cw.isApprox(cw)) {
         changeDir[3] = 0.0;
     } else {
-        double dot = std::max(-1.0, std::min(1.0, vctDotProduct(mInitial.Cw, cw)));
+        double dot = std::max(-1.0, std::min(1.0, mInitial.Cw.dot(cw)));
         changeDir[3] = -acos(dot);
-        crossN = vctCrossProduct(mInitial.Cw, cw);
-        if (vctDotProduct(normXY, crossN) < 0) {
+        Eigen::Vector3d crossN = mInitial.Cw.cross(cw);
+        if (normXY.dot(crossN) < 0) {
             changeDir[3] = -changeDir[3];
         }
     }
@@ -317,8 +308,8 @@ void mtsTeleOperationECMOneHand::RunEnabled(void)
     changeJoints[2] = changeDir[2];
     changeJoints[3] = changeDir[3];
 
-    goalJoints.Add(changeJoints);
-    mECM_OneHand.m_servo_jp.Goal().ForceAssign(goalJoints);
+    goalJoints += changeJoints;
+    mECM_OneHand.m_servo_jp.Goal() = goalJoints;
     mECM_OneHand.servo_jp(mECM_OneHand.m_servo_jp);
 }
 

@@ -19,7 +19,6 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsDaVinciEndoscopeFocus_h
 #define _mtsDaVinciEndoscopeFocus_h
 
-#include <cisstVector/vctFixedSizeVectorTypes.h>
 #include <cisstMultiTask/mtsTaskFromSignal.h>
 #include <cisstParameterTypes/prmEventButton.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
@@ -33,10 +32,10 @@ class CISST_EXPORT mtsDaVinciEndoscopeFocus: public mtsTaskFromSignal
     mtsDaVinciEndoscopeFocus(const mtsTaskConstructorArg & arg);
     inline ~mtsDaVinciEndoscopeFocus() {}
 
-    void Configure(const std::string & filename);
-    void Startup(void);
-    void Run(void);
-    void Cleanup(void);
+    void Configure(const std::string & filename) override;
+    void Startup(void) override;
+    void Run(void) override;
+    void Cleanup(void) override;
 
 protected:
 

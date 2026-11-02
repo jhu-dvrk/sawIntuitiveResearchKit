@@ -16,8 +16,7 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#include <mtsDerivedPSM.h>
-
+#include "mtsDerivedPSM.h"
 
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 
@@ -70,16 +69,16 @@ void mtsDerivedPSM::RunHomed(void)
             if (m_recently_activated) {
                 m_recently_activated = false;
                 // set initial PID position goal using current setpoint
-                servo_jp_internal(m_pid_measured_js.Position(), vctDoubleVec());
+                servo_jp_internal(m_pid_measured_js.Position(), Eigen::VectorXd());
                 // set default effort to 0.0
-                servo_jf_internal(vctDoubleVec(number_of_joints(), 0.0));
+                servo_jf_internal(Eigen::VectorXd::Zero(number_of_joints()).eval());
                 // set all joints in PID mode except 3rd one (translation)
-                vctBoolVec _torqueMode(number_of_joints(), false);
+                Eigen::ArrayX<bool> _torqueMode = Eigen::ArrayX<bool>::Constant(number_of_joints(), false);
                 _torqueMode[2] = true;
                 PID.EnableTorqueMode(_torqueMode);
             }
             // apply viscosity on 3rd joint, replace this logic with whatever algorithm you want!
-            vctDoubleVec _servo_jf(number_of_joints(), 0.0);
+            Eigen::VectorXd _servo_jf = Eigen::VectorXd::Zero(number_of_joints());
             _servo_jf[2] = m_gain * -100.0 * m_pid_measured_js.Velocity()[2];
             servo_jf_internal(_servo_jf);
         }

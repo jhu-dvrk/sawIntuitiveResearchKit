@@ -111,7 +111,7 @@ void mtsTeleOperationPSM::Init(void)
                                        &mtsTeleOperationPSM::TransitionEnabled,
                                        this);
 
-    mPSM.m_jaw_servo_jp.Goal().SetSize(1);
+    mPSM.m_jaw_servo_jp.Goal() = Eigen::VectorXd::Zero(1);
 
     this->StateTable.AddData(mMTM.m_measured_cp, "MTM/measured_cp");
     this->StateTable.AddData(mMTM.m_measured_cv, "MTM/measured_cv");
@@ -437,8 +437,8 @@ void mtsTeleOperationPSM::Clutch(const bool & clutch)
         m_operator.was_active_before_clutch = m_operator.is_active;
         set_following(false);
 
-        mMTM.m_move_cp.Goal().Rotation().FromNormalized(mPSM.m_setpoint_cp.Position().Rotation());
-        mMTM.m_move_cp.Goal().Translation().Assign(mMTM.m_measured_cp.Position().Translation());
+        mMTM.m_move_cp.Goal().linear() = mPSM.m_setpoint_cp.Position().rotation();
+        mMTM.m_move_cp.Goal().translation() = mMTM.m_measured_cp.Position().translation();
         mInterface->SendStatus(this->GetName() + ": console clutch pressed");
         // only for haptic MTMs that can move/lock/effort
         if (m_config.MTM_is_haptic) {
@@ -453,7 +453,7 @@ void mtsTeleOperationPSM::Clutch(const bool & clutch)
             if ((m_config.align_MTM || m_config.rotation_locked)
                 && mMTM.lock_orientation.IsValid()) {
                 // lock in current position
-                mMTM.lock_orientation(mMTM.m_measured_cp.Position().Rotation());
+                mMTM.lock_orientation(Eigen::Matrix3d(mMTM.m_measured_cp.Position().rotation()));
             } else {
                 // make sure it is freed
                 if (mMTM.unlock_orientation.IsValid()) {
@@ -522,21 +522,21 @@ void mtsTeleOperationPSM::SetDesiredState(const std::string & state)
     mInterface->SendStatus(this->GetName() + ": set desired state to " + state);
 }
 
-vctMatRot3 mtsTeleOperationPSM::UpdateAlignOffset(void)
+Eigen::Matrix3d mtsTeleOperationPSM::UpdateAlignOffset(void)
 {
-    vctMatRot3 desiredOrientation = mPSM.m_setpoint_cp.Position().Rotation();
-    mMTM.m_measured_cp.Position().Rotation().ApplyInverseTo(desiredOrientation, m_alignment_offset);
+    Eigen::Matrix3d desiredOrientation = mPSM.m_setpoint_cp.Position().rotation();
+    m_alignment_offset = mMTM.m_measured_cp.Position().rotation().inverse() * desiredOrientation;
     return desiredOrientation;
 }
 
 void mtsTeleOperationPSM::UpdateInitialState(void)
 {
-    mMTM.m_pose_initial.From(mMTM.m_measured_cp.Position());
-    mPSM.m_pose_initial.From(mPSM.m_setpoint_cp.Position());
+    mMTM.m_pose_initial = mMTM.m_measured_cp.Position();
+    mPSM.m_pose_initial = mPSM.m_setpoint_cp.Position();
     UpdateAlignOffset();
     m_alignment_offset_initial = m_alignment_offset;
     if (mBaseFrame.measured_cp.IsValid()) {
-        mBaseFrame.m_pose_initial.From(mBaseFrame.m_measured_cp.Position());
+        mBaseFrame.m_pose_initial = mBaseFrame.m_measured_cp.Position();
     }
 }
 
@@ -569,7 +569,7 @@ void mtsTeleOperationPSM::lock_rotation(const bool & lock)
         // lock orientation if the arm is running
         if ((mTeleopState.CurrentState() == "ENABLED")
             && mMTM.lock_orientation.IsValid()) {
-            mMTM.lock_orientation(mMTM.m_measured_cp.Position().Rotation());
+            mMTM.lock_orientation(Eigen::Matrix3d(mMTM.m_measured_cp.Position().rotation()));
         }
     }
 }
@@ -813,7 +813,7 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
 
     // if we don't align MTM, just stay in same position
     if (!m_config.align_MTM && m_config.MTM_is_haptic && mMTM.move_cp.IsValid()) {
-        mMTM.m_move_cp.Goal().Assign(mMTM.m_setpoint_cp.Position());
+        mMTM.m_move_cp.Goal() = mMTM.m_setpoint_cp.Position();
         mMTM.move_cp(mMTM.m_move_cp);
     }
 
@@ -839,10 +839,10 @@ void mtsTeleOperationPSM::align_MTM_and_reset_start_thresholds(void)
     m_operator.gripper_max = -cmnPI * 100.0;
 
     // Orient MTM with PSM
-    mMTM.m_pose_to_follow.Translation().Assign(mMTM.m_setpoint_cp.Position().Translation());
-    mMTM.m_pose_to_follow.Rotation().FromNormalized(mPSM.m_setpoint_cp.Position().Rotation());
+    mMTM.m_pose_to_follow.translation() = mMTM.m_setpoint_cp.Position().translation();
+    mMTM.m_pose_to_follow.linear() = mPSM.m_setpoint_cp.Position().rotation();
     // convert to prm type
-    mMTM.m_move_cp.Goal().From(mMTM.m_pose_to_follow);
+    mMTM.m_move_cp.Goal() = mMTM.m_pose_to_follow;
     if (m_config.MTM_is_haptic && mMTM.move_cp.IsValid()) {
         mMTM.move_cp(mMTM.m_move_cp);
     }
@@ -857,10 +857,9 @@ void mtsTeleOperationPSM::RunAligningMTM(void)
     }
 
     // set trajectory goal if needed, get angle between PSM and MTM pose_to_follow
-    vctMatRot3 change_orientation;
-    mMTM.m_pose_to_follow.Rotation().ApplyTo(mPSM.m_setpoint_cp.Position().Rotation().Inverse(), change_orientation);
-    vctAxAnRot3 change_axis_angle = vctAxAnRot3(change_orientation);
-    if (change_axis_angle.Angle() > m_config.start_orientation_tolerance) {
+    Eigen::Matrix3d change_orientation = mMTM.m_pose_to_follow.rotation() * mPSM.m_setpoint_cp.Position().rotation().inverse();
+    Eigen::AngleAxisd change_axis_angle(change_orientation);
+    if (change_axis_angle.angle() > m_config.start_orientation_tolerance) {
         align_MTM_and_reset_start_thresholds();
     }
 }
@@ -873,12 +872,12 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
     }
 
     // check difference of orientation between mtm and PSM to enable
-    vctMatRot3 desiredOrientation = UpdateAlignOffset();
-    vctAxAnRot3 axisAngle(m_alignment_offset, VCT_NORMALIZE);
+    Eigen::Matrix3d desiredOrientation = UpdateAlignOffset();
+    Eigen::AngleAxisd axisAngle(m_alignment_offset);
     double orientationError = 0.0;
     // set error only if we need to align MTM to PSM
     if (m_config.align_MTM) {
-        orientationError = axisAngle.Angle();
+        orientationError = axisAngle.angle();
     }
 
     // if not active, use gripper and/or roll to detect if the user is ready
@@ -897,8 +896,9 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
         }
 
         // checking roll
-        const double roll = acos(vctDotProduct(desiredOrientation.Column(1),
-                                               mMTM.m_measured_cp.Position().Rotation().Column(1)));
+        const double roll = std::acos(
+            desiredOrientation.col(1)
+                .dot(mMTM.m_measured_cp.Position().rotation().col(1)));
         if (roll > m_operator.roll_max) {
             m_operator.roll_max = roll;
         } else if (roll < m_operator.roll_min) {
@@ -977,7 +977,7 @@ void mtsTeleOperationPSM::EnterEnabled(void)
         // orientation locked or not
         if (m_config.rotation_locked
             && mMTM.lock_orientation.IsValid()) {
-            mMTM.lock_orientation(mMTM.m_measured_cp.Position().Rotation());
+            mMTM.lock_orientation(Eigen::Matrix3d(mMTM.m_measured_cp.Position().rotation()));
         } else {
             if (mMTM.unlock_orientation.IsValid()) {
                 mMTM.unlock_orientation();
@@ -1021,56 +1021,56 @@ void mtsTeleOperationPSM::RunCartesianTeleop() {
     }
 
     // compute mtm Cartesian motion
-    vctFrm4x4 mtmPosition(mMTM.m_measured_cp.Position());
+    Eigen::Isometry3d mtmPosition(mMTM.m_measured_cp.Position());
 
     // translation
-    vct3 mtmTranslation;
-    vct3 psmTranslation;
+    Eigen::Vector3d mtmTranslation;
+    Eigen::Vector3d psmTranslation;
     if (m_config.translation_locked) {
-        psmTranslation = mPSM.m_pose_initial.Translation();
+        psmTranslation = mPSM.m_pose_initial.translation();
     } else {
-        mtmTranslation = (mtmPosition.Translation() - mMTM.m_pose_initial.Translation());
+        mtmTranslation = (mtmPosition.translation() - mMTM.m_pose_initial.translation());
         psmTranslation = mtmTranslation * m_config.scale;
-        psmTranslation = psmTranslation + mPSM.m_pose_initial.Translation();
+        psmTranslation = psmTranslation + mPSM.m_pose_initial.translation();
     }
     // rotation
-    vctMatRot3 psmRotation;
+    Eigen::Matrix3d psmRotation;
     if (m_config.rotation_locked) {
-        psmRotation.From(mPSM.m_pose_initial.Rotation());
+        psmRotation =mPSM.m_pose_initial.rotation();
     } else {
-        psmRotation = mtmPosition.Rotation() * m_alignment_offset_initial;
+        psmRotation = mtmPosition.rotation() * m_alignment_offset_initial;
     }
 
     // compute desired psm position
-    vctFrm4x4 psmCartesianGoal;
-    psmCartesianGoal.Translation().Assign(psmTranslation);
-    psmCartesianGoal.Rotation().FromNormalized(psmRotation);
+    Eigen::Isometry3d psmCartesianGoal;
+    psmCartesianGoal.translation() = psmTranslation;
+    psmCartesianGoal.linear() = psmRotation;
 
     // take into account changes in PSM base frame if any
     if (mBaseFrame.measured_cp.IsValid()) {
-        vctFrm4x4 baseFrame(mBaseFrame.m_measured_cp.Position());
-        vctFrm4x4 baseFrameChange = baseFrame.Inverse() * mBaseFrame.m_pose_initial;
+        Eigen::Isometry3d baseFrame(mBaseFrame.m_measured_cp.Position());
+        Eigen::Isometry3d baseFrameChange = baseFrame.inverse() * mBaseFrame.m_pose_initial;
         // update PSM position goal
         psmCartesianGoal = baseFrameChange * psmCartesianGoal;
         // update alignment offset
-        mtmPosition.Rotation().ApplyInverseTo(psmCartesianGoal.Rotation(), m_alignment_offset);
+        m_alignment_offset = mtmPosition.rotation().inverse() * psmCartesianGoal.rotation();
     }
 
     // PSM go this cartesian position -> m_servo_cp
-    mPSM.m_servo_cp.Goal().FromNormalized(psmCartesianGoal);
+    mPSM.m_servo_cp.Goal() = psmCartesianGoal;
 
     // Add desired velocity if needed
     if (m_config.use_MTM_linear_velocity) {
         // linear is scaled and re-oriented
         mPSM.m_servo_cp.Velocity() = m_config.scale * mMTM.m_measured_cv.VelocityLinear();
     } else {
-        mPSM.m_servo_cp.Velocity().Assign(vct3(0.0));
+        mPSM.m_servo_cp.Velocity().setZero();
     }
     if (m_config.use_MTM_angular_velocity) {
         // angular is not scaled
         mPSM.m_servo_cp.VelocityAngular() = mMTM.m_measured_cv.VelocityAngular();
     } else {
-        mPSM.m_servo_cp.VelocityAngular().Assign(vct3(0.0));
+        mPSM.m_servo_cp.VelocityAngular().setZero();
     }
 
     mPSM.servo_cp(mPSM.m_servo_cp);

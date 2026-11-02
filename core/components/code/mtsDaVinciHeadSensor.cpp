@@ -38,7 +38,7 @@ mtsDaVinciHeadSensor::mtsDaVinciHeadSensor(const mtsTaskConstructorArg & arg):
 void mtsDaVinciHeadSensor::Init(void)
 {
     // default values
-    mSensors.SetAll(0);
+    mSensors.fill(0);
     mOperatorPresent = false;
 
     // Robot IO
@@ -103,12 +103,12 @@ void mtsDaVinciHeadSensor::HeadSensorEventHandler(const size_t sensorNumber,
                                                   const prmEventButton & event)
 {
     if (event.Type() == prmEventButton::PRESSED) {
-        mSensors.at(sensorNumber) = 1;
+        mSensors(sensorNumber) = 1;
     } else {
-        mSensors.at(sensorNumber) = 0;
+        mSensors(sensorNumber) = 0;
     }
     // for now use a simple test, at least two sensors triggered
-    const bool operatorPresent = (mSensors.SumOfElements() >= 3);
+    const bool operatorPresent = (mSensors.sum() >= 3);
 
     // nothing has changed, don't do anything
     if (mOperatorPresent == operatorPresent) {

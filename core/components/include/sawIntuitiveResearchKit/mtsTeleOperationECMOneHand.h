@@ -71,15 +71,15 @@ protected:
     bool m_mtm_measured_cv_available = false;
 
     struct TeleopState {
-        vct3 C = vct3(0.0, 0.0, 0.35);             // nominal center of virtual handlebar
-        vct3 vectorLR = vct3(1.0, 0.0, 0.0);        // nominal LR axis of virtual handlebar
-        vct3 Up = vct3(0.0, -1.0, 0.0);            // up direction
-        vct3 Lr = vct3(0.0, 0.0, 1.0);             // C projected on XZ plane
-        vct3 Ud = vct3(0.0, 0.0, 1.0);             // C projected on YZ plane
-        vct3 Cw = vct3(0.0, -1.0, 0.0);            // Up projected on XY plane
-        vct3 MTMPosition = vct3(0.0);              // initial MTM position
-        vctMatRot3 MTMRotation;                    // initial MTM rotation
-        vctVec ECMPositionJoint;                   // initial ECM joint positions
+        Eigen::Vector3d C = Eigen::Vector3d(0.0, 0.0, 0.35);             // nominal center of virtual handlebar
+        Eigen::Vector3d vectorLR = Eigen::Vector3d(1.0, 0.0, 0.0);       // nominal LR axis of virtual handlebar
+        Eigen::Vector3d Up = Eigen::Vector3d(0.0, -1.0, 0.0);            // up direction
+        Eigen::Vector3d Lr = Eigen::Vector3d(0.0, 0.0, 1.0);             // C projected on XZ plane
+        Eigen::Vector3d Ud = Eigen::Vector3d(0.0, 0.0, 1.0);             // C projected on YZ plane
+        Eigen::Vector3d Cw = Eigen::Vector3d(0.0, -1.0, 0.0);            // Up projected on XY plane
+        Eigen::Vector3d MTMPosition = Eigen::Vector3d(0.0, 0.0, 0.0);    // initial MTM position
+        Eigen::Matrix3d MTMRotation;                                            // initial MTM rotation
+        Eigen::VectorXd ECMPositionJoint;                                       // initial ECM joint positions
     } mInitial;
 };
 

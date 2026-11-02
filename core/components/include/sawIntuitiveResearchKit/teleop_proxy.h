@@ -47,6 +47,7 @@ namespace dvrk {
         teleop_proxy(const std::string & name,
                      dvrk::system * system,
                      dvrk::console * console);
+        virtual ~teleop_proxy() = default;
 
         // NOT_COPYABLE(teleop_PSM_proxy);
         // NOT_MOVEABLE(teleop_PSM_proxy);

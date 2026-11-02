@@ -53,7 +53,6 @@ set (
   REQUIRED_CISST_LIBRARIES
   cisstCommon
   cisstCommonQt
-  cisstVector
   cisstVectorQt
   cisstOSAbstraction
   cisstMultiTask
@@ -61,8 +60,7 @@ set (
   cisstParameterTypes
   cisstParameterTypesQt
   cisstRobot
-  cisstNumerical
-  )
+)
 
 find_package (cisst 1.5 REQUIRED COMPONENTS ${REQUIRED_CISST_LIBRARIES})
 

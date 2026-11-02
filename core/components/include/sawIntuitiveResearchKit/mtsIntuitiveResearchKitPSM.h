@@ -23,6 +23,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <memory>
 
 #include <cisstParameterTypes/prmActuatorJointCoupling.h>
+#include <cisstParameterTypes/prmConfigurationJoint.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
 #include <sawIntuitiveResearchKit/mtsToolList.h>
 
@@ -60,16 +61,14 @@ protected:
                        const std::string & filename) override;
     virtual bool ConfigureTool(const std::string & filename);
 
+    virtual void ConfigureToolDH(const Json::Value& json_config, const std::string& filename);
+
     /*! Configuration methods */
-    inline size_t number_of_joints(void) const override {
-        return 7;
-    }
+    size_t number_of_joints(void) const override { return 7; }
 
-    inline size_t number_of_joints_kinematics(void) const override {
-        return m_snake_like ? 8 : 6;
-    }
+    size_t number_of_joints_kinematics(void) const override { return 6; }
 
-    inline size_t number_of_brakes(void) const override {
+    size_t number_of_brakes(void) const override {
         switch (m_generation) {
         case dvrk::generation::Classic:
             return 0;
@@ -84,15 +83,15 @@ protected:
     }
 
     void UpdateStateJointKinematics(void) override;
-    void ToJointsPID(const vctDoubleVec &jointsKinematics, vctDoubleVec &jointsPID) override;
+    void ToJointsPID(const Eigen::VectorXd& jointsKinematics, Eigen::VectorXd& jointsPID) override;
 
+    Eigen::Isometry3d safe_cartesian_goal(const Eigen::Isometry3d& raw_goal) const override;
 
-    robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
-                                            const vctFrm4x4 & cartesianGoal) const override;
+    Eigen::Isometry3d safe_cartesian_goal(const Eigen::Isometry3d& raw_goal, const Eigen::Isometry3d& current_pose) const override;
 
     bool is_safe_for_cartesian_control(void) const override;
 
-
+    void initializeKinematics(const prmConfigurationJoint& joint_config, const KDL::Chain& chain) override;
     void Init(void) override;
 
     bool is_homed(void) const override;
@@ -106,12 +105,12 @@ protected:
 
     // state related methods
     void SetGoalHomingArm(void) override;
-    void EnterHomed(void);
+    void EnterHomed(void) override;
     void TransitionHomed(void); // for adapter/tool detection
 
     // methods used in change coupling/engaging
-    void update_configuration_js_no_tool(void);
-    void update_configuration_js(void) override;
+    void update_configuration_js_no_tool(const prmConfigurationJoint& joint_config);
+    void update_configuration_js(const prmConfigurationJoint& joint_config) override;
 
     // engaging adapter
     void EnterEngagingAdapter(void);
@@ -152,10 +151,10 @@ protected:
     void jaw_move_jp(const prmPositionJointSet & jp);
     void jaw_servo_jf(const prmForceTorqueJointSet & jf);
 
-    void servo_jp_internal(const vctDoubleVec & jp,
-                           const vctDoubleVec & jv) override;
-    void servo_jf_internal(const vctDoubleVec & jf) override;
-    void feed_forward_jf_internal(const vctDoubleVec & jf) override;
+    void servo_jp_internal(const Eigen::VectorXd& jp,
+                           const Eigen::VectorXd& jv) override;
+    void servo_jf_internal(const Eigen::VectorXd& jf) override;
+    void feed_forward_jf_internal(const Eigen::VectorXd& jf) override;
 
     void control_move_jp_on_stop(const bool reached) override;
 
@@ -213,6 +212,10 @@ protected:
         mtsFunctionVoid tool_type_request;
     } ToolEvents;
 
+    // Kinematics of non-tool portion of arm
+    prmConfigurationJoint arm_joints;
+    KDL::Chain arm_chain;
+
     /*! 5mm tools with 8 joints */
     bool m_snake_like = false;
 
@@ -221,7 +224,7 @@ protected:
     double m_cannula_depth = 0.0;
 
     robManipulator * ToolOffset = nullptr;
-    vctFrm4x4 ToolOffsetTransformation;
+    Eigen::Isometry3d ToolOffsetTransformation;
 
     prmStateJoint m_jaw_measured_js, m_jaw_setpoint_js;
     prmConfigurationJoint m_jaw_configuration_js;
@@ -232,7 +235,7 @@ protected:
     unsigned int EngagingStage; // 0 requested
     unsigned int LastEngagingStage;
 
-    vctDoubleVec m_tool_engage_lower_position,
+    Eigen::VectorXd m_tool_engage_lower_position,
         m_tool_engage_upper_position;
 
     std::unique_ptr<GravityCompensationPSM> m_gc;

@@ -30,13 +30,12 @@ public:
     {
         Name = "ECM";
         NumberOfLinks = 4;
-        Manipulator = new robManipulatorECM;
+        Manipulator = std::make_unique<robManipulatorECM>();
     };
 
     void CheckIKResults(void) {
-        vctDoubleVec jointErrors(NumberOfLinks), jointErrorsAbsolute(NumberOfLinks);
-        jointErrors.DifferenceOf(SolutionJoints, ActualJoints);
-        jointErrorsAbsolute.AbsOf(jointErrors);
+        Eigen::VectorXd jointErrors = SolutionJoints - ActualJoints;
+        Eigen::VectorXd jointErrorsAbsolute = jointErrors.cwiseAbs();
 
         // compare joint values
         CPPUNIT_ASSERT_MESSAGE("Joint 0 solution is incorrect",
@@ -52,15 +51,14 @@ public:
                                (jointErrorsAbsolute[3] < 0.001 * cmnPI_180)); // acosl
 
         // translation
-        vct3 positionTranslationError = ActualPose.Translation() - SolutionPose.Translation();
+        Eigen::Vector3d positionTranslationError = ActualPose.translation() - SolutionPose.translation();
         CPPUNIT_ASSERT_MESSAGE("Cartesian translation error is too high",
-                               positionTranslationError.Norm() < 0.005 * cmn_mm);
+                               positionTranslationError.norm() < 0.005 * cmn_mm);
 
         // rotation
-        vctMatRot3 positionRotationError;
-        ActualPose.Rotation().ApplyInverseTo(SolutionPose.Rotation(), positionRotationError);
+        Eigen::Matrix3d positionRotationError = ActualPose.rotation().inverse() * SolutionPose.rotation();
         CPPUNIT_ASSERT_MESSAGE("Cartesian rotation error is too high",
-                               vctAxAnRot3(positionRotationError).Angle() < 0.0000001 * cmnPI_180);
+                               Eigen::AngleAxisd(positionRotationError).angle() < 0.0000001 * cmnPI_180);
     }
 };
 
@@ -71,13 +69,12 @@ public:
     {
         Name = "MTM";
         NumberOfLinks = 7;
-        Manipulator = new robManipulatorMTM;
+        Manipulator = std::make_unique<robManipulatorECM>();
     };
 
     void CheckIKResults(void) {
-        vctDoubleVec jointErrors(NumberOfLinks), jointErrorsAbsolute(NumberOfLinks);
-        jointErrors.DifferenceOf(SolutionJoints, ActualJoints);
-        jointErrorsAbsolute.AbsOf(jointErrors);
+        Eigen::VectorXd jointErrors = SolutionJoints - ActualJoints;
+        Eigen::VectorXd jointErrorsAbsolute = jointErrors.cwiseAbs();
 
         std::string details =
             "Actual joints: " + (SolutionJoints * cmn180_PI).ToString() + "\n"
@@ -95,9 +92,9 @@ public:
                                (jointErrorsAbsolute[2] < 0.001 * cmnPI_180)); // asinl
 
         // translation
-        vct3 positionTranslationError = ActualPose.Translation() - SolutionPose.Translation();
+        Eigen::Vector3d positionTranslationError = ActualPose.translation() - SolutionPose.translation();
         CPPUNIT_ASSERT_MESSAGE("Cartesian translation error is too high",
-                               positionTranslationError.Norm() < 0.005 * cmn_mm);
+                               positionTranslationError.norm() < 0.005 * cmn_mm);
 
         // rotation
         vctMatRot3 positionRotationError;

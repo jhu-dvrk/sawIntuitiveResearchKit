@@ -2,7 +2,7 @@
 // ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab:
 
 inline-header {
-#include <cisstVector/vctTransformationTypes.h>
+#include <Eigen/Geometry>
 // Always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
@@ -27,9 +27,9 @@ class {
 
     member {
         name transform;
-        type vctFrm4x4;
+        type Eigen::Isometry3d;
         visibility public;
-        default vctFrm4x4::Identity();
+        default Eigen::Isometry3d::Identity();
     }
 
     // or get it dynamically from a component/interface
@@ -55,10 +55,10 @@ class {
                     ((reference_frame != "")
                      && (interface == "") && (component == ""))
                     // component
-                    || ((reference_frame == "") && (transform == vctFrm4x4::Identity())
+                    || ((reference_frame == "") && (transform.matrix() == Eigen::Isometry3d::Identity().matrix())
                         && (interface != "") && (component != ""))
                     // undefined
-                    || ((reference_frame == "") && (transform == vctFrm4x4::Identity())
+                    || ((reference_frame == "") && (transform.matrix() == Eigen::Isometry3d::Identity().matrix())
                         && (interface == "") && (component == ""))
                     );
         }

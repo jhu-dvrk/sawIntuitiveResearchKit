@@ -27,8 +27,6 @@ endif ()
 # create a list of required cisst libraries
 set (REQUIRED_CISST_LIBRARIES
   cisstCommon
-  cisstVector
-  cisstNumerical
   cisstRobot
   cisstOSAbstraction
   cisstMultiTask

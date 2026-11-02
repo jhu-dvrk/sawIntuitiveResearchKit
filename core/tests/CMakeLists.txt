@@ -18,7 +18,6 @@ project (sawIntuitiveResearchKitTests VERSION 2.5.0)
 set (REQUIRED_CISST_LIBRARIES
   cisstCommon
   cisstVector
-  cisstNumerical
   cisstOSAbstraction
   cisstMultiTask
   cisstParameterTypes

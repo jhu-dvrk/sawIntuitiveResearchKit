@@ -20,8 +20,10 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsIntuitiveResearchKitMTM_h
 #define _mtsIntuitiveResearchKitMTM_h
 
+#include <kdl/chain.hpp>
 #include <memory>
 
+#include <cisstParameterTypes/prmConfigurationJoint.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
 
 // Always include last
@@ -74,8 +76,13 @@ public:
 
     void ConfigureGC(const Json::Value & armConfig, const cmnPath & configPath, const std::string & filename) override;
 
-    robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
-                                            const vctFrm4x4 & cartesianGoal) const override;
+    Eigen::Isometry3d safe_cartesian_goal(const Eigen::Isometry3d& raw_goal) const override {
+        return raw_goal;
+    }
+
+    Eigen::Isometry3d safe_cartesian_goal(const Eigen::Isometry3d& raw_goal, const Eigen::Isometry3d& CMN_UNUSED(current_pose)) const override {
+        return raw_goal;
+    }
 
     inline bool is_safe_for_cartesian_control(void) const override {
         return true;
@@ -86,7 +93,7 @@ public:
         MTM_CLOSED
     } mKinematicType = MTM_CLOSED;
 
-    virtual void CreateManipulator(void) override;
+    virtual void initializeKinematics(const prmConfigurationJoint& joint_config, const KDL::Chain& chain) override;
     virtual void Init(void) override;
 
     bool is_homed(void) const override;
@@ -111,11 +118,11 @@ public:
     // see base class
     void control_servo_cf_orientation_locked(void) override;
     void SetControlEffortActiveJoints(void) override;
-    void control_servo_cf_preload(vctDoubleVec & effortPreload,
-                                  vctDoubleVec & wrenchPreload) override;
+    void control_servo_cf_preload(Eigen::VectorXd& effortPreload,
+                                  Eigen::Vector<double, 6>& wrenchPreload) override;
 
     /*! Lock master orientation when in cartesian effort mode */
-    virtual void lock_orientation(const vctMatRot3 & orientation);
+    virtual void lock_orientation(const Eigen::Matrix3d& orientation);
     virtual void unlock_orientation(void);
 
     // Functions for events

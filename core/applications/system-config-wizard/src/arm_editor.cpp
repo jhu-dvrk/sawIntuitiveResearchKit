@@ -16,6 +16,7 @@ http://www.cisst.org/cisst/license.txt.
 #include "arm_editor.hpp"
 
 #include <cmath>
+#include <Eigen/Geometry>
 
 #include "cisstCommon/cmnConstants.h"
 #include <cisstCommon/cmnPortability.h>
@@ -23,7 +24,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <qlabel.h>
 #include <qline.h>
 #include <qlineedit.h>
-#include "cisstVector/vctTransformationTypes.h"
 
 #include "models/config_model.hpp"
 #include "sawIntuitiveResearchKit/sawIntuitiveResearchKitConfig.h"
@@ -693,16 +693,16 @@ void BaseFramePage::initializePage() {
             base_frame_type->setCurrentIndex(1);
         } else if (config->base_frame->reference_frame_name == "fixed ECM") {
             // rotation of Y-Axis around X-axis
-            double theta = std::atan2(config->base_frame->transform.at(2, 1), config->base_frame->transform.at(1, 1));
+            double theta = std::atan2(config->base_frame->transform.matrix()(2, 1), config->base_frame->transform.matrix()(1, 1));
             double pitch = theta + cmnPI_2;
             ecm_mounting_pitch->setValue(std::round(pitch * cmn180_PI));
             base_frame_type->setCurrentIndex(2);
         } else if (config->base_frame->reference_frame_name == "HRSV") {
             // rotation of Y-Axis around X-axis (but negative to rotation for flip about Y axis)
-            double theta = -std::atan2(config->base_frame->transform.at(2, 1), config->base_frame->transform.at(1, 1));
+            double theta = -std::atan2(config->base_frame->transform.matrix()(2, 1), config->base_frame->transform.matrix()(1, 1));
             hrsv_pitch->setValue(std::round(theta * cmn180_PI));
 
-            double x_offset_meters = config->base_frame->transform.at(0, 3);
+            double x_offset_meters = config->base_frame->transform.matrix()(0, 3);
             mtm_offset->setValue(std::round(x_offset_meters * 1000.0));
 
             base_frame_type->setCurrentIndex(3);
@@ -753,7 +753,7 @@ void BaseFramePage::setFrameToFixedECM() {
     this->config->base_frame->reference_frame_name = "fixed ECM";
     double mounting_pitch = cmnPI_180 * ecm_mounting_pitch->value(); // convert radians to degrees
     double theta = mounting_pitch - cmnPI_2; // convert from pitch relative to horizontal to angle relative to PSM default base frame
-    this->config->base_frame->transform = vctFrm4x4(vctAxAnRot3(vct3(1.0, 0.0, 0.0), theta), vct3(0.0));
+    this->config->base_frame->transform = Eigen::Isometry3d(Eigen::AngleAxisd(theta, Eigen::Vector3d::UnitX()).matrix());
 }
 
 void BaseFramePage::setFrameToHRSV() {
@@ -762,10 +762,11 @@ void BaseFramePage::setFrameToHRSV() {
     this->config->base_frame->reference_frame_name = "HRSV";
     double mounting_pitch = cmnPI_180 * hrsv_pitch->value(); // convert radians to degrees
     // Rotate by display mounting pitch, then do 180 degree rotation to flip X-axis direction to match ECM/stereo display
-    vctRot3 rotation = vctRot3(vctAxAnRot3(vct3(0.0, 1.0, 0.0), cmnPI)) * vctRot3(vctAxAnRot3(vct3(1.0, 0.0, 0.0), mounting_pitch));
+    Eigen::Matrix3d rotation = Eigen::AngleAxisd(cmnPI, Eigen::Vector3d(0.0, 1.0, 0.0)).matrix() * Eigen::AngleAxisd(mounting_pitch, Eigen::Vector3d(1.0, 0.0, 0.0)).matrix();
 
     double x_offset = mtm_offset->value() * 1.0e-3;
-    this->config->base_frame->transform = vctFrm4x4(rotation, vct3(x_offset, 0.400, 0.475));
+    this->config->base_frame->transform = Eigen::Isometry3d(rotation);
+    this->config->base_frame->transform.translation() = Eigen::Vector3d(x_offset, 0.400, 0.475);
 }
 
 void BaseFramePage::setFrameToHapticMTMUser() {
@@ -773,7 +774,7 @@ void BaseFramePage::setFrameToHapticMTMUser() {
     this->config->base_frame->use_custom_transform = true;
     this->config->base_frame->reference_frame_name = "user";
     // -90 degree rotation about +Z axis
-    this->config->base_frame->transform = vctFrm4x4(vctAxAnRot3(vct3(0.0, 0.0, 1.0), -cmnPI_2), vct3(0.0));
+    this->config->base_frame->transform = Eigen::Isometry3d(Eigen::AngleAxisd( -cmnPI_2, Eigen::Vector3d::UnitZ()));
 }
 
 void BaseFramePage::setFrameToSetupJoints() {

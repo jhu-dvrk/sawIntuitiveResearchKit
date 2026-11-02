@@ -34,7 +34,7 @@ public:
     ~mtsIntuitiveResearchKitECMQtWidget() {}
 
 protected:
-    void setupUiDerived(void);
+    void setupUiDerived(void) override;
 
 signals:
     void SignalEndoscopeType(QString toolType);

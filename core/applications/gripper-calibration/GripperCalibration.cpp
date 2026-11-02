@@ -18,10 +18,12 @@ http://www.cisst.org/cisst/license.txt.
 
 // system
 #include <iostream>
+#include <iomanip>
 #include <limits>
 #include <json/json.h>
 
 // cisst/saw
+#include <cisstCommon/cmnConstants.h>
 #include <cisstCommon/cmnPath.h>
 #include <cisstCommon/cmnUnits.h>
 #include <cisstCommon/cmnKbHit.h>
@@ -114,7 +116,7 @@ int main(int argc, char * argv[])
         }
         port->Read();
         // read values in volts in case scale and offsets are set to 0
-        double v = robot->PotentiometerVoltage().at(0);
+        double v = robot->PotentiometerVoltage()(0);
         bool newValue = false;
         if (v > max_v) {
             max_v = v;
@@ -125,7 +127,7 @@ int main(int argc, char * argv[])
             newValue = true;
         }
         // read values in radians to test existing coefficients
-        double p = robot->PotentiometerPosition().at(0);
+        double p = robot->PotentiometerPosition()(0);
         if (p > max_p) {
             max_p = p;
         }

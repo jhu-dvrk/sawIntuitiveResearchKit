@@ -18,85 +18,159 @@ http://www.cisst.org/cisst/license.txt.
 
 // system include
 #include <iostream>
+#include <kdl/chainidsolver_recursive_newton_euler.hpp>
+#include <kdl/jntarray.hpp>
+#include <kdl/rigidbodyinertia.hpp>
 #include <time.h>
 
 // cisst
 #include <cisstCommon/cmnPath.h>
+#include <cisstCommon/cmnUnits.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmEventButton.h>
+#include <cisstRobot/kdl_utilities.h>
 
+#include <sawIntuitiveResearchKit/robManipulator.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitECM.h>
 #include <sawIntuitiveResearchKit/robManipulatorECM.h>
 
 // ECM-specific GC - accesses ECM's Manipulator so knows current endoscope mass
-class GravityCompensationECM : public robGravityCompensation {
+class GravityCompensationECM : public robGravityCompensation
+{
 public:
-    bool configure(std::string physical_dh_file);
+    static std::unique_ptr<GravityCompensationECM> configure(
+        std::string physical_dh_file
+    );
     std::string error(void);
 
     void set_endoscope_mass(double mass);
-    vctVec compute(const prmStateJoint& state, vct3 gravity) override;
+    void setGravity(const Eigen::Vector3d& gravity) override;
+    Eigen::VectorXd compute(const prmStateJoint& state) override;
+
 private:
-    robManipulator physical_model;
+    GravityCompensationECM(const KDL::Chain& chain);
+
+    KDL::Chain physical_model;
+    std::unique_ptr<KDL::ChainIdSolver_RNE> id_solver;
     std::string error_message;
+
+    KDL::JntArray q_in;
+    KDL::JntArray qdot_in;
+    KDL::Wrenches f_ext;
+    KDL::JntArray effort_out;
 };
 
-bool GravityCompensationECM::configure(std::string physical_dh_file)
+GravityCompensationECM::GravityCompensationECM(const KDL::Chain& chain)
+    : physical_model(chain),
+      id_solver(std::make_unique<KDL::ChainIdSolver_RNE>(
+          physical_model, KDL::Vector::Zero()
+      ))
 {
-    robManipulator::Errno err = physical_model.LoadRobot(physical_dh_file);
-    if (err != robManipulator::ESUCCESS) {
-        error_message = physical_model.mLastError;
-        return false;
+    qdot_in.data.setZero(physical_model.getNrOfJoints());
+    f_ext = std::vector<KDL::Wrench>(
+        physical_model.getNrOfSegments(), KDL::Wrench::Zero()
+    );
+    effort_out = KDL::JntArray(physical_model.getNrOfJoints());
+}
+
+void GravityCompensationECM::setGravity(const Eigen::Vector3d& gravity)
+{
+    // Can't update ID solver's gravity vector, so we re-instantiate instead
+    id_solver = std::make_unique<KDL::ChainIdSolver_RNE>(
+        physical_model, -toKDL(gravity)
+    );
+}
+
+std::unique_ptr<GravityCompensationECM> GravityCompensationECM::configure(
+    std::string physical_dh_file
+)
+{
+    std::ifstream json_stream(physical_dh_file);
+
+    Json::Reader json_reader;
+    Json::Value json_config;
+
+    if (!json_reader.parse(json_stream, json_config)) {
+        CMN_LOG_INIT_ERROR << "Configure GravityCompensationECM"
+                           << ": failed to parse configuration file \""
+                           << physical_dh_file << "\"\n"
+                           << json_reader.getFormattedErrorMessages();
+        return nullptr;
+    }
+
+    const Json::Value json_dh = json_config["DH"];
+    if (json_dh.isNull() || !json_dh.isObject()) {
+        CMN_LOG_INIT_ERROR << "Configure GravityCompensationECM"
+                           << ": failed to load find DH parameters in \""
+                           << physical_dh_file << "\"\n";
+        return nullptr;
+    }
+
+    const auto kdl_chain = loadKDLChain(json_dh);
+    if (!kdl_chain.has_value()) {
+        CMN_LOG_INIT_ERROR
+            << "Configure GravityCompensationECM"
+            << ": failed to load kinematics parameters from file \""
+            << physical_dh_file << "\"\n";
+        return nullptr;
     }
 
     // make sure we have expected number of links so we know which link
     // to put the variable endoscope/camera mass
-    if (physical_model.links.size() == 6) {
-        return true; // 6 links, ECM Si physical DH
-    } else if (physical_model.links.size() == 4) {
-        return true; // 4 links, ECM Classic virtual DH used as physical DH
-    } else {
-        error_message = "ECM GC kinematics does not match Classic or Si number of links";
-        return false; // unknown physical DH
+    const int num_links = kdl_chain->getNrOfSegments();
+    if (num_links != 6 && num_links != 4) {
+        CMN_LOG_INIT_ERROR << "Configure GravityCompensationECM"
+                           << ": does not match Classic or Si number of links, "
+                           << physical_dh_file << "\"\n";
+        return nullptr;
     }
+
+    return std::unique_ptr<GravityCompensationECM>(
+        new GravityCompensationECM(*kdl_chain)
+    );
 }
 
-std::string GravityCompensationECM::error(void)
-{
-    return error_message;
-}
+std::string GravityCompensationECM::error(void) { return error_message; }
 
 void GravityCompensationECM::set_endoscope_mass(double mass)
 {
     // Si vs Classic
-    if (physical_model.links.size() == 6) {
+    if (physical_model.getNrOfSegments() == 6) {
         // Si
-        physical_model.links.at(5).MassData().Mass() = mass;
+        auto inertia_data = physical_model.segments.at(5).getInertia();
+        KDL::RigidBodyInertia updated_inertia(
+            mass, inertia_data.getCOG(), inertia_data.getRotationalInertia()
+        );
+        physical_model.segments.at(5).setInertia(updated_inertia);
     } else {
         // Classic
-        physical_model.links.at(2).MassData().Mass() = mass;
+        auto inertia_data = physical_model.segments.at(2).getInertia();
+        KDL::RigidBodyInertia updated_inertia(
+            mass, inertia_data.getCOG(), inertia_data.getRotationalInertia()
+        );
+        physical_model.segments.at(2).setInertia(updated_inertia);
     }
 }
 
-vctVec GravityCompensationECM::compute(const prmStateJoint& state, vct3 gravity)
+Eigen::VectorXd GravityCompensationECM::compute(const prmStateJoint& state)
 {
-    size_t n_joints = physical_model.links.size();
-    auto j = state.Position();
+    size_t n_joints = physical_model.getNrOfJoints();
+    const auto& j = state.Position();
 
-    vctDoubleVec qd(n_joints, 0.0);
-    vctDoubleVec efforts(state.Position().size(), 0.0);
+    Eigen::VectorXd efforts = Eigen::VectorXd::Zero(state.Position().size());
 
-    if (n_joints == 6) {
+    if (n_joints == 5) {
         // convert virtual joint positions to physical
-        vctDoubleVec q(6, j[0], 0.0, j[1], -j[1], j[1], j[2]);
-        vctDoubleVec predicted_efforts = physical_model.CCG_MDH(q, qd, gravity);
-        efforts[0] = predicted_efforts[0];
-        efforts[1] = predicted_efforts[2] - predicted_efforts[3] + predicted_efforts[4];
-        efforts[2] = predicted_efforts[5];
+        q_in.data = Eigen::VectorXd({{j[0], j[1], -j[1], j[1], j[2]}});
+        id_solver->CartToJnt(q_in, qdot_in, qdot_in, f_ext, effort_out);
+        efforts[0] = effort_out(0);
+        efforts[1] = effort_out(1) - effort_out(2) + effort_out(3);
+        efforts[2] = effort_out(4);
     } else if (n_joints == 4) {
-        vctDoubleVec q(4, j[0], j[1], j[2], 0.0);
-        efforts = physical_model.CCG_MDH(j, qd, gravity);
+        q_in.data = Eigen::VectorXd({{j[0], j[1], j[2], 0.0}});
+        id_solver->CartToJnt(q_in, qdot_in, qdot_in, f_ext, effort_out);
+        efforts.head<3>() = effort_out.data.head<3>();
     }
 
     return efforts;
@@ -226,49 +300,18 @@ void mtsIntuitiveResearchKitECM::ConfigureGC(const Json::Value & jsonConfig,
         exit(EXIT_FAILURE);
     }
 
-    m_gc = std::make_unique<GravityCompensationECM>();
-    bool ok = m_gc->configure(physical_dh);
-    if (ok) {
+    m_gc = GravityCompensationECM::configure(physical_dh);
+    if (m_gc) {
         m_rob_gravity_compensation = m_gc.get();
     } else {
-        CMN_LOG_CLASS_INIT_ERROR << "ConfigureGC: " << this->GetName()
-                                 << " using GC kinematics file \"" << physical_dh << "\", got error \""
-                                 << m_gc->error() << "\"" << std::endl;
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureGC: failed to configure using GC kinematics file \"" << physical_dh << "\"";
         exit(EXIT_FAILURE);
     }
 }
 
-robManipulator::Errno mtsIntuitiveResearchKitECM::InverseKinematics(vctDoubleVec & jointSet,
-                                                                    const vctFrm4x4 & cartesianGoal) const
+void mtsIntuitiveResearchKitECM::initializeKinematics(const prmConfigurationJoint& joint_config, const KDL::Chain& chain)
 {
-    // solve IK
-    if (Manipulator->InverseKinematics(jointSet, cartesianGoal) == robManipulator::ESUCCESS) {
-        // find closest solution mod 2 pi
-        const double difference = m_kin_measured_js.Position()[3] - jointSet[3];
-        const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
-        jointSet[3] = jointSet[3] + differenceInTurns * 2.0 * cmnPI;
-        // make sure we are away from RCM point, this test is
-        // simplistic
-        if (jointSet[2] < 40.0 * cmn_mm) {
-            jointSet[2] = 40.0 * cmn_mm;
-        }
-#if 0
-        vctFrm4x4 forward = Manipulator->ForwardKinematics(jointSet);
-        vctDouble3 diff;
-        diff.DifferenceOf(forward.Translation(), cartesianGoal.Translation());
-        std::cerr << cmnInternalTo_mm(diff.Norm()) << "mm ";
-#endif
-        return robManipulator::ESUCCESS;
-    }
-    return robManipulator::EFAILURE;
-}
-
-void mtsIntuitiveResearchKitECM::CreateManipulator(void)
-{
-    if (Manipulator) {
-        delete Manipulator;
-    }
-    Manipulator = new robManipulatorECM();
+    Manipulator = std::make_unique<robManipulatorECM>(joint_config, chain);
 }
 
 void mtsIntuitiveResearchKitECM::Init(void)
@@ -296,15 +339,15 @@ void mtsIntuitiveResearchKitECM::Init(void)
                                this);
 
     // initialize trajectory data
-    m_trajectory_j.v_max.Assign(30.0 * cmnPI_180, // degrees per second
+    m_trajectory_j.v_max = Eigen::VectorXd({{30.0 * cmnPI_180, // degrees per second
                                 30.0 * cmnPI_180,
                                 60.0 * cmn_mm,    // mm per second
-                                30.0 * cmnPI_180);
-    m_trajectory_j.a_max.Assign(90.0 * cmnPI_180,
+                                30.0 * cmnPI_180}});
+    m_trajectory_j.a_max = Eigen::VectorXd({{90.0 * cmnPI_180,
                                 90.0 * cmnPI_180,
                                 60.0 * cmn_mm,
-                                90.0 * cmnPI_180);
-    m_trajectory_j.goal_tolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
+                                90.0 * cmnPI_180}});
+    m_trajectory_j.goal_tolerance.setConstant(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
 
     mtsInterfaceRequired * interfaceRequired;
 
@@ -313,7 +356,7 @@ void mtsIntuitiveResearchKitECM::Init(void)
     m_arm_interface->AddEventWrite(ClutchEvents.ManipClutch, "arm_clutch", prmEventButton());
 
     // Unit gravity direction at the lenses; zero when unavailable.
-    m_gravity_direction.Zeros();
+    m_gravity_direction.setZero();
     StateTable.AddData(m_gravity_direction, "gravity_direction");
     m_arm_interface->AddCommandReadState(StateTable, m_gravity_direction, "gravity_direction");
 
@@ -348,12 +391,47 @@ bool mtsIntuitiveResearchKitECM::is_cartesian_ready(void) const
     return m_powered && m_encoders_biased_from_pots;
 }
 
+Eigen::Isometry3d mtsIntuitiveResearchKitECM::safe_cartesian_goal(const Eigen::Isometry3d& raw_goal) const {
+    Eigen::Isometry3d safe_goal = raw_goal;
+
+    // Make sure we're at least 1mm away from RCM to prevent numerical instability in next step
+    if (raw_goal.translation().norm() < 1.0 * cmn_mm) {
+        safe_goal.translation().z() = -1.0 * cmn_mm;
+    }
+
+    // Enforce a 40mm minimum insertion
+    if (safe_goal.translation().norm() < 40.0 * cmn_mm) {
+        safe_goal.translation() = 40.0 * cmn_mm * safe_goal.translation().normalized();
+    }
+
+    return safe_goal;
+}
+
+Eigen::Isometry3d mtsIntuitiveResearchKitECM::safe_cartesian_goal(const Eigen::Isometry3d& raw_goal, const Eigen::Isometry3d& current_pose) const {
+    Eigen::Isometry3d safe_goal = raw_goal;
+    
+    // Make sure we're at least 1mm away from RCM to prevent numerical instability in next step
+    if (raw_goal.translation().norm() < 1.0 * cmn_mm) {
+        safe_goal.translation().z() = -1.0 * cmn_mm;
+    }
+
+    // Enforce a 40mm minimum insertion
+    const double goal_rcm_distance = raw_goal.translation().norm();
+    if (goal_rcm_distance < 40.0 * cmn_mm) {
+        const double current_rcm_distance = current_pose.translation().norm();
+        const double safe_distance = std::max(current_rcm_distance, goal_rcm_distance);
+        safe_goal.translation() = safe_distance * raw_goal.translation().normalized();
+    }
+
+    return safe_goal;
+}
+
 void mtsIntuitiveResearchKitECM::SetGoalHomingArm(void)
 {
     // if simulated, start at zero but insert endoscope so it can be used in cartesian mode
     if (m_simulation_mode == prmSimulationType::KINEMATIC) {
-        m_trajectory_j.goal.SetAll(0.0);
-        m_trajectory_j.goal.at(2) = 12.0 * cmn_cm;
+        m_trajectory_j.goal.setZero();
+        m_trajectory_j.goal(2) = 12.0 * cmn_cm;
         return;
     }
 
@@ -361,13 +439,13 @@ void mtsIntuitiveResearchKitECM::SetGoalHomingArm(void)
     PID.enable_measured_setpoint_check(true);
 
     // compute joint goal position
-    m_trajectory_j.goal.SetSize(number_of_joints());
+    m_trajectory_j.goal = Eigen::VectorXd(number_of_joints());
     if (m_homing_goes_to_zero) {
         // move to zero position
-        m_trajectory_j.goal.SetAll(0.0);
+        m_trajectory_j.goal.setZero();
     } else {
         // stay at current position by default
-        m_trajectory_j.goal.Assign(m_pid_setpoint_js.Position(), number_of_joints());
+        m_trajectory_j.goal = m_pid_setpoint_js.Position().head(number_of_joints());
     }
 }
 
@@ -450,24 +528,24 @@ void mtsIntuitiveResearchKitECM::EventHandlerSUJClutch(const prmEventButton & bu
 void mtsIntuitiveResearchKitECM::get_robot_data(void)
 {
     mtsIntuitiveResearchKitArm::get_robot_data();
-    m_gravity_direction.Zeros();
+    m_gravity_direction.setZero();
     if (!m_local_measured_cp.Valid() || !m_endoscope_configured
         || !std::isfinite(m_mounting_pitch)) {
         return;
     }
     // RNE gravity compensation uses the upward base acceleration.  Negate
     // it to report physical down, independently of gravity compensation.
-    const vct3 down_in_base(0.0, -sin(m_mounting_pitch), -cos(m_mounting_pitch));
+    const Eigen::Vector3d down_in_base(0.0, -sin(m_mounting_pitch), -cos(m_mounting_pitch));
     // Local FK already includes the configured endoscope's lens rotation.
-    const vct3 down_in_lens = m_local_measured_cp.Position().Rotation().Inverse() * down_in_base;
-    m_gravity_direction.Assign(down_in_lens);
+    const Eigen::Vector3d down_in_lens = m_local_measured_cp.Position().rotation().inverse() * down_in_base;
+    m_gravity_direction = down_in_lens;
 }
 
 void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscopeType)
 {
     // initialize configured flag
     m_endoscope_configured = false;
-    m_gravity_direction.Zeros();
+    m_gravity_direction.setZero();
 
     m_arm_interface->SendStatus(this->GetName() + ": setting up for endoscope type \"" + endoscopeType + "\"");
     // check if the endoscope is in the supported list
@@ -488,28 +566,36 @@ void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscop
     case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Custom_STRAIGHT:
     case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Custom_UP:
     case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Custom_DOWN:
-        ToolOffsetTransformation.Assign( 0.0,  1.0,  0.0,  0.0,
-                                         -1.0,  0.0,  0.0, 0.0,
-                                         0.0,  0.0,  1.0,  0.18,
-                                         0.0,  0.0,  0.0,  1.0);
+        ToolOffsetTransformation = Eigen::Isometry3d(
+            Eigen::Matrix4d({
+                { 0.0,  1.0,  0.0,  0.0 },
+                {-1.0,  0.0,  0.0,  0.0 },
+                { 0.0,  0.0,  1.0,  0.18 },
+                { 0.0,  0.0,  0.0,  1.0 }
+            })
+        );
         break;
     default:
-        ToolOffsetTransformation.Assign( 0.0,  1.0,  0.0,  0.0,
-                                         -1.0,  0.0,  0.0,  0.0,
-                                         0.0,  0.0,  1.0,  0.0,
-                                         0.0,  0.0,  0.0,  1.0);
+        ToolOffsetTransformation = Eigen::Isometry3d(
+            Eigen::Matrix4d({
+            { 0.0,  1.0,  0.0,  0.0 },
+            {-1.0,  0.0,  0.0,  0.0 },
+            { 0.0,  0.0,  1.0,  0.0 },
+            { 0.0,  0.0,  0.0,  1.0 }
+            })
+        );
         break;
     }
 
-    vctFrm4x4 tip;
-    tip.Translation().Assign(vct3(0.0, 0.0, 0.0));
+    Eigen::Isometry3d tip;
+    tip.translation() = Eigen::Vector3d(0.0, 0.0, 0.0);
     switch (m_endoscope_type) {
     case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Classic_SD_UP:
     case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Classic_HD_UP:
     case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Si_HD_UP:
     case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Custom_UP:
         // -30 degree rotation along X axis
-        tip.Rotation().From(vctAxAnRot3(vct3(1.0, 0.0, 0.0), -30.0 * cmnPI_180));
+        tip.linear() = Eigen::AngleAxisd( -30.0 * cmnPI_180, Eigen::Vector3d(1.0, 0.0, 0.0)).matrix();
         ToolOffsetTransformation = ToolOffsetTransformation * tip;
         break;
     case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Classic_SD_DOWN:
@@ -517,16 +603,14 @@ void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscop
     case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Si_HD_DOWN:
     case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Custom_DOWN:
         // 30 degree rotation along X axis
-        tip.Rotation().From(vctAxAnRot3(vct3(1.0, 0.0, 0.0), 30.0 * cmnPI_180));
+        tip.linear() = Eigen::AngleAxisd(30.0 * cmnPI_180, Eigen::Vector3d(1.0, 0.0, 0.0)).matrix();
         ToolOffsetTransformation = ToolOffsetTransformation * tip;
         break;
     default:
         break;
     }
-    // remove old tip and replace by new one
-    Manipulator->DeleteTools();
-    ToolOffset = new robManipulator(ToolOffsetTransformation);
-    Manipulator->Attach(ToolOffset);
+
+    Manipulator->setEndEffectorOffset(ToolOffsetTransformation);
 
     // update estimated mass for gravity compensation
     double mass;
@@ -556,7 +640,7 @@ void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscop
         break;
     }
 
-    if (!m_skip_gravity_compensation) {
+    if (!m_skip_gravity_compensation && m_gc) {
         m_gc->set_endoscope_mass(mass);
     }
 

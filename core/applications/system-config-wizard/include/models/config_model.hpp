@@ -24,9 +24,11 @@ http://www.cisst.org/cisst/license.txt.
 #include <optional>
 #include <string>
 #include <vector>
+#include <Eigen/Geometry>
 
+#include <cisstCommon/cmnDataFunctionsJSON.h>
+#include <cisstCommon/cmnDataFunctionsEigenJSON.h>
 #include <json/json.h>
-#include "cisstVector/vctTransformationTypes.h"
 
 #include "models/list_model.hpp"
 
@@ -693,7 +695,7 @@ public:
 
         if (config->use_custom_transform) {
             config->reference_frame_name = json["reference_frame"].asString();
-            cmnDataJSON<vctFrm4x4>::DeSerializeText(config->transform, json["transform"]);
+            cmnDataJSON<Eigen::Isometry3d>::DeSerializeText(config->transform, json["transform"]);
         } else {
             config->transform = decltype(transform)::Identity();
             auto base_frame = ComponentInterfaceConfig::fromJSON(json);
@@ -709,7 +711,7 @@ public:
         if (use_custom_transform) {
             Json::Value json;
             json["reference_frame"] = reference_frame_name;
-            cmnDataJSON<vctFrm4x4>::SerializeText(transform, json["transform"]);
+            cmnDataJSON<Eigen::Isometry3d>::SerializeText(transform, json["transform"]);
             return json;
         } else {
             return base_frame_component.toJSON(destination);
@@ -718,7 +720,7 @@ public:
 
     bool use_custom_transform;
     std::string reference_frame_name;
-    vctFrm4x4 transform;
+    Eigen::Isometry3d transform;
     ComponentInterfaceConfig base_frame_component;
 };
 

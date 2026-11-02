@@ -17,13 +17,11 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 
-// system include
-#include <iostream>
-
 // Qt include
 #include <QLineEdit>
 
 // cisst
+#include <cisstCommon/cmnConstants.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitMTMQtWidget.h>
@@ -64,7 +62,7 @@ void mtsIntuitiveResearchKitMTMQtWidget::timerEventDerived(void)
     gripper_measured_js(m_gripper_measured_js);
     if (m_gripper_measured_js.Position().size() > 0) {
         QString text;
-        text.setNum(m_gripper_measured_js.Position().at(0) * cmn180_PI, 'f', 3);
+        text.setNum(m_gripper_measured_js.Position()[0] * cmn180_PI, 'f', 3);
         QLEGripperPosition->setText(text);
     } else {
         QLEGripperPosition->setText("");
