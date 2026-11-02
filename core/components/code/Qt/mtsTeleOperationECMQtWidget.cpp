@@ -45,8 +45,7 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsTeleOperationECMQtWidget, mtsComponent,
 
 mtsTeleOperationECMQtWidget::mtsTeleOperationECMQtWidget(const std::string & componentName, double periodInSeconds):
     mtsComponent(componentName),
-    TimerPeriodInMilliseconds(periodInSeconds * 1000), // Qt timers are in milliseconds
-    LogEnabled(false)
+    TimerPeriodInMilliseconds(periodInSeconds * 1000) // Qt timers are in milliseconds
 {
     this->AddTag("UI");
     QMMessage = new mtsMessageQtWidget();
@@ -56,10 +55,15 @@ mtsTeleOperationECMQtWidget::mtsTeleOperationECMQtWidget(const std::string & com
     if (interfaceRequired) {
         QMMessage->SetInterfaceRequired(interfaceRequired);
         interfaceRequired->AddFunction("set_scale", TeleOperation.set_scale);
+        interfaceRequired->AddFunction("MTM/measured_cp",
+                                       TeleOperation.MTM_measured_cp,
+                                       MTS_OPTIONAL);
         interfaceRequired->AddFunction("MTML/measured_cp",
-                                       TeleOperation.MTML_measured_cp);
+                                       TeleOperation.MTML_measured_cp,
+                                       MTS_OPTIONAL);
         interfaceRequired->AddFunction("MTMR/measured_cp",
-                                       TeleOperation.MTMR_measured_cp);
+                                       TeleOperation.MTMR_measured_cp,
+                                       MTS_OPTIONAL);
         interfaceRequired->AddFunction("ECM/measured_cp",
                                        TeleOperation.ECM_measured_cp);
         interfaceRequired->AddFunction("period_statistics", TeleOperation.period_statistics);
@@ -119,14 +123,25 @@ void mtsTeleOperationECMQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
     }
 
     // retrieve transformations
-    TeleOperation.MTML_measured_cp(m_MTML_measured_cp);
-    QCPGMTMLWidget->SetValue(m_MTML_measured_cp);
+    if (QCPGMTMWidget && TeleOperation.MTM_measured_cp.IsValid()) {
+        TeleOperation.MTM_measured_cp(m_MTM_measured_cp);
+        QCPGMTMWidget->SetValue(m_MTM_measured_cp);
+    }
 
-    TeleOperation.MTMR_measured_cp(m_MTMR_measured_cp);
-    QCPGMTMRWidget->SetValue(m_MTMR_measured_cp);
+    if (QCPGMTMLWidget && TeleOperation.MTML_measured_cp.IsValid()) {
+        TeleOperation.MTML_measured_cp(m_MTML_measured_cp);
+        QCPGMTMLWidget->SetValue(m_MTML_measured_cp);
+    }
 
-    TeleOperation.ECM_measured_cp(m_ECM_measured_cp);
-    QCPGECMWidget->SetValue(m_ECM_measured_cp);
+    if (QCPGMTMRWidget && TeleOperation.MTMR_measured_cp.IsValid()) {
+        TeleOperation.MTMR_measured_cp(m_MTMR_measured_cp);
+        QCPGMTMRWidget->SetValue(m_MTMR_measured_cp);
+    }
+
+    if (QCPGECMWidget && TeleOperation.ECM_measured_cp.IsValid()) {
+        TeleOperation.ECM_measured_cp(m_ECM_measured_cp);
+        QCPGECMWidget->SetValue(m_ECM_measured_cp);
+    }
 
     TeleOperation.period_statistics(m_interval_statistics);
     QMIntervalStatistics->SetValue(m_interval_statistics);
@@ -176,18 +191,47 @@ void mtsTeleOperationECMQtWidget::setupUi(void)
     QGridLayout * frameLayout = new QGridLayout;
     mainLayout->addLayout(frameLayout);
     int column = 0;
-    QLabel * masterLabel = new QLabel("<b>MTML</b>");
-    masterLabel->setAlignment(Qt::AlignCenter);
-    frameLayout->addWidget(masterLabel, 0, column);
-    QCPGMTMLWidget = new prmPositionCartesianGetQtWidget();
-    frameLayout->addWidget(QCPGMTMLWidget, 1, column);
-    column++;
-    masterLabel = new QLabel("<b>MTMR</b>");
-    masterLabel->setAlignment(Qt::AlignCenter);
-    frameLayout->addWidget(masterLabel, 0, column);
-    QCPGMTMRWidget = new prmPositionCartesianGetQtWidget();
-    frameLayout->addWidget(QCPGMTMRWidget, 1, column);
-    column++;
+
+    const bool has_MTM = TeleOperation.MTM_measured_cp.IsValid();
+    const bool has_MTML = TeleOperation.MTML_measured_cp.IsValid();
+    const bool has_MTMR = TeleOperation.MTMR_measured_cp.IsValid();
+
+    if (has_MTM) {
+        QLabel * masterLabel = new QLabel("<b>MTM</b>");
+        masterLabel->setAlignment(Qt::AlignCenter);
+        frameLayout->addWidget(masterLabel, 0, column);
+        QCPGMTMWidget = new prmPositionCartesianGetQtWidget();
+        frameLayout->addWidget(QCPGMTMWidget, 1, column);
+        column++;
+    } else if (has_MTML && !has_MTMR) {
+        QLabel * masterLabel = new QLabel("<b>MTML</b>");
+        masterLabel->setAlignment(Qt::AlignCenter);
+        frameLayout->addWidget(masterLabel, 0, column);
+        QCPGMTMLWidget = new prmPositionCartesianGetQtWidget();
+        frameLayout->addWidget(QCPGMTMLWidget, 1, column);
+        column++;
+    } else if (has_MTMR && !has_MTML) {
+        QLabel * masterLabel = new QLabel("<b>MTMR</b>");
+        masterLabel->setAlignment(Qt::AlignCenter);
+        frameLayout->addWidget(masterLabel, 0, column);
+        QCPGMTMRWidget = new prmPositionCartesianGetQtWidget();
+        frameLayout->addWidget(QCPGMTMRWidget, 1, column);
+        column++;
+    } else {
+        QLabel * masterLabel = new QLabel("<b>MTML</b>");
+        masterLabel->setAlignment(Qt::AlignCenter);
+        frameLayout->addWidget(masterLabel, 0, column);
+        QCPGMTMLWidget = new prmPositionCartesianGetQtWidget();
+        frameLayout->addWidget(QCPGMTMLWidget, 1, column);
+        column++;
+        masterLabel = new QLabel("<b>MTMR</b>");
+        masterLabel->setAlignment(Qt::AlignCenter);
+        frameLayout->addWidget(masterLabel, 0, column);
+        QCPGMTMRWidget = new prmPositionCartesianGetQtWidget();
+        frameLayout->addWidget(QCPGMTMRWidget, 1, column);
+        column++;
+    }
+
     QLabel * ecmLabel = new QLabel("<b>ECM</b>");
     ecmLabel->setAlignment(Qt::AlignCenter);
     frameLayout->addWidget(ecmLabel, 0, column);

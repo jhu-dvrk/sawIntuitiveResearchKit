@@ -127,7 +127,9 @@ if (sawRobotIO1394_FOUND AND sawControllers_FOUND)
     mtsIntuitiveResearchKitSUJSi.h
     mtsIntuitiveResearchKitSUJFixed.h
     mtsTeleOperationPSM.h
-    mtsTeleOperationECM.h
+    mtsTeleOperationECMBase.h
+    mtsTeleOperationECMTwoHands.h
+    mtsTeleOperationECMOneHand.h
     mtsDaVinciHeadSensor.h
     mtsDaVinciEndoscopeFocus.h
     mtsToolList.h
@@ -158,7 +160,9 @@ if (sawRobotIO1394_FOUND AND sawControllers_FOUND)
     mtsIntuitiveResearchKitSUJSi.cpp
     mtsIntuitiveResearchKitSUJFixed.cpp
     mtsTeleOperationPSM.cpp
-    mtsTeleOperationECM.cpp
+    mtsTeleOperationECMBase.cpp
+    mtsTeleOperationECMTwoHands.cpp
+    mtsTeleOperationECMOneHand.cpp
     mtsDaVinciHeadSensor.cpp
     mtsDaVinciEndoscopeFocus.cpp
     mtsToolList.cpp

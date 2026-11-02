@@ -47,7 +47,16 @@ void dvrk::console::post_configure(void)
 {
     // ECM teleops
     for (auto & proxy_config : m_config->teleop_ECMs) {
-        const std::string name = proxy_config.MTML + "_" + proxy_config.MTMR + "_" + proxy_config.ECM;
+        std::string name;
+        if (proxy_config.one_hand()) {
+            std::string mtm = proxy_config.MTM;
+            if (mtm.empty()) {
+                mtm = proxy_config.MTMR.empty() ? proxy_config.MTML : proxy_config.MTMR;
+            }
+            name = mtm + "_" + proxy_config.ECM;
+        } else {
+            name = proxy_config.MTML + "_" + proxy_config.MTMR + "_" + proxy_config.ECM;
+        }
         auto iter = m_teleop_proxies.find(name);
         if (iter == m_teleop_proxies.end()) {
             // create a new teleop_ecm proxy if needed

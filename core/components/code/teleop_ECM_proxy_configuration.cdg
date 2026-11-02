@@ -16,19 +16,28 @@ class {
         name type;
         type dvrk::teleop_ECM_type;
         visibility public;
-        default dvrk::teleop_ECM_type::TELEOP_ECM;
+        default dvrk::teleop_ECM_type::TELEOP_ECM_TWO_HANDS;
+    }
+
+    member {
+        name MTM;
+        type std::string;
+        visibility public;
+        default "";
     }
 
     member {
         name MTML;
         type std::string;
         visibility public;
+        default "";
     }
 
     member {
         name MTMR;
         type std::string;
         visibility public;
+        default "";
     }
 
     member {
@@ -49,5 +58,34 @@ class {
         type double;
         visibility public;
         default mtsIntuitiveResearchKit::TeleopPeriod;
+    }
+
+    inline-header {
+    public:
+        inline bool one_hand(void) const {
+            return (this->type == dvrk::teleop_ECM_type::TELEOP_ECM_ONE_HAND)
+                || (this->type == dvrk::teleop_ECM_type::TELEOP_ECM_ONE_HAND_DERIVED)
+                || (this->type == dvrk::teleop_ECM_type::TELEOP_ECM_ONE_HAND_GENERIC)
+                || (!this->MTM.empty() && this->MTML.empty() && this->MTMR.empty());
+        }
+
+        inline bool two_hands(void) const {
+            return !one_hand();
+        }
+
+        inline bool native(void) const {
+            return (this->type == dvrk::teleop_ECM_type::TELEOP_ECM_TWO_HANDS)
+                || (this->type == dvrk::teleop_ECM_type::TELEOP_ECM_ONE_HAND);
+        }
+
+        inline bool derived(void) const {
+            return (this->type == dvrk::teleop_ECM_type::TELEOP_ECM_TWO_HANDS_DERIVED)
+                || (this->type == dvrk::teleop_ECM_type::TELEOP_ECM_ONE_HAND_DERIVED);
+        }
+
+        inline bool generic(void) const {
+            return (this->type == dvrk::teleop_ECM_type::TELEOP_ECM_TWO_HANDS_GENERIC)
+                || (this->type == dvrk::teleop_ECM_type::TELEOP_ECM_ONE_HAND_GENERIC);
+        }
     }
 }

@@ -79,6 +79,7 @@ private:
 protected:
     struct {
         mtsFunctionWrite set_scale;
+        mtsFunctionRead MTM_measured_cp;
         mtsFunctionRead MTML_measured_cp;
         mtsFunctionRead MTMR_measured_cp;
         mtsFunctionRead ECM_measured_cp;
@@ -86,25 +87,27 @@ protected:
     } TeleOperation;
 
 private:
-    QLineEdit * QLEDesiredState;
-    QLineEdit * QLECurrentState;
-    QLineEdit * QLEFollowing;
-    QDoubleSpinBox * QSBScale;
+    QLineEdit * QLEDesiredState = nullptr;
+    QLineEdit * QLECurrentState = nullptr;
+    QLineEdit * QLEFollowing = nullptr;
+    QDoubleSpinBox * QSBScale = nullptr;
+    prmPositionCartesianGet m_MTM_measured_cp;
+    prmPositionCartesianGetQtWidget * QCPGMTMWidget = nullptr;
     prmPositionCartesianGet m_MTML_measured_cp;
-    prmPositionCartesianGetQtWidget * QCPGMTMLWidget;
+    prmPositionCartesianGetQtWidget * QCPGMTMLWidget = nullptr;
     prmPositionCartesianGet m_MTMR_measured_cp;
-    prmPositionCartesianGetQtWidget * QCPGMTMRWidget;
+    prmPositionCartesianGetQtWidget * QCPGMTMRWidget = nullptr;
     prmPositionCartesianGet m_ECM_measured_cp;
-    prmPositionCartesianGetQtWidget * QCPGECMWidget;
+    prmPositionCartesianGetQtWidget * QCPGECMWidget = nullptr;
 
     // timing
     mtsIntervalStatistics m_interval_statistics;
-    mtsIntervalStatisticsQtWidget * QMIntervalStatistics;
+    mtsIntervalStatisticsQtWidget * QMIntervalStatistics = nullptr;
 
     // messages
-    bool LogEnabled;
-    QPushButton * QPBLog;
-    mtsMessageQtWidget * QMMessage;
+    bool LogEnabled = false;
+    QPushButton * QPBLog = nullptr;
+    mtsMessageQtWidget * QMMessage = nullptr;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsTeleOperationECMQtWidget);
