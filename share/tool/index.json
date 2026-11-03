@@ -226,6 +226,14 @@
         }
         ,
         {
+            "model": "400327",
+            "names": ["MEDIUM-LARGE_CLIP_APPLIER"],
+            "description": "Medium-large Clip Applier",
+            "generation": "Classic",
+            "file": "MEDIUM-LARGE_CLIP_APPLIER_400327.json"
+        }
+        ,
+        {
             "model": "410298",
             "names": ["STAPLER_45"],
             "description": "Stapler 45",
@@ -239,6 +247,14 @@
             "description": "Potts Scissors",
             "generation": "S",
             "file": "POTTS_SCISSORS_420001.json"
+        }
+        ,
+        {
+            "model": "420003",
+            "names": ["SMALL_CLIP_APPLIER"],
+            "description": "Small Clip Applier",
+            "generation": "S",
+            "file": "SMALL_CLIP_APPLIER_420003.json"
         }
         ,
         {
@@ -273,6 +289,14 @@
             "description": "Black Diamond Micro Forceps",
             "generation": "S",
             "file": "MICRO_FORCEPS_420033.json"
+        }
+        ,
+        {
+            "model": "420035",
+            "names": ["ROUND_TOOTH_FORCEPS"],
+            "description": "Round Tooth Forceps",
+            "generation": "S",
+            "file": "ROUND_TOOTH_FORCEPS_420035.json"
         }
         ,
         {
@@ -323,6 +347,14 @@
             "description": "5mm Needle Driver",
             "generation": "S",
             "file": "NEEDLE_DRIVER_420117.json"
+        }
+        ,
+        {
+            "model": "420127",
+            "names": ["BOWEL_GRASPER"],
+            "description": "Bowel Grasper",
+            "generation": "S",
+            "file": "BOWEL_GRASPER_420127.json"
         }
         ,
         {
@@ -384,6 +416,14 @@
         }
         ,
         {
+            "model": "420189",
+            "names": ["DOUBLE_FENESTRATED_GRASPER"],
+            "description": "Double Fenestrated Grasper",
+            "generation": "S",
+            "file": "DOUBLE_FENESTRATED_GRASPER_420189.json"
+        }
+        ,
+        {
             "model": "420194",
             "version_max": 11,
             "names": ["MEGA_NEEDLE_DRIVER"],
@@ -407,6 +447,22 @@
             "description": "Fenestrated Bipolar Forceps",
             "generation": "S",
             "file": "FENESTRATED_BIPOLAR_FORCEPS_420205.json"
+        }
+        ,
+        {
+            "model": "420207",
+            "names": ["TENACULUM_FORCEPS"],
+            "description": "Tenaculum Forceps",
+            "generation": "S",
+            "file": "TENACULUM_FORCEPS_420207.json"
+        }
+        ,
+        {
+            "model": "420208",
+            "names": ["THORACIC_GRASPER"],
+            "description": "Thoracic Grasper",
+            "generation": "S",
+            "file": "THORACIC_GRASPER_420208.json"
         }
         ,
         {
