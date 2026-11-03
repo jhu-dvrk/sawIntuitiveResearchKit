@@ -35,6 +35,67 @@ robManipulatorPSMSnake::robManipulatorPSMSnake(const vctFrame4x4<double> &Rtw0)
 {
 }
 
+vctDoubleVec robManipulatorPSMSnake::FullJoints(const vctDoubleVec & active)
+{
+    CMN_ASSERT(active.size() == 6);
+    vctDoubleVec full(8);
+    full.Assign(active, 4);
+    full.at(4) = full.at(7) = active.at(4) / 2.0;
+    full.at(5) = full.at(6) = active.at(5) / 2.0;
+    return full;
+}
+
+vctDoubleVec robManipulatorPSMSnake::ActiveJoints(const vctDoubleVec & full)
+{
+    CMN_ASSERT(full.size() == 8);
+    vctDoubleVec active(6);
+    active.Assign(full, 4);
+    active.at(4) = full.at(4) + full.at(7);
+    active.at(5) = full.at(5) + full.at(6);
+    return active;
+}
+
+vctFrm4x4 robManipulatorPSMSnake::ForwardKinematics(const vctDoubleVec & q, int N) const
+{
+    if ((q.size() == 6) && (links.size() == 8)) {
+        // Public FK requests pass N=6 for the complete independent chain.
+        return robManipulator::ForwardKinematics(FullJoints(q), N == 6 ? 8 : N);
+    }
+    return robManipulator::ForwardKinematics(q, N);
+}
+
+namespace {
+    void ActiveJacobian(const vctDoubleMat & full, vctDoubleMat & active)
+    {
+        active.SetSize(6, 6);
+        active.Ref(6, 4, 0, 0).Assign(full.Ref(6, 4, 0, 0));
+        active.Column(4).SumOf(full.Column(4), full.Column(7));
+        active.Column(5).SumOf(full.Column(5), full.Column(6));
+        active.Column(4) *= 0.5;
+        active.Column(5) *= 0.5;
+    }
+}
+
+bool robManipulatorPSMSnake::JacobianBodyActive(const vctDoubleVec & q, vctDoubleMat & J) const
+{
+    vctDoubleMat full(6, 8);
+    if (!robManipulator::JacobianBody(FullJoints(q), full)) {
+        return false;
+    }
+    ActiveJacobian(full, J);
+    return true;
+}
+
+bool robManipulatorPSMSnake::JacobianSpatialActive(const vctDoubleVec & q, vctDoubleMat & J) const
+{
+    vctDoubleMat full(6, 8);
+    if (!robManipulator::JacobianSpatial(FullJoints(q), full)) {
+        return false;
+    }
+    ActiveJacobian(full, J);
+    return true;
+}
+
 void robManipulatorPSMSnake::Resize(void)
 {
     if (m.E.cols() == links.size()) {
@@ -74,6 +135,18 @@ robManipulatorPSMSnake::InverseKinematics(vctDynamicVector<double> & q,
                                           size_t Niterations,
                                           double CMN_UNUSED(LAMBDA))
 {
+    if ((q.size() == 6) && (links.size() == 8)) {
+        vctDoubleVec full = FullJoints(q);
+        const auto result = InverseKinematics(full, Rts, tolerance, Niterations);
+        if (result == robManipulator::ESUCCESS) {
+            if ((fabs(full.at(4) - full.at(7)) > 1e-5)
+                || (fabs(full.at(5) - full.at(6)) > 1e-5)) {
+                return robManipulator::EFAILURE;
+            }
+            q.ForceAssign(ActiveJoints(full));
+        }
+        return result;
+    }
     if (q.size() != links.size()) {
         CMN_LOG_RUN_ERROR << CMN_LOG_DETAILS
                           << ": robManipulatorPSMSnake::InverseKinematics: expected " << links.size() << " joints values. "

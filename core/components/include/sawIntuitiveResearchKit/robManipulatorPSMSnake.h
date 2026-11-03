@@ -20,6 +20,8 @@ http://www.cisst.org/cisst/license.txt.
 #define _robManipulatorPSMSnake_h
 
 #include <cisstRobot/robManipulator.h>
+#include <cisstVector/vctDynamicVectorTypes.h>
+#include <cisstVector/vctDynamicMatrixTypes.h>
 #include <cisstNumerical/nmrLSEISolver.h>
 
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
@@ -37,6 +39,14 @@ public:
                            const vctFrame4x4<double>& Rtw0 = vctFrame4x4<double>());
 
     ~robManipulatorPSMSnake() {}
+
+    // Six independent arm coordinates; expansion is local to kinematic calls.
+    static vctDoubleVec FullJoints(const vctDoubleVec & active);
+    static vctDoubleVec ActiveJoints(const vctDoubleVec & full);
+    vctFrm4x4 ForwardKinematics(const vctDoubleVec & q, int N = -1) const override;
+    bool JacobianBodyActive(const vctDoubleVec & q, vctDoubleMat & J) const;
+    bool JacobianSpatialActive(const vctDoubleVec & q, vctDoubleMat & J) const;
+
 
     vctReturnDynamicVector<double>
     ConstrainedRMRC(const vctDynamicVector<double> & q,

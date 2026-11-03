@@ -143,6 +143,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     /*! Get data from the PID level based on current state. */
     virtual void get_robot_data(void);
     virtual void UpdateStateJointKinematics(void);
+    virtual void UpdateJacobian(const vctDoubleVec & joints);
     virtual void ToJointsPID(const vctDoubleVec & jointsKinematics, vctDoubleVec & jointsPID);
 
     void UpdateOperatingStateAndBusy(const prmOperatingState::StateType & state,

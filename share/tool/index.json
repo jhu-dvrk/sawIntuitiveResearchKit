@@ -106,6 +106,14 @@
         }
         ,
         {
+            "model": "400141",
+            "names": ["ROUND_TIP_SCISSORS", "5MM_ROUND_TIP_SCISSORS"],
+            "description": "5mm Round Tip Scissors",
+            "generation": "Classic",
+            "file": "ROUND_TIP_SCISSORS_400141.json"
+        }
+        ,
+        {
             "model": "400143",
             "names": ["MARYLAND_DISSECTOR", "5MM_MARYLAND_DISSECTOR"],
             "description": "5mm Maryland Dissector",
@@ -355,6 +363,14 @@
             "description": "Bowel Grasper",
             "generation": "S",
             "file": "BOWEL_GRASPER_420127.json"
+        }
+        ,
+        {
+            "model": "420141",
+            "names": ["ROUND_TIP_SCISSORS", "5MM_ROUND_TIP_SCISSORS"],
+            "description": "5mm Round Tip Scissors",
+            "generation": "S",
+            "file": "ROUND_TIP_SCISSORS_420141.json"
         }
         ,
         {

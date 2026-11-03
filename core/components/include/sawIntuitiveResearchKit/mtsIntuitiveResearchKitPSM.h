@@ -66,7 +66,7 @@ protected:
     }
 
     inline size_t number_of_joints_kinematics(void) const override {
-        return m_snake_like ? 8 : 6;
+        return 6;
     }
 
     inline size_t number_of_brakes(void) const override {
@@ -84,6 +84,7 @@ protected:
     }
 
     void UpdateStateJointKinematics(void) override;
+    void UpdateJacobian(const vctDoubleVec & joints) override;
     void ToJointsPID(const vctDoubleVec &jointsKinematics, vctDoubleVec &jointsPID) override;
 
 

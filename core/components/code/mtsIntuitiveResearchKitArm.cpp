@@ -996,8 +996,7 @@ void mtsIntuitiveResearchKitArm::get_robot_data(void)
         m_measured_cs.PositionIsValid() = true;
 
         // update jacobians
-        Manipulator->JacobianSpatial(m_kin_measured_js.Position(), m_spatial_jacobian);
-        Manipulator->JacobianBody(m_kin_measured_js.Position(), m_body_jacobian);
+        UpdateJacobian(m_kin_measured_js.Position());
 
         // update cartesian velocity using the jacobian and joint
         // velocities.
@@ -1113,6 +1112,12 @@ void mtsIntuitiveResearchKitArm::get_robot_data(void)
         // composite cartesian state
         m_measured_cs.SetValid(false);
     }
+}
+
+void mtsIntuitiveResearchKitArm::UpdateJacobian(const vctDoubleVec & joints)
+{
+    Manipulator->JacobianBody(joints, m_body_jacobian);
+    Manipulator->JacobianSpatial(joints, m_spatial_jacobian);
 }
 
 void mtsIntuitiveResearchKitArm::UpdateStateJointKinematics(void)
@@ -1829,7 +1834,7 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
             // initialize trajectory
             m_servo_jp.Assign(m_pid_setpoint_js.Position(), number_of_joints());
             if (m_control_mode == mtsIntuitiveResearchKitControlTypes::POSITION_MODE) {
-                m_servo_jv.Assign(m_pid_measured_js.Velocity(), number_of_joints());
+                m_servo_jv.ForceAssign(m_pid_measured_js.Velocity());
             } else {
                 // we're switching from effort or no mode
                 m_servo_jv.SetSize(number_of_joints());
@@ -2126,7 +2131,7 @@ void mtsIntuitiveResearchKitArm::servo_jp(const prmPositionJointSet & jp)
                            mtsIntuitiveResearchKitControlTypes::POSITION_MODE);
     // set goal
     m_servo_jp.Assign(jp.Goal(), number_of_joints_kinematics());
-    m_servo_jv.Assign(jp.Velocity(), jp.Velocity().size());
+    m_servo_jv.ForceAssign(jp.Velocity());
     m_pid_new_goal = true;
 }
 

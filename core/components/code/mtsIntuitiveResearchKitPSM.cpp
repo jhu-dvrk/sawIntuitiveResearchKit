@@ -22,6 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 
 // cisst
 #include <sawIntuitiveResearchKit/robManipulatorPSMSnake.h>
+#include <sawIntuitiveResearchKit/prmConfigurationJointFromManipulator.h>
 
 #include <cisstCommon/cmnPath.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
@@ -533,52 +534,33 @@ void mtsIntuitiveResearchKitPSM::UpdateStateJointKinematics(void)
     m_jaw_setpoint_js.Position().at(0) = m_pid_setpoint_js.Position().at(jaw_index);
     m_jaw_setpoint_js.Effort().at(0)   = m_pid_setpoint_js.Effort().at(jaw_index);
     m_jaw_setpoint_js.Timestamp() = m_pid_setpoint_js.Timestamp();
-    m_jaw_setpoint_js.Valid() = m_pid_setpoint_js.Timestamp();
+    m_jaw_setpoint_js.Valid() = m_pid_setpoint_js.Valid();
 
-    if (!m_snake_like) {
+    // All PSM tools expose six independent arm joints; the jaw is separate.
+    // measured p/v/e
+    m_kin_measured_js.Position().Assign(m_pid_measured_js.Position().Ref(number_of_joints_kinematics()));
+    m_kin_measured_js.Velocity().Assign(m_pid_measured_js.Velocity().Ref(number_of_joints_kinematics()));
+    m_kin_measured_js.Effort().Assign(m_pid_measured_js.Effort().Ref(number_of_joints_kinematics()));
+    m_kin_measured_js.Timestamp() = m_pid_measured_js.Timestamp();
+    m_kin_measured_js.Valid() = m_pid_measured_js.Valid();
 
-        // most tool, copy first n joints (6) from PID for kinematics
-        // measured p/v/e
-        m_kin_measured_js.Position().Assign(m_pid_measured_js.Position().Ref(number_of_joints_kinematics()));
-        m_kin_measured_js.Velocity().Assign(m_pid_measured_js.Velocity().Ref(number_of_joints_kinematics()));
-        m_kin_measured_js.Effort().Assign(m_pid_measured_js.Effort().Ref(number_of_joints_kinematics()));
-        m_kin_measured_js.Timestamp() = m_pid_measured_js.Timestamp();
-        m_kin_measured_js.Valid() = m_pid_measured_js.Valid();
+    // setpoint p/v/e
+    m_kin_setpoint_js.Position().Assign(m_pid_setpoint_js.Position().Ref(number_of_joints_kinematics()));
+    m_kin_setpoint_js.Velocity().Assign(m_pid_setpoint_js.Velocity().Ref(number_of_joints_kinematics()));
+    m_kin_setpoint_js.Effort().Assign(m_pid_setpoint_js.Effort().Ref(number_of_joints_kinematics()));
+    m_kin_setpoint_js.Timestamp() = m_pid_setpoint_js.Timestamp();
+    m_kin_setpoint_js.Valid() = m_pid_setpoint_js.Valid();
+}
 
-        // setpoint p/e
-        m_kin_setpoint_js.Position().Assign(m_pid_setpoint_js.Position().Ref(number_of_joints_kinematics()));
-        m_kin_setpoint_js.Velocity().Assign(m_pid_setpoint_js.Velocity().Ref(number_of_joints_kinematics()));
-        m_kin_setpoint_js.Effort().Assign(m_pid_setpoint_js.Effort().Ref(number_of_joints_kinematics()));
-        m_kin_setpoint_js.Timestamp() = m_pid_setpoint_js.Timestamp();
-        m_kin_setpoint_js.Valid() = m_pid_setpoint_js.Valid();
-
+void mtsIntuitiveResearchKitPSM::UpdateJacobian(const vctDoubleVec & joints)
+{
+    if (m_snake_like) {
+        const auto snake = dynamic_cast<robManipulatorPSMSnake *>(Manipulator);
+        CMN_ASSERT(snake);
+        snake->JacobianBodyActive(joints, m_body_jacobian);
+        snake->JacobianSpatialActive(joints, m_spatial_jacobian);
     } else {
-
-        // measured p/v/e
-        m_kin_measured_js.Position().Assign(m_pid_measured_js.Position(), 4);
-        m_kin_measured_js.Position().at(4) = m_kin_measured_js.Position().at(7) = m_pid_measured_js.Position().at(4) / 2.0;
-        m_kin_measured_js.Position().at(5) = m_kin_measured_js.Position().at(6) = m_pid_measured_js.Position().at(5) / 2.0;
-
-        m_kin_measured_js.Velocity().Assign(m_pid_measured_js.Velocity(), 4);
-        m_kin_measured_js.Velocity().at(4) = m_kin_measured_js.Velocity().at(7) = m_pid_measured_js.Velocity().at(4) / 2.0;
-        m_kin_measured_js.Velocity().at(5) = m_kin_measured_js.Velocity().at(6) = m_pid_measured_js.Velocity().at(5) / 2.0;
-
-        m_kin_measured_js.Effort().Assign(m_pid_measured_js.Effort(), 4);
-        m_kin_measured_js.Effort().at(4) = m_kin_measured_js.Effort().at(7) = m_pid_measured_js.Effort().at(4) / 2.0;
-        m_kin_measured_js.Effort().at(5) = m_kin_measured_js.Effort().at(6) = m_pid_measured_js.Effort().at(5) / 2.0;
-        m_kin_measured_js.Timestamp() = m_pid_measured_js.Timestamp();
-        m_kin_measured_js.Valid() = m_pid_measured_js.Valid();
-
-        // setpoint p/e
-        m_kin_setpoint_js.Position().Assign(m_pid_setpoint_js.Position(), 4);
-        m_kin_setpoint_js.Position().at(4) = m_kin_setpoint_js.Position().at(7) = m_pid_setpoint_js.Position().at(4) / 2.0;
-        m_kin_setpoint_js.Position().at(5) = m_kin_setpoint_js.Position().at(6) = m_pid_setpoint_js.Position().at(5) / 2.0;
-        std::cerr << CMN_LOG_DETAILS << " ------- need to add code to generate setpoint_js.Velocity " << std::endl;
-        m_kin_setpoint_js.Effort().Assign(m_pid_measured_js.Effort(), 4);
-        m_kin_setpoint_js.Effort().at(4) = m_kin_setpoint_js.Effort().at(7) = m_pid_setpoint_js.Effort().at(4) / 2.0;
-        m_kin_setpoint_js.Effort().at(5) = m_kin_setpoint_js.Effort().at(6) = m_pid_setpoint_js.Effort().at(5) / 2.0;
-        m_kin_setpoint_js.Timestamp() = m_pid_setpoint_js.Timestamp();
-        m_kin_setpoint_js.Valid() = m_pid_setpoint_js.Valid();
+        mtsIntuitiveResearchKitArm::UpdateJacobian(joints);
     }
 }
 
@@ -586,17 +568,8 @@ void mtsIntuitiveResearchKitPSM::ToJointsPID(const vctDoubleVec & jointsKinemati
 {
     if (is_cartesian_ready()) {
         // tool is present
-        if (m_snake_like) {
-            CMN_ASSERT(jointsKinematics.size() == 8);
-            jointsPID.Assign(jointsKinematics, 4);
-            // Test if position 4 and 7 are very much apart; throw error maybe ?
-            jointsPID.at(4) = jointsKinematics.at(4) + jointsKinematics.at(7);
-            // Same goes for 5 and 6
-            jointsPID.at(5) = jointsKinematics.at(5) + jointsKinematics.at(6);
-        } else {
-            CMN_ASSERT(jointsKinematics.size() >= 6);
-            jointsPID.Assign(jointsKinematics, 6);
-        }
+        CMN_ASSERT(jointsKinematics.size() >= 6);
+        jointsPID.Assign(jointsKinematics, 6);
     } else {
         // joint space, no tool yet so we can control all 7 actuators
         CMN_ASSERT(jointsKinematics.size() == 7);
@@ -619,15 +592,6 @@ robManipulator::Errno mtsIntuitiveResearchKitPSM::InverseKinematics(vctDoubleVec
 
     // IK
     robManipulator::Errno Err = Manipulator->InverseKinematics(jointSet, cartesianGoal);;
-
-    // check equality constraint for snake like kinematic
-    if (m_snake_like) {
-        // Check for equality Snake joints (4,7) and (5,6)
-        if (fabs(jointSet.at(4) - jointSet.at(7)) > 0.00001 ||
-            fabs(jointSet.at(5) - jointSet.at(6)) > 0.00001) {
-            m_arm_interface->SendWarning(GetName() + ": InverseKinematics, equality constraint violated");
-        }
-    }
 
     // Find closest solution mod 2 Pi for roll along shaft
     if (Err == robManipulator::ESUCCESS) {
@@ -986,7 +950,24 @@ void mtsIntuitiveResearchKitPSM::update_configuration_js_no_tool(void)
 void mtsIntuitiveResearchKitPSM::update_configuration_js(void)
 {
     mStateTableConfiguration.Start();
-    if (m_tool_present && m_tool_configured) {
+    if (m_tool_present && m_tool_configured && m_snake_like) {
+        prmConfigurationJoint full;
+        prmConfigurationJointFromManipulator(*Manipulator, 8, full);
+        m_configuration_js = full;
+        m_configuration_js.Name().resize(6);
+        m_configuration_js.Name().at(4) = "wrist_pitch";
+        m_configuration_js.Name().at(5) = "wrist_yaw";
+        m_configuration_js.Type().SetSize(6);
+        m_configuration_js.Type().Assign(full.Type(), 6);
+        m_configuration_js.PositionMin().ForceAssign(robManipulatorPSMSnake::ActiveJoints(full.PositionMin()));
+        m_configuration_js.PositionMax().ForceAssign(robManipulatorPSMSnake::ActiveJoints(full.PositionMax()));
+        // Efforts are conjugate to the total bend angle: average each pair.
+        m_configuration_js.EffortMin().ForceAssign(robManipulatorPSMSnake::ActiveJoints(full.EffortMin()));
+        m_configuration_js.EffortMax().ForceAssign(robManipulatorPSMSnake::ActiveJoints(full.EffortMax()));
+        m_configuration_js.EffortMin().Ref(2, 4) *= 0.5;
+        m_configuration_js.EffortMax().Ref(2, 4) *= 0.5;
+        cmnDataCopy(m_gravity_compensation_setpoint_js.Name(), m_configuration_js.Name());
+    } else if (m_tool_present && m_tool_configured) {
         mtsIntuitiveResearchKitArm::update_configuration_js();
     } else {
         update_configuration_js_no_tool();
@@ -1381,7 +1362,7 @@ void mtsIntuitiveResearchKitPSM::jaw_move_jp(const prmPositionJointSet & jawPosi
             SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE,
                                    mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE);
             // make sure all other joints have a reasonable goal
-            m_trajectory_j.goal.Assign(m_pid_setpoint_js.Position(), number_of_joints_kinematics());
+            m_trajectory_j.goal.Assign(m_pid_setpoint_js.Position());
         }
         break;
     default:
@@ -1432,7 +1413,7 @@ void mtsIntuitiveResearchKitPSM::servo_jp_internal(const vctDoubleVec & jp,
 
     // velocity - current code only support jaw_servo_jv if servo_jp has a velocity goal
     const size_t jv_size = jv.size();
-    m_servo_jp_param.Velocity().SetSize(7);
+    m_servo_jp_param.Velocity().SetSize(jv_size == 0 ? 0 : number_of_joints());
     if (jv_size != 0) {
         ToJointsPID(jv, m_servo_jp_param.Velocity());
     }
@@ -1488,11 +1469,7 @@ void mtsIntuitiveResearchKitPSM::servo_jf_internal(const vctDoubleVec & newEffor
 
     // pad array for PID
     vctDoubleVec torqueDesired(number_of_joints(), 0.0); // for PID
-    if (m_snake_like) {
-        std::cerr << CMN_LOG_DETAILS << " need to convert 8 joints from snake to 6 for force control" << std::endl;
-    } else {
-        torqueDesired.Assign(newEffort, number_of_joints_kinematics());
-    }
+    torqueDesired.Assign(newEffort, number_of_joints_kinematics());
     // add torque for jaws
     torqueDesired.at(6) = m_jaw_servo_jf;
 
@@ -1523,9 +1500,7 @@ void mtsIntuitiveResearchKitPSM::feed_forward_jf_internal(const vctDoubleVec & j
     vctDoubleVec joint_efforts(number_of_joints(), 0.0); // for PID
     joint_efforts.at(6) = m_jaw_servo_jf;
 
-    if (m_snake_like) {
-        std::cerr << CMN_LOG_DETAILS << " need to convert 8 joints from snake to 6 for force control" << std::endl;
-    } else if (jf.size() > 0) {
+    if (jf.size() > 0) {
         joint_efforts.Ref(number_of_joints_kinematics()).Assign(jf);
     }
 

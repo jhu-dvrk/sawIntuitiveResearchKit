@@ -44,6 +44,7 @@ if (sawIntuitiveResearchKit_FOUND)
   link_directories (${sawIntuitiveResearchKit_LIBRARY_DIR})
 
   add_executable (sawIntuitiveResearchKitTests
+    mtsIntuitiveResearchKitPSMTest.cpp
     robManipulatorTest.cpp
     robManipulatorTest.h)
 
