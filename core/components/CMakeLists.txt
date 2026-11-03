@@ -142,6 +142,7 @@ if (sawRobotIO1394_FOUND AND sawControllers_FOUND)
     prmConfigurationJointFromManipulator.h
     robGravityCompensation.h
 
+    configuration_overrides.h
     arm_proxy.h
     console.h
     IO_proxy.h

@@ -32,6 +32,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitRevision.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitConfig.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
+#include <sawIntuitiveResearchKit/configuration_overrides.h>
 #include <sawIntuitiveResearchKit/prmActuatorJointCouplingCheck.h>
 #include <sawIntuitiveResearchKit/prmConfigurationJointFromManipulator.h>
 
@@ -584,6 +585,10 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
                                      << jsonReader.getFormattedErrorMessages();
             exit(EXIT_FAILURE);
         }
+
+        // The log below records the effective configuration. Keep filename
+        // unchanged so relative assets still resolve from the original file.
+        dvrk::apply_arm_overrides(jsonConfig, m_configuration_overrides);
 
         CMN_LOG_CLASS_INIT_VERBOSE << "Configure: " << this->GetName()
                                    << " using file \"" << filename << "\"" << std::endl

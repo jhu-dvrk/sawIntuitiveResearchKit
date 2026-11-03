@@ -282,6 +282,7 @@ void dvrk::arm_proxy::create_arm()
         CMN_ASSERT(m_arm != nullptr);
         m_arm->set_simulation_mode(m_config->simulation);
         m_arm->set_calibration_mode(m_calibration_mode);
+        m_arm->set_configuration_overrides(m_config->arm_overrides);
         m_arm->Configure(m_arm_configuration_file);
         set_base_frame_if_needed();
         component_manager->AddComponent(m_arm.get());

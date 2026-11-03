@@ -64,11 +64,16 @@ int main(int argc, char ** argv)
     // parse options
     mtsCommandLineOptionsQt options;
     std::string jsonMainConfigFile;
+    std::list<std::string> toolOverrides;
     std::string _IRE_shell = "";
 
     options.AddOptionOneValue("j", "json-config",
                               "json configuration file",
                               cmnCommandLineOptions::REQUIRED_OPTION, &jsonMainConfigFile);
+
+    options.AddOptionMultipleValues("t", "tool",
+                                    "fixed PSM tool as ARM=TOOL (repeat for multiple arms)",
+                                    cmnCommandLineOptions::OPTIONAL_OPTION, &toolOverrides);
 
     options.AddOptionNoValue("C", "calibration-mode",
                              "run in calibration mode, doesn't use potentiometers to monitor encoder values and always force re-homing.  This mode should only be used when calibrating your potentiometers.");
@@ -93,7 +98,7 @@ int main(int argc, char ** argv)
     system->set_calibration_mode(options.IsSet("calibration-mode"));
     system->set_embedded_python(_IRE_shell);
     file_exists("dVRK system JSON configuration file", jsonMainConfigFile, system);
-    system->Configure(jsonMainConfigFile);
+    system->Configure(jsonMainConfigFile, toolOverrides);
     component_manager->AddComponent(system);
     system->Connect();
 

@@ -69,6 +69,12 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual ~mtsIntuitiveResearchKitArm();
 
     void Configure(const std::string & filename) override;
+
+    /*! Set overrides before Configure. Relative paths remain relative to the
+      original arm file. Derived Configure methods can still call the base. */
+    inline void set_configuration_overrides(const Json::Value & overrides) {
+        m_configuration_overrides = overrides;
+    }
     void Startup(void) override;
     void Run(void) override;
     void Cleanup(void) override;
@@ -90,6 +96,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual void set_base_frame(const prmPositionCartesianSet & newBaseFrame);
 
  protected:
+    Json::Value m_configuration_overrides;
+
     virtual void ConfigureGC(const Json::Value & CMN_UNUSED(armConfig),
                              const cmnPath & CMN_UNUSED(configPath),
                              const std::string & CMN_UNUSED(filename)) {};

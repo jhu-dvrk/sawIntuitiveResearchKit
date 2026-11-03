@@ -767,6 +767,10 @@ public:
             config->io_name = value["IO"].asString();
         }
 
+        if (value.isMember("arm_overrides")) {
+            config->arm_overrides = value["arm_overrides"];
+        }
+
         if (value.isMember("arm_file")) {
             config->arm_file = value["arm_file"].asString();
         }
@@ -806,6 +810,10 @@ public:
         Json::Value value;
         value["name"] = name;
         value["type"] = type.serialize();
+
+        if (!arm_overrides.isNull()) {
+            value["arm_overrides"] = arm_overrides;
+        }
 
         if (arm_file.has_value()) {
             // only save arm config file path if it differs from the default
@@ -870,6 +878,7 @@ public:
     std::string name;
     ArmType type;
 
+    Json::Value arm_overrides;
     std::optional<std::filesystem::path> arm_file;
     std::optional<std::filesystem::path> io_file;
     std::optional<std::filesystem::path> io_gripper_file;

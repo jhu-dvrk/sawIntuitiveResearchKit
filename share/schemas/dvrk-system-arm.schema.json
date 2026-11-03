@@ -72,6 +72,17 @@
             "description": "Arm configuration file.  Note that this is **optional** if the `serial` number has been provided.  If the `serial` number has been provided, the application will assume the arm file is `<name>-<serial>.json`.  For example `PSM1-22723.json`.  This attribute is useful mostly if the arm is simulated (`\"simulation\": \"KINEMATIC\"`)."
         },
 
+        "arm_overrides": {
+            "type": "object",
+            "description": "Configuration merged recursively over arm_file in memory before configuring a native or derived PSM, ECM or MTM. Objects merge; arrays, scalars and null replace values. Relative file paths retain the original arm-file search path. Precedence: arm_file, arm_overrides, command-line --tool. --tool sets tool_detection to FIXED.",
+            "examples": [
+                {
+                    "tool_detection": "FIXED",
+                    "tool": "ROUND_TIP_SCISSORS:400007"
+                }
+            ]
+        },
+
         "simulation": {
             "type": "string",
             "enum": ["KINEMATIC"],

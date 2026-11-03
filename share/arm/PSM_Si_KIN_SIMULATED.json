@@ -1,0 +1,7 @@
+{
+    "$id": "dvrk-psm.schema.json",
+    "$version": "1",
+    "kinematic": "kinematic/PSM_Si.json",
+    "generation": "Si",
+    "mounting_pitch": 0.0
+}

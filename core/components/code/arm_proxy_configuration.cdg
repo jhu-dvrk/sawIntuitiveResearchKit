@@ -2,6 +2,7 @@
 // ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab:
 
 inline-header {
+#include <json/json.h>
 #include <cisstParameterTypes/prmSimulationType.h>
 #include <sawIntuitiveResearchKit/arm_type.h>
 #include <sawIntuitiveResearchKit/base_frame.h>
@@ -68,6 +69,14 @@ class {
         type std::string;
         visibility public;
         default "";
+    }
+
+    member {
+        name arm_overrides;
+        type Json::Value;
+        visibility public;
+        default Json::Value();
+        description Configuration merged over the arm file in memory;
     }
 
     member {
