@@ -353,7 +353,7 @@ void mtsIntuitiveResearchKitECM::SetGoalHomingArm(void)
     // if simulated, start at zero but insert endoscope so it can be used in cartesian mode
     if (m_simulation_mode == prmSimulationType::KINEMATIC) {
         m_trajectory_j.goal.SetAll(0.0);
-        m_trajectory_j.goal.at(2) = 12.0 * cmn_cm;
+        m_trajectory_j.goal.at(2) = 5.0 * cmn_cm;
         return;
     }
 
