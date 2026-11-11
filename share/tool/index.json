@@ -98,6 +98,14 @@
         }
         ,
         {
+            "model": "400121",
+            "names": ["FINE_TISSUE_FORCEPS"],
+            "description": "Fine Tissue Forceps",
+            "generation": "Classic",
+            "file": "FINE_TISSUE_FORCEPS_400121.json"
+        }
+        ,
+        {
             "model": "400127",
             "names": ["BOWEL_GRASPER"],
             "description": "Bowel Grasper",
@@ -127,6 +135,14 @@
             "description": "Maryland Bipolar Forceps",
             "generation": "Classic",
             "file": "MARYLAND_BIPOLAR_FORCEPS_400172.json"
+        }
+        ,
+        {
+            "model": "400177",
+            "names": ["BOWEL_GRASPER", "5MM_BOWEL_GRASPER"],
+            "description": "5mm Bowel Grasper",
+            "generation": "Classic",
+            "file": "BOWEL_GRASPER_5MM_400177.json"
         }
         ,
         {
@@ -178,11 +194,27 @@
         }
         ,
         {
+            "model": "400190",
+            "names": ["COBRA_GRASPER"],
+            "description": "Cobra Grasper",
+            "generation": "Classic",
+            "file": "COBRA_GRASPER_400190.json"
+        }
+        ,
+        {
             "model": "400194",
             "names": ["MEGA_NEEDLE_DRIVER"],
             "description": "Mega Needle Driver",
             "generation": "Classic",
             "file": "MEGA_NEEDLE_DRIVER_400194.json"
+        }
+        ,
+        {
+            "model": "400203",
+            "names": ["PERICARDIAL_DISSECTOR"],
+            "description": "Pericardial Dissector",
+            "generation": "Classic",
+            "file": "PERICARDIAL_DISSECTOR_400203.json"
         }
         ,
         {
@@ -358,6 +390,14 @@
         }
         ,
         {
+            "model": "420121",
+            "names": ["FINE_TISSUE_FORCEPS"],
+            "description": "Fine Tissue Forceps",
+            "generation": "S",
+            "file": "FINE_TISSUE_FORCEPS_420121.json"
+        }
+        ,
+        {
             "model": "420127",
             "names": ["BOWEL_GRASPER"],
             "description": "Bowel Grasper",
@@ -379,6 +419,14 @@
             "description": "Maryland Bipolar Forceps",
             "generation": "S",
             "file": "MARYLAND_BIPOLAR_FORCEPS_420172.json"
+        }
+        ,
+        {
+            "model": "420177",
+            "names": ["BOWEL_GRASPER", "5MM_BOWEL_GRASPER"],
+            "description": "5mm Bowel Grasper",
+            "generation": "S",
+            "file": "BOWEL_GRASPER_5MM_420177.json"
         }
         ,
         {
@@ -440,6 +488,14 @@
         }
         ,
         {
+            "model": "420190",
+            "names": ["COBRA_GRASPER"],
+            "description": "Cobra Grasper",
+            "generation": "S",
+            "file": "COBRA_GRASPER_420190.json"
+        }
+        ,
+        {
             "model": "420194",
             "version_max": 11,
             "names": ["MEGA_NEEDLE_DRIVER"],
@@ -455,6 +511,14 @@
             "description": "Mega Needle Driver (Geared)",
             "generation": "S",
             "file": "MEGA_NEEDLE_DRIVER_420194_GEARED.json"
+        }
+        ,
+        {
+            "model": "420203",
+            "names": ["PERICARDIAL_DISSECTOR"],
+            "description": "Pericardial Dissector",
+            "generation": "S",
+            "file": "PERICARDIAL_DISSECTOR_420203.json"
         }
         ,
         {
