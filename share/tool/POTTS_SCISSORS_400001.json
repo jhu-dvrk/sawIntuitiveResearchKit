@@ -38,9 +38,9 @@
     }
     ,
     "jaw" : {
-        // for last joint, manual says [0, 30] but we need -40 to allow stronger torque, 30 to open wide (physical limit)
-        "qmin": -0.698132, // -40 degrees - overriding ISI values
-        "qmax":  0.5236,  //   30 degrees - physical limit!
+        // for last joint, reference max is 30 degrees but we need -40 degrees to allow stronger grip torque
+        "qmin": -0.698132, // -40 degrees
+        "qmax":  0.523599, //  30 degrees
         "ftmax": 0.16
     }
     ,

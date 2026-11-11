@@ -38,8 +38,9 @@
     }
     ,
     "jaw" : {
-        "qmin":  0.0,        //  0 degrees
-        "qmax":  0.2617990,  // 12 degrees
+        // for last joint, reference max is 20 degrees, 15 degrees to open wide (physical limit)
+        "qmin":  0.0    , // 0 degrees
+        "qmax":  0.261799, //  15 degrees (physical limit, reference max is 20 degrees)
         "ftmax": 0.19
     }
     ,

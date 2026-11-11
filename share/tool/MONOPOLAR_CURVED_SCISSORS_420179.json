@@ -38,9 +38,9 @@
     }
     ,
     "jaw" : {
-        // for last joint, manual says [0, 30] but we need -20 to allow stronger torque, 80 to open wide
+        // for last joint, reference max is 55 degrees but we need -20 degrees to allow stronger grip torque
         "qmin": -0.349066, // -20 degrees
-        "qmax":  1.39626,  //  80 degrees
+        "qmax":  0.959931, //  55 degrees
         "ftmax": 0.16
     }
     ,
