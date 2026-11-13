@@ -128,6 +128,12 @@ protected:
     void RunManual(void);
     void LeaveManual(void);
 
+    // return to joint limits after engagement or manual positioning
+    bool recover_joint_limits(const std::string & return_state);
+    void EnterRecoveringJointLimits(void);
+    void RunRecoveringJointLimits(void);
+    void LeaveRecoveringJointLimits(void);
+
     void EventHandlerAdapter(const prmEventButton & button);
 
     /*! This should be called to set either m_tool_present or m_tool_configured. */
@@ -208,6 +214,7 @@ protected:
     bool m_tool_configured = false;
     bool m_tool_type_requested = false;
     bool m_return_disks_to_zero = false;
+    std::string m_joint_limit_return_state;
     struct {
         mtsFunctionWrite tool_type;
         mtsFunctionVoid tool_type_request;
