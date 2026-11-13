@@ -686,6 +686,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     mArmState.AddState("ENGAGING_TOOL");
     mArmState.AddState("TOOL_ENGAGED");
     mArmState.AddState("MANUAL");
+    mArmState.AddState("RECOVERING_JOINT_LIMITS");
 
     // after arm homed
     mArmState.SetEnterCallback("HOMED",
@@ -720,6 +721,15 @@ void mtsIntuitiveResearchKitPSM::Init(void)
                              this);
     mArmState.SetLeaveCallback("MANUAL",
                                &mtsIntuitiveResearchKitPSM::LeaveManual,
+                               this);
+    mArmState.SetEnterCallback("RECOVERING_JOINT_LIMITS",
+                               &mtsIntuitiveResearchKitPSM::EnterRecoveringJointLimits,
+                               this);
+    mArmState.SetRunCallback("RECOVERING_JOINT_LIMITS",
+                             &mtsIntuitiveResearchKitPSM::RunRecoveringJointLimits,
+                             this);
+    mArmState.SetLeaveCallback("RECOVERING_JOINT_LIMITS",
+                               &mtsIntuitiveResearchKitPSM::LeaveRecoveringJointLimits,
                                this);
 
     // initialize trajectory data, last 4 tweaked for engage procedures
@@ -798,6 +808,9 @@ void mtsIntuitiveResearchKitPSM::Init(void)
 
 bool mtsIntuitiveResearchKitPSM::is_homed(void) const
 {
+    if (mArmState.CurrentState() == "RECOVERING_JOINT_LIMITS") {
+        return false;
+    }
     if (Tool.IsPresent || Tool.IsEmulated) {
         return m_powered && m_encoders_biased_from_pots && Adapter.IsEngaged && Tool.IsEngaged;
     }
@@ -876,6 +889,9 @@ void mtsIntuitiveResearchKitPSM::SetGoalHomingArm(void)
 void mtsIntuitiveResearchKitPSM::EnterHomed(void)
 {
     m_return_disks_to_zero = false;
+    if (is_homed() && recover_joint_limits("HOMED")) {
+        return;
+    }
     mtsIntuitiveResearchKitArm::EnterHomed();
 
     // event to propagate tool type based on configuration file
@@ -1069,8 +1085,8 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         } else {
             // keep first two joint values as is
             m_trajectory_j.goal.Ref(2, 0).Assign(m_pid_setpoint_js.Position().Ref(2, 0));
-            // sterile adapter should be raised up
-            m_trajectory_j.goal[2] = 0.0;
+            // raise the sterile adapter to the configured insertion limit
+            m_trajectory_j.goal[2] = m_configuration_js.PositionMin().at(2);
             // set last 4 to -170.0
             m_trajectory_j.goal.Ref(4, 3).SetAll(-mtsIntuitiveResearchKit::PSM::AdapterEngageRange);
         }
@@ -1196,6 +1212,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
                                        << ", depth threshold is " << depth << std::endl;
             m_arm_interface->SendStatus(message);
             mArmState.SetCurrentState("TOOL_ENGAGED");
+            return;
         }
 
         // keep first three joint values as is
@@ -1288,6 +1305,9 @@ void mtsIntuitiveResearchKitPSM::EnterToolEngaged(void)
     m_jaw_setpoint_js.Position().SetSize(1);
     m_jaw_setpoint_js.Velocity().SetSize(0);
     m_jaw_setpoint_js.Effort().SetSize(1);
+
+    get_robot_data();
+    recover_joint_limits("TOOL_ENGAGED");
 }
 
 void mtsIntuitiveResearchKitPSM::TransitionToolEngaged(void)
@@ -1316,6 +1336,81 @@ void mtsIntuitiveResearchKitPSM::LeaveManual(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, false);
     hold();
+}
+
+bool mtsIntuitiveResearchKitPSM::recover_joint_limits(const std::string & return_state)
+{
+    vctDoubleVec goal(m_pid_setpoint_js.Position());
+    if (is_cartesian_ready()) {
+        vctDoubleVec kin_goal(m_kin_setpoint_js.Position());
+        clip_jp(kin_goal);
+        ToJointsPID(kin_goal, goal);
+        goal.at(6) = clip_jaw_jp(goal.at(6));
+    } else {
+        clip_jp(goal);
+    }
+    if ((goal - m_pid_setpoint_js.Position()).LinfNorm() <= 1.0e-9) {
+        return false;
+    }
+
+    m_trajectory_j.goal.Assign(goal);
+    m_joint_limit_return_state = return_state;
+    mArmState.SetCurrentState("RECOVERING_JOINT_LIMITS");
+    return true;
+}
+
+void mtsIntuitiveResearchKitPSM::EnterRecoveringJointLimits(void)
+{
+    UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
+    set_LED_pattern(mtsIntuitiveResearchKit::Blue200,
+                    mtsIntuitiveResearchKit::Green200,
+                    false, true);
+    // The initial position can be outside the limits.  Keep tracking checks
+    // enabled, but do not clip the intermediate points of this trajectory.
+    PID.enforce_position_limits(false);
+    mtsIntuitiveResearchKitArm::servo_jp_internal(m_pid_setpoint_js.Position(), vctDoubleVec());
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::JOINT_SPACE,
+                           mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE);
+    m_trajectory_j.goal_v.Zeros();
+    PID.enable_joints(vctBoolVec(number_of_joints(), true));
+    PID.enable(true);
+    m_feed_forward_jf_param.ForceTorque().Zeros();
+    control_move_jp_on_start();
+}
+
+void mtsIntuitiveResearchKitPSM::RunRecoveringJointLimits(void)
+{
+    m_trajectory_j.Reflexxes.Evaluate(m_servo_jp,
+                                      m_servo_jv,
+                                      m_trajectory_j.goal,
+                                      m_trajectory_j.goal_v);
+    // Use PID joint coordinates, including coupling and the jaw.  Recovery is
+    // not homed, so the base method does not clip the trajectory.
+    mtsIntuitiveResearchKitArm::servo_jp_internal(m_servo_jp, m_servo_jv);
+    switch (m_trajectory_j.Reflexxes.ResultValue()) {
+    case robReflexxes::Reflexxes_WORKING:
+        break;
+    case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
+        // Wait for the PID to consume the final setpoint before normal control
+        // resumes; otherwise EnterHomed could clip the preceding setpoint.
+        if ((m_pid_setpoint_js.Position() - m_trajectory_j.goal).LinfNorm() <= 1.0e-9) {
+            control_move_jp_on_stop(true);
+            const std::string return_state = m_joint_limit_return_state;
+            mArmState.SetCurrentState(return_state);
+        }
+        break;
+    default:
+        m_arm_interface->SendError(this->GetName() + ": error while returning to joint limits");
+        SetDesiredState("FAULT");
+        break;
+    }
+}
+
+void mtsIntuitiveResearchKitPSM::LeaveRecoveringJointLimits(void)
+{
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::UNDEFINED_SPACE,
+                           mtsIntuitiveResearchKitControlTypes::UNDEFINED_MODE);
+    PID.enforce_position_limits(true);
 }
 
 double mtsIntuitiveResearchKitPSM::clip_jaw_jp(double jp)
@@ -1700,6 +1795,11 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
         default:
             break;
         }
+        if (mArmState.CurrentState() == "RECOVERING_JOINT_LIMITS") {
+            // The tool configuration changed the coupling and joint limits.
+            // Stop the old recovery before entering tool engagement.
+            mArmState.SetCurrentState("HOMED");
+        }
         break;
     case prmEventButton::RELEASED:
         {
@@ -1708,7 +1808,8 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
                 && Adapter.IsEngaged && (m_simulation_mode != prmSimulationType::KINEMATIC)
                 && ((current_state == "TOOL_ENGAGED") || (current_state == "ENGAGING_TOOL")
                     || (current_state == "HOMED") || (current_state == "MANUAL")
-                    || (current_state == "ENGAGING_ADAPTER"));
+                    || (current_state == "ENGAGING_ADAPTER")
+                    || (current_state == "RECOVERING_JOINT_LIMITS"));
             if (m_tool_present && m_trajectory_j.is_active) {
                 control_move_jp_on_stop(false);
             }
@@ -1735,7 +1836,8 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
                     mArmState.SetCurrentState("ENGAGING_ADAPTER");
                 }
             } else if ((mArmState.CurrentState() == "ENGAGING_TOOL")
-                       || (mArmState.CurrentState() == "TOOL_ENGAGED")) {
+                       || (mArmState.CurrentState() == "TOOL_ENGAGED")
+                       || (mArmState.CurrentState() == "RECOVERING_JOINT_LIMITS")) {
                 mArmState.SetCurrentState("HOMED");
             }
         }
@@ -1755,6 +1857,9 @@ void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton & 
     case prmEventButton::PRESSED:
         if (ArmIsReady("Clutch", mtsIntuitiveResearchKitControlTypes::JOINT_SPACE)) {
             ClutchEvents.ManipClutchPreviousState = mArmState.CurrentState();
+            if (mArmState.CurrentState() == "RECOVERING_JOINT_LIMITS") {
+                ClutchEvents.ManipClutchPreviousState = m_joint_limit_return_state;
+            }
             PID.enabled(ClutchEvents.PIDEnabledPreviousState);
             mArmState.SetCurrentState("MANUAL");
             set_LED_pattern(mtsIntuitiveResearchKit::Blue200,
@@ -1766,6 +1871,14 @@ void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton & 
         break;
     case prmEventButton::RELEASED:
         if (mArmState.CurrentState() == "MANUAL") {
+            get_robot_data();
+            if (ClutchEvents.PIDEnabledPreviousState
+                && is_homed()
+                && ((ClutchEvents.ManipClutchPreviousState == "HOMED")
+                    || (ClutchEvents.ManipClutchPreviousState == "TOOL_ENGAGED"))
+                && recover_joint_limits(ClutchEvents.ManipClutchPreviousState)) {
+                return;
+            }
             // go back to state before clutching
             mArmState.SetCurrentState(ClutchEvents.ManipClutchPreviousState);
             PID.enable(ClutchEvents.PIDEnabledPreviousState);
