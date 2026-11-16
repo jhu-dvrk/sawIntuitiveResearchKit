@@ -1,0 +1,13 @@
+{
+    "device": {
+        "name": "PCsensor FootSwitch Keyboard",
+        "vendor_id": "3553",
+        "product_id": "b001"
+    },
+    "exclusive": true,
+    "buttons": [
+        {"key": "KEY_A", "interface": "Clutch"},
+        {"key": "KEY_B", "interface": "Camera"},
+        {"key": "KEY_C", "interface": "OperatorPresent"}
+    ]
+}

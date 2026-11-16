@@ -1,5 +1,5 @@
 {
   "name": "sawIntuitiveResearchKitCore",
-  "dependencies": ["cisst", "sawKeyboardAll", "sawTextToSpeechAll",
+  "dependencies": ["cisst", "sawTextToSpeechAll",
                    "sawControllersCore", "sawRobotIO1394Core"]
 }

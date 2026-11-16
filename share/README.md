@@ -71,6 +71,30 @@ be used with the `dvrk_robot` ROS package to start RViz
 with the proper CAD models.  All shared system configuration files
 are in `system`.
 
+System `arms[].base_frame` applies to native and derived dVRK arms. For generic
+arms (`MTM_GENERIC`, `PSM_GENERIC`, `ECM_GENERIC`), configure the frame in the
+component that owns the arm or in its external controller. The system-level
+field is ignored for those arms.
+
+For Haply, put the transform in `devices[].base_frame` in the component JSON.
+For example, `system/system-MTMR-Haply-PSM1_KIN_SIMULATED-Teleop.json` selects
+`system/sawHaplyService-JHU-Imerse-Right.json`; the MTMR frame belongs there.
+The simulated native PSM's frame remains in the system configuration.
+
+The single-Haply/simulated-PSM profile uses the VerseGrip's A/B buttons for jaw
+control: hold A to close, hold B to open, and release both to hold the current
+opening. Pressing both also holds the opening. The emulated gripper range is
+0 to 1, matching `gripper_scaling` in the teleop configuration; jaw following is
+enabled with `ignore_jaw: false`.
+
+Console inputs come from a separate `mtsEvdev` component named `Pedals`, loaded
+from `sawGenericInput` at runtime. Its configuration is
+`system/sawGenericInput-dVRK-console.json`, which selects the PCsensor three-pedal
+device: `KEY_A` supplies clutch, `KEY_B` camera, and `KEY_C` operator presence.
+Hold the operator-present pedal to teleoperate. Adjust the evdev device selector
+and key codes for another input device. This keeps the Haply A/B buttons
+available for the jaws and C available for the grip's orientation-reset gesture.
+
 ## sawSocketStreamer and sawOpenIGTLink
 
 Some examples of configuration files and instructions for
