@@ -19,11 +19,12 @@ http://www.cisst.org/cisst/license.txt.
 // system include
 
 #include <Eigen/QR>
+#include <chrono>
+#include <filesystem>
 #include <iostream>
 #include <time.h>
 
 // cisst
-#include <cisstCommon/cmnPath.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmConfigurationJoint.h>
@@ -37,6 +38,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/prmActuatorJointCouplingCheck.h>
 #include <sawIntuitiveResearchKit/robManipulator.h>
 
+using namespace std::chrono_literals;
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitArm, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
 
@@ -187,7 +189,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
 
     m_safe_for_cartesian_control_counter = 0;
     mArmNotReadyCounter = 0;
-    mArmNotReadyTimeLastMessage = 0.0;
+    mArmNotReadyTimeLastMessage = std::chrono::steady_clock::time_point::min();
 
     // initialize trajectory data
     m_servo_jp = Eigen::VectorXd::Zero(number_of_joints());
@@ -584,15 +586,15 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
         }
 
         // extract path of main json config file to search other files relative to it
-        cmnPath configPath(cmnPath::GetWorkingDirectory());
+        cmnSearchPath configPath(std::filesystem::current_path());
         std::string fullname = configPath.Find(filename);
         std::string configDir = fullname.substr(0, fullname.find_last_of('/'));
         // for user files first
-        configPath.Add(configDir, cmnPath::TAIL);
+        configPath.Add(configDir, cmnSearchPath::Position::TAIL);
         // for standard files using io/xyz.json, arm/xyz.json
-        configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_CONFIG_DIR), cmnPath::TAIL);
+        configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_CONFIG_DIR), cmnSearchPath::Position::TAIL);
         // for tool definition files
-        configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_CONFIG_DIR) + "/tool", cmnPath::TAIL);
+        configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_CONFIG_DIR) + "/tool", cmnSearchPath::Position::TAIL);
 
         // arm specific configuration
         PreConfigure(jsonConfig, configPath, filename);
@@ -1173,14 +1175,12 @@ void mtsIntuitiveResearchKitArm::EnterPowering(void)
         return;
     }
 
-    const double currentTime = this->StateTable.GetTic();
-
     // in case we still have power but brakes are not engaged
     if (has_brakes()) {
         IO.BrakeEngage();
     }
 
-    m_homing_timer = currentTime;
+    m_homing_timer = StateTable.GetTic();
     // make sure the PID is not sending currents
     PID.enable(false);
     // pre-load the boards with zero current
@@ -1197,7 +1197,6 @@ void mtsIntuitiveResearchKitArm::TransitionPowering(void)
         return;
     }
 
-    const double currentTime = this->StateTable.GetTic();
 
     // check power status
     Eigen::ArrayX<bool> actuatorAmplifiersStatus(number_of_joints());
@@ -1210,7 +1209,8 @@ void mtsIntuitiveResearchKitArm::TransitionPowering(void)
         m_arm_interface->SendStatus(this->GetName() + ": power on");
         mArmState.SetCurrentState("ENABLED");
     } else {
-        if ((currentTime - m_homing_timer) > 2.0 * mtsIntuitiveResearchKit::TimeToPower) {
+        const auto currentTime = StateTable.GetTic();
+        if ((currentTime - m_homing_timer) > 2 * mtsIntuitiveResearchKit::TimeToPower) {
             m_arm_interface->SendError(this->GetName() + ": failed to enable power");
             SetDesiredState("FAULT");
         }
@@ -1270,7 +1270,6 @@ void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
     }
 
     // request bias encoder
-    const double currentTime = this->StateTable.GetTic();
     const int nb_samples = 1970; // birth year, state table contains 1999 elements so anything under that would work
     if (m_re_home
         || m_calibration_mode
@@ -1282,7 +1281,7 @@ void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
         IO.BiasEncoder(-nb_samples);
     }
     m_homing_bias_encoder_requested = true;
-    m_homing_timer = currentTime;
+    m_homing_timer = StateTable.GetTic();
 }
 
 void mtsIntuitiveResearchKitArm::TransitionCalibratingEncodersFromPots(void)
@@ -1293,8 +1292,8 @@ void mtsIntuitiveResearchKitArm::TransitionCalibratingEncodersFromPots(void)
         return;
     }
 
-    const double currentTime = this->StateTable.GetTic();
-    const double timeToBias = 30.0 * cmn_s; // large timeout
+    const auto currentTime = StateTable.GetTic();
+    const std::chrono::steady_clock::duration timeToBias = 30s; // large timeout
     if ((currentTime - m_homing_timer) > timeToBias) {
         m_homing_bias_encoder_requested = false;
         m_arm_interface->SendError(this->GetName() + ": failed to bias encoders (timeout)");
@@ -1349,7 +1348,7 @@ void mtsIntuitiveResearchKitArm::EnterHoming(void)
     m_servo_jp = m_pid_setpoint_js.Position();
     m_servo_jv = m_pid_measured_js.Velocity();
     m_trajectory_j.goal_v.setZero();
-    m_trajectory_j.end_time = 0.0;
+    m_trajectory_j.end_time = std::chrono::steady_clock::time_point::min();
     SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::JOINT_SPACE,
                            mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE);
 
@@ -1361,8 +1360,7 @@ void mtsIntuitiveResearchKitArm::EnterHoming(void)
 
 void mtsIntuitiveResearchKitArm::RunHoming(void)
 {
-    static const double extraTime = 2.0 * cmn_s;
-    const double currentTime = this->StateTable.GetTic();
+    static const std::chrono::steady_clock::duration extraTime = 2s;
 
     m_trajectory_j.Reflexxes.Evaluate(m_servo_jp,
                                       m_servo_jv,
@@ -1377,9 +1375,9 @@ void mtsIntuitiveResearchKitArm::RunHoming(void)
 
     case robReflexxes::ResultType::WORKING:
         // if this is the first evaluation, we can't calculate expected completion time
-        if (m_trajectory_j.end_time == 0.0) {
-            m_trajectory_j.end_time = currentTime + m_trajectory_j.Reflexxes.Duration();
-            m_homing_timer = m_trajectory_j.end_time;
+        if (m_trajectory_j.end_time == std::chrono::steady_clock::time_point::min()) {
+            m_homing_timer = StateTable.GetTic() + durationFromSeconds<std::chrono::steady_clock>(m_trajectory_j.Reflexxes.Duration());
+            m_trajectory_j.end_time = m_homing_timer;
         }
         break;
 
@@ -1393,7 +1391,7 @@ void mtsIntuitiveResearchKitArm::RunHoming(void)
             mArmState.SetCurrentState("HOMED");
         } else {
             // time out
-            if (currentTime > m_homing_timer + extraTime) {
+            if (StateTable.GetTic() > m_homing_timer + extraTime) {
                 CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHoming: unable to reach home position, error in degrees is "
                                            << m_trajectory_j.goal_error * cmn180_PI << std::endl;
                 m_arm_interface->SendError(this->GetName() + ": unable to reach home position during calibration on pots");
@@ -1501,13 +1499,12 @@ void mtsIntuitiveResearchKitArm::control_move_jp(void)
     servo_jp_internal(m_servo_jp, m_servo_jv);
 
     const robReflexxes::ResultType trajectoryResult = m_trajectory_j.Reflexxes.ResultValue();
-    const double currentTime = this->StateTable.GetTic();
 
     switch (trajectoryResult) {
     case robReflexxes::ResultType::WORKING:
         // if this is the first evaluation, we can't calculate expected completion time
-        if (m_trajectory_j.end_time == 0.0) {
-            m_trajectory_j.end_time = currentTime + m_trajectory_j.Reflexxes.Duration();
+        if (m_trajectory_j.end_time == std::chrono::steady_clock::time_point::min()) {
+            m_trajectory_j.end_time = StateTable.GetTic() + durationFromSeconds<std::chrono::steady_clock>(m_trajectory_j.Reflexxes.Duration());
         }
         break;
     case robReflexxes::ResultType::FINAL_STATE_REACHED:
@@ -1601,12 +1598,12 @@ bool mtsIntuitiveResearchKitArm::ArmIsReady(const std::string & methodName,
             || ((space == mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE)
                 && is_cartesian_ready())) {
             mArmNotReadyCounter = 0;
-            mArmNotReadyTimeLastMessage = 0.0;
+            mArmNotReadyTimeLastMessage = std::chrono::steady_clock::time_point::min();
             return true;
         }
     }
     // throttle messages in time
-    if ((StateTable.GetTic() - mArmNotReadyTimeLastMessage) > 2.0 * cmn_s) {
+    if ((StateTable.GetTic() - mArmNotReadyTimeLastMessage) > 2s) {
         std::stringstream message;
         message << this->GetName() << ": " << methodName << ", arm not ready";
         if (mArmNotReadyCounter > 1) {
@@ -1827,7 +1824,7 @@ void mtsIntuitiveResearchKitArm::control_move_jp_on_start(void)
 {
     UpdateIsBusy(true);
     m_trajectory_j.is_active = true;
-    m_trajectory_j.end_time = 0.0;
+    m_trajectory_j.end_time = std::chrono::steady_clock::time_point::min();
 }
 
 void mtsIntuitiveResearchKitArm::control_move_jp_on_stop(const bool goal_reached)
@@ -1915,7 +1912,7 @@ void mtsIntuitiveResearchKitArm::servo_jf_internal(const Eigen::VectorXd& jf)
 {
     // convert to cisstParameterTypes
     m_servo_jf_param.SetForceTorque(jf);
-    m_servo_jf_param.SetTimestamp(StateTable.GetTic());
+    m_servo_jf_param.SetTimestamp(durationToSeconds(StateTable.GetTic().time_since_epoch()));
     if (m_has_coupling) {
         m_servo_jf_param.ForceTorque() = m_coupling.JointToActuatorEffort() * m_servo_jf_param.ForceTorque();
     }
@@ -1935,7 +1932,7 @@ void mtsIntuitiveResearchKitArm::servo_jp_internal(const Eigen::VectorXd& jp,
 
     // assign velocities
     m_servo_jp_param.Velocity() = jv;
-    m_servo_jp_param.SetTimestamp(StateTable.GetTic());
+    m_servo_jp_param.SetTimestamp(durationToSeconds(StateTable.GetTic().time_since_epoch()));
     if (m_has_coupling) {
         m_servo_jp_param.Goal() = m_coupling.JointToActuatorPosition() * m_servo_jp_param.Goal();
         if (m_servo_jp_param.Velocity().size() != 0) {
@@ -1965,7 +1962,7 @@ void mtsIntuitiveResearchKitArm::apply_feed_forward(void)
         jf = m_coupling.JointToActuatorEffort() * jf;
     }
 
-    m_feed_forward_jf_param.SetTimestamp(StateTable.GetTic());
+    m_feed_forward_jf_param.SetTimestamp(durationToSeconds(StateTable.GetTic().time_since_epoch()));
     PID.feed_forward_servo_jf(m_feed_forward_jf_param);
 }
 
@@ -1983,7 +1980,7 @@ void mtsIntuitiveResearchKitArm::feed_forward_jf_internal(const Eigen::VectorXd&
         m_feed_forward_jf_param.ForceTorque() += actuator_efforts;
     }
 
-    m_feed_forward_jf_param.SetTimestamp(StateTable.GetTic());
+    m_feed_forward_jf_param.SetTimestamp(durationToSeconds(StateTable.GetTic().time_since_epoch()));
     PID.feed_forward_servo_jf(m_feed_forward_jf_param);
 }
 

@@ -17,12 +17,12 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 // system include
+#include <filesystem>
 #include <iostream>
 #include <time.h>
 
 // cisst
 #include <cisstCommon/cmnJointType.h>
-#include <cisstCommon/cmnPath.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmEventButton.h>
@@ -216,7 +216,7 @@ void mtsIntuitiveResearchKitPSM::set_generation(const dvrk::generation generatio
     }
 }
 
-void mtsIntuitiveResearchKitPSM::load_tool_list(const cmnPath & path,
+void mtsIntuitiveResearchKitPSM::load_tool_list(const cmnSearchPath & path,
                                                 const std::string & indexFile)
 {
     m_tool_list.Load(path, indexFile);
@@ -238,7 +238,7 @@ void mtsIntuitiveResearchKitPSM::tool_full_description(const size_t & index, std
 }
 
 void mtsIntuitiveResearchKitPSM::PostConfigure(const Json::Value & jsonConfig,
-                                               const cmnPath & configPath,
+                                               const cmnSearchPath & configPath,
                                                const std::string & filename)
 {
     // joint configuration when instrument is not present. First make sure
@@ -317,7 +317,7 @@ void mtsIntuitiveResearchKitPSM::PostConfigure(const Json::Value & jsonConfig,
 }
 
 void mtsIntuitiveResearchKitPSM::ConfigureGC(const Json::Value & jsonConfig,
-                                             const cmnPath & configPath,
+                                             const cmnSearchPath & configPath,
                                              const std::string & filename)
 {
     std::string physical_dh_name;
@@ -354,17 +354,17 @@ bool mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
     std::string absolute_tool_path;
 
     // try to locate the file based on tool type
-    if (cmnPath::Exists(filename)) {
+    if (std::filesystem::exists(filename)) {
         absolute_tool_path = filename;
     } else {
         // construct path using working directory and share/arm
-        cmnPath path(cmnPath::GetWorkingDirectory());
+        cmnSearchPath path = std::filesystem::current_path();
         // find the file in tool
-        path.Add(std::string(sawIntuitiveResearchKit_SOURCE_CONFIG_DIR) + "/tool", cmnPath::TAIL);
+        path.Add(std::string(sawIntuitiveResearchKit_SOURCE_CONFIG_DIR) + "/tool", cmnSearchPath::Position::TAIL);
         // find file if specified as share/<system>/...
-        path.Add(std::string(sawIntuitiveResearchKit_SOURCE_CONFIG_DIR), cmnPath::TAIL);
+        path.Add(std::string(sawIntuitiveResearchKit_SOURCE_CONFIG_DIR), cmnSearchPath::Position::TAIL);
         // finally, default installation directory
-        path.Add(mtsIntuitiveResearchKit::DefaultInstallationDirectory + "/tool", cmnPath::TAIL);
+        path.Add(mtsIntuitiveResearchKit::DefaultInstallationDirectory + "/tool", cmnSearchPath::Position::TAIL);
 
         absolute_tool_path = path.Find(filename);
         // still not found, try to add suffix to search again
@@ -1074,8 +1074,6 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         return;
     }
 
-    const double currentTime = this->StateTable.GetTic();
-
     if ((EngagingStage == 1)
         || (m_return_disks_to_zero && (EngagingStage == LastEngagingStage))) {
         const bool return_disks_to_zero = m_return_disks_to_zero;
@@ -1124,8 +1122,9 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
 
     case robReflexxes::ResultType::WORKING:
         // if this is the first evaluation, we can't calculate expected completion time
-        if (m_trajectory_j.end_time == 0.0) {
-            m_trajectory_j.end_time = currentTime + m_trajectory_j.Reflexxes.Duration();
+        if (m_trajectory_j.end_time == std::chrono::steady_clock::time_point::min()) {
+            const auto duration = durationFromSeconds<std::chrono::steady_clock>(m_trajectory_j.Reflexxes.Duration());
+            m_trajectory_j.end_time = StateTable.GetTic() + duration;
             m_homing_timer = m_trajectory_j.end_time;
         }
         break;
@@ -1148,7 +1147,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
                 } else {
                     m_trajectory_j.goal.segment(3, 4).fill(0.0); // back to zero position
                 }
-                m_trajectory_j.end_time = 0.0;
+                m_trajectory_j.end_time = std::chrono::steady_clock::time_point::min();
                 std::stringstream message;
                 message << this->GetName() << ": engaging adapter " << EngagingStage - 1 << " of " << LastEngagingStage - 1;
                 m_arm_interface->SendStatus(message.str());
@@ -1189,8 +1188,6 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         mArmState.SetCurrentState("TOOL_ENGAGED");
         return;
     }
-
-    const double currentTime = this->StateTable.GetTic();
 
     if (EngagingStage == 1) {
         // configure PID to fail in case of tracking error
@@ -1254,8 +1251,9 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
 
     case robReflexxes::ResultType::WORKING:
         // if this is the first evaluation, we can't calculate expected completion time
-        if (m_trajectory_j.end_time == 0.0) {
-            m_trajectory_j.end_time = currentTime + m_trajectory_j.Reflexxes.Duration();
+        if (m_trajectory_j.end_time == std::chrono::steady_clock::time_point::min()) {
+            const auto duration = durationFromSeconds<std::chrono::steady_clock>(m_trajectory_j.Reflexxes.Duration());
+            m_trajectory_j.end_time = StateTable.GetTic() + duration;
             m_homing_timer = m_trajectory_j.end_time;
         }
         break;
@@ -1278,7 +1276,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
                 } else {
                     m_trajectory_j.goal.segment(3, 4).setZero(); // back to zero position
                 }
-                m_trajectory_j.end_time = 0.0;
+                m_trajectory_j.end_time = std::chrono::steady_clock::time_point::min();
                 std::stringstream message;
                 message << this->GetName() << ": engaging tool " << EngagingStage - 1 << " of " << LastEngagingStage - 1;
                 m_arm_interface->SendStatus(message.str());
@@ -1443,7 +1441,7 @@ void mtsIntuitiveResearchKitPSM::servo_jp_internal(const Eigen::VectorXd& jp,
         CMN_ASSERT(!m_has_coupling);
         m_servo_jp_param.Goal() = jp;
         m_servo_jp_param.Velocity() = jv;
-        m_servo_jp_param.SetTimestamp(StateTable.GetTic());
+        m_servo_jp_param.SetTimestamp(getTimestamp(StateTable.GetTic()));
         PID.servo_jp(m_servo_jp_param);
         apply_feed_forward();
         return;
@@ -1475,7 +1473,7 @@ void mtsIntuitiveResearchKitPSM::servo_jp_internal(const Eigen::VectorXd& jp,
     if (jv_size != 0) {
         m_servo_jp_param.Velocity()(6) = 0.0;
     }
-    m_servo_jp_param.SetTimestamp(StateTable.GetTic());
+    m_servo_jp_param.SetTimestamp(getTimestamp(StateTable.GetTic()));
     if (m_has_coupling) {
         m_servo_jp_param.Goal() = m_coupling.JointToActuatorPosition() * m_servo_jp_param.Goal();
         if (jv_size != 0) {
@@ -1539,7 +1537,7 @@ void mtsIntuitiveResearchKitPSM::servo_jf_internal(const Eigen::VectorXd& newEff
 
     // convert to cisstParameterTypes
     m_servo_jf_param.SetForceTorque(torqueDesired);
-    m_servo_jf_param.SetTimestamp(StateTable.GetTic());
+    m_servo_jf_param.SetTimestamp(getTimestamp(StateTable.GetTic()));
     if (m_has_coupling) {
         m_servo_jf_param.ForceTorque() = m_coupling.JointToActuatorEffort() * m_servo_jf_param.ForceTorque();
     }
@@ -1575,8 +1573,8 @@ void mtsIntuitiveResearchKitPSM::feed_forward_jf_internal(const Eigen::VectorXd&
 
     // convert to cisstParameterTypes
     m_servo_jf_param.SetForceTorque(m_feed_forward_jf_param.ForceTorque());
-    m_servo_jf_param.SetTimestamp(StateTable.GetTic());
-    m_feed_forward_jf_param.SetTimestamp(StateTable.GetTic());
+    m_servo_jf_param.SetTimestamp(getTimestamp(StateTable.GetTic()));
+    m_feed_forward_jf_param.SetTimestamp(getTimestamp(StateTable.GetTic()));
     PID.feed_forward_servo_jf(m_feed_forward_jf_param);
 }
 

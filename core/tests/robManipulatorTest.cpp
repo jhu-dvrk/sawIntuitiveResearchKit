@@ -18,10 +18,11 @@ http://www.cisst.org/cisst/license.txt.
 
 #include "robManipulatorTest.h"
 
-#include <cisstCommon/cmnPath.h>
+#include <cisstCommon/cmnSearchPath.h>
 #include <cisstCommon/cmnUnits.h>
 
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitConfig.h>
+#include "sawIntuitiveResearchKit/robManipulatorECM.h"
 
 
 class ManipulatorTestDataECM: public ManipulatorTestData {
@@ -30,7 +31,6 @@ public:
     {
         Name = "ECM";
         NumberOfLinks = 4;
-        Manipulator = std::make_unique<robManipulatorECM>();
     };
 
     void CheckIKResults(void) {
@@ -69,38 +69,37 @@ public:
     {
         Name = "MTM";
         NumberOfLinks = 7;
-        Manipulator = std::make_unique<robManipulatorECM>();
     };
 
     void CheckIKResults(void) {
         Eigen::VectorXd jointErrors = SolutionJoints - ActualJoints;
         Eigen::VectorXd jointErrorsAbsolute = jointErrors.cwiseAbs();
 
-        std::string details =
-            "Actual joints: " + (SolutionJoints * cmn180_PI).ToString() + "\n"
-            "Solution     : " + (ActualJoints * cmn180_PI).ToString() + "\n"
-            "Error        : " + (jointErrors * cmn180_PI).ToString() + "\n";
+        std::stringstream details;
+        details << "Actual joints: " << (SolutionJoints * cmn180_PI).transpose() << "\n"
+                   "Solution     : " << (ActualJoints * cmn180_PI).transpose()   << "\n"
+                   "Error        : " << (jointErrors * cmn180_PI).transpose()    << "\n";
+        const std::string detail_str = details.str();
 
         // compare joint values
-        CPPUNIT_ASSERT_MESSAGE("Joint 0 solution is incorrect\n" + details,
+        CPPUNIT_ASSERT_MESSAGE("Joint 0 solution is incorrect\n" + detail_str,
                                (jointErrorsAbsolute[0] < 0.001 * cmnPI_180)); // asinl is not that precise
 
-        CPPUNIT_ASSERT_MESSAGE("Joint 1 solution is incorrect\n" + details,
+        CPPUNIT_ASSERT_MESSAGE("Joint 1 solution is incorrect\n" + detail_str,
                                (jointErrorsAbsolute[1] < 0.001 * cmnPI_180)); // asinl
 
-        CPPUNIT_ASSERT_MESSAGE("Joint 2 solution is incorrect\n" + details,
+        CPPUNIT_ASSERT_MESSAGE("Joint 2 solution is incorrect\n" + detail_str,
                                (jointErrorsAbsolute[2] < 0.001 * cmnPI_180)); // asinl
 
         // translation
-        Eigen::Vector3d positionTranslationError = ActualPose.translation() - SolutionPose.translation();
+        const Eigen::Vector3d positionTranslationError = ActualPose.translation() - SolutionPose.translation();
         CPPUNIT_ASSERT_MESSAGE("Cartesian translation error is too high",
                                positionTranslationError.norm() < 0.005 * cmn_mm);
 
         // rotation
-        vctMatRot3 positionRotationError;
-        ActualPose.Rotation().ApplyInverseTo(SolutionPose.Rotation(), positionRotationError);
-        CPPUNIT_ASSERT_MESSAGE("Cartesian rotation error is too high",
-                               vctAxAnRot3(positionRotationError).Angle() < 0.0000001 * cmn180_PI);
+        const Eigen::Matrix3d positionRotationError = ActualPose.inverse() * SolutionPose.rotation();
+        const double rotation_error = Eigen::AngleAxisd(positionRotationError).angle();
+        CPPUNIT_ASSERT_MESSAGE("Cartesian rotation error is too high", rotation_error < 0.0000001 * cmn180_PI);
     }
 };
 
@@ -109,8 +108,8 @@ void robManipulatorTest::SetupTestData(ManipulatorTestData & data,
                                        const std::string & filename)
 {
     // find the file
-    cmnPath path;
-    path.Add(std::string(sawIntuitiveResearchKit_SOURCE_CONFIG_DIR) + "/kinematic", cmnPath::TAIL);
+    cmnSearchPath path;
+    path.Add(std::string(sawIntuitiveResearchKit_SOURCE_CONFIG_DIR) + "/kinematic", cmnSearchPath::Position::TAIL);
     const std::string configFile = path.Find(filename);
     CPPUNIT_ASSERT_MESSAGE("Can't find full path for " + filename,
                            configFile != std::string(""));
@@ -126,44 +125,46 @@ void robManipulatorTest::SetupTestData(ManipulatorTestData & data,
 
     // look for DH in file
     const Json::Value jsonDH = jsonConfig["DH"];
-    CPPUNIT_ASSERT_MESSAGE("Can't find \"DH\" in " + configFile,
-                           !jsonDH.isNull());
+    CPPUNIT_ASSERT_MESSAGE("Can't find \"DH\" in " + configFile, !jsonDH.isNull());
 
-    // try to load the DH parameters
-    CPPUNIT_ASSERT_MESSAGE("Failed while loading from JSON \"DH\" value in " + configFile,
-                           data.Manipulator->LoadRobot(jsonDH) == robManipulator::ESUCCESS);
+    const auto kdl_chain = loadKDLChain(jsonDH);
+    CPPUNIT_ASSERT_MESSAGE("Failed to load kinematic chain from " + configFile, kdl_chain.has_value());
+
+    const auto joint_config = loadJointConfig(jsonDH);
+    CPPUNIT_ASSERT_MESSAGE("Failed to load joint config from " + configFile, joint_config.has_value());
+    data.Manipulator = std::make_unique<robManipulatorECM>(joint_config.value(), kdl_chain.value());
 
     // verify number of links in robManipulator
     CPPUNIT_ASSERT_EQUAL_MESSAGE("Expected number of links for " + filename,
-                                 data.NumberOfLinks, data.Manipulator->links.size());
+                                 (int)data.NumberOfLinks, data.Manipulator->numJoints());
 
     // allocate test data
-    data.LowerLimits.SetSize(data.NumberOfLinks);
-    data.UpperLimits.SetSize(data.NumberOfLinks);
-    data.Manipulator->GetJointLimits(data.LowerLimits,
-                                     data.UpperLimits);
-    data.Increments.SetSize(data.NumberOfLinks);
-    data.ActualJoints.SetSize(data.NumberOfLinks);
-    data.PreviousActualJoints.SetSize(data.NumberOfLinks);
-    data.SolutionJoints.SetSize(data.NumberOfLinks);
+    data.LowerLimits = joint_config->GetPositionMin();
+    data.UpperLimits = joint_config->GetPositionMax();
+    data.Increments = Eigen::VectorXd::Zero(data.NumberOfLinks);
+    data.ActualJoints = Eigen::VectorXd::Zero(data.NumberOfLinks);
+    data.PreviousActualJoints = Eigen::VectorXd::Zero(data.NumberOfLinks);
+    data.SolutionJoints = Eigen::VectorXd::Zero(data.NumberOfLinks);
 }
 
 void robManipulatorTest::ComputeAndTestIK(ManipulatorTestData & data)
 {
     // compute FK
-    data.ActualPose = data.Manipulator->ForwardKinematics(data.ActualJoints);
+    data.ActualPose = data.Manipulator->forwardKinematics(data.ActualJoints);
     // compute IK
-    data.SolutionJoints.Assign(data.ActualJoints);
-    robManipulator::Errno result = data.Manipulator->InverseKinematics(data.SolutionJoints,
-                                                                       data.ActualPose);
+    data.SolutionJoints = data.ActualJoints;
+    std::string ik_error;
+    bool ik_ok = data.Manipulator->inverseKinematics(
+        data.ActualPose,
+        data.SolutionJoints,
+        ik_error
+    );
     // make sure IK didn't complain
-    CPPUNIT_ASSERT_EQUAL_MESSAGE("robManipulator::InverseKinematics result for "
-                                 + data.Name + ": " + data.Manipulator->LastError(),
-                                 robManipulator::ESUCCESS,
-                                 result);
+    CPPUNIT_ASSERT_MESSAGE("robManipulator::InverseKinematics result for "
+                                 + data.Name + ": " + ik_error, ik_ok);
 
     // compute solution pose
-    data.SolutionPose = data.Manipulator->ForwardKinematics(data.SolutionJoints);
+    data.SolutionPose = data.Manipulator->forwardKinematics(data.SolutionJoints);
 
     // arm specific testing
     data.CheckIKResults();
@@ -171,11 +172,11 @@ void robManipulatorTest::ComputeAndTestIK(ManipulatorTestData & data)
 
 void robManipulatorTest::TestSampleJointSpace(ManipulatorTestData & data)
 {
-    vctDoubleVec directions(data.NumberOfLinks, 1.0);
+    Eigen::VectorXd directions = Eigen::VectorXd::Constant(data.NumberOfLinks, 1.0);
 
     // initial position
-    data.ActualJoints.Assign(data.LowerLimits);
-    data.PreviousActualJoints.Assign(data.LowerLimits);
+    data.ActualJoints = data.LowerLimits;
+    data.PreviousActualJoints = data.LowerLimits;
     ComputeAndTestIK(data);
 
     bool allReached = false;
@@ -193,7 +194,7 @@ void robManipulatorTest::TestSampleJointSpace(ManipulatorTestData & data)
                     directions[index] = 1.0;
                 } else {
                     // valid position
-                    data.PreviousActualJoints.Assign(data.ActualJoints);
+                    data.PreviousActualJoints = data.ActualJoints;
                     data.ActualJoints[index] = future;
                     nextDimensionIncrement = false;
                     ComputeAndTestIK(data);
@@ -209,8 +210,8 @@ void robManipulatorTest::TestECMIKSampleJointSpace(void)
     ManipulatorTestDataECM data;
     SetupTestData(data, "ecm.json");
 
-    data.Increments.SetAll(3.0 * cmnPI_180); // use 3 degrees sampling
-    data.Increments.at(2) = 2.0 * cmn_cm; // except for the translation stage
+    data.Increments.fill(3.0 * cmnPI_180); // use 3 degrees sampling
+    data.Increments(2) = 2.0 * cmn_cm; // except for the translation stage
 
     TestSampleJointSpace(data);
 }
@@ -222,9 +223,9 @@ void robManipulatorTest::TestMTMIKSampleJointSpace(void)
     ManipulatorTestDataMTM data;
     SetupTestData(data, "mtmr.json");
 
-    data.Increments.SetAll(15.0 * cmnPI_180); // use 15 degrees sampling
-    data.LowerLimits.at(6) = -cmnPI;
-    data.UpperLimits.at(6) =  cmnPI;
+    data.Increments.fill(15.0 * cmnPI_180); // use 15 degrees sampling
+    data.LowerLimits(6) = -cmnPI;
+    data.UpperLimits(6) =  cmnPI;
 
     TestSampleJointSpace(data);
 }

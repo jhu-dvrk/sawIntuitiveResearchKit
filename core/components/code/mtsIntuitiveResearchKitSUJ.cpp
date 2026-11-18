@@ -17,8 +17,8 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 // system include
+#include <chrono>
 #include <iostream>
-#include <time.h>
 
 // cisst
 #include <cisstCommon/cmnJointType.h>
@@ -27,12 +27,15 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/robManipulatorGeneric.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
+#include <cisstOSAbstraction/osaSleep.h>
 #include <cisstParameterTypes/prmStateJoint.h>
 #include <cisstParameterTypes/prmConfigurationJoint.h>
 #include <cisstParameterTypes/prmPositionJointSet.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 #include <cisstParameterTypes/prmEventButton.h>
+
+using namespace std::chrono_literals;
 
 const size_t MUX_ARRAY_SIZE = 6;
 const size_t MUX_MAX_INDEX = 15;
@@ -435,7 +438,7 @@ void mtsIntuitiveResearchKitSUJ::init(void)
     StateTable.AddData(m_operating_state, "operating_state");
 
     // default values
-    m_mux_timer = 0.0;
+    m_mux_timer = std::chrono::steady_clock::time_point::min();
     m_mux_state = Eigen::ArrayX<bool>::Constant(4, false);
     m_voltages = Eigen::VectorXd::Zero(4);
     m_brake_currents = Eigen::VectorXd::Zero(4);
@@ -733,10 +736,10 @@ void mtsIntuitiveResearchKitSUJ::run_all_states(void)
 
 void mtsIntuitiveResearchKitSUJ::reset_mux(void)
 {
-    m_mux_timer = this->StateTable.GetTic();
+    m_mux_timer = StateTable.GetTic();
     mux_increment.SetValue(false);
     no_mux_reset.SetValue(false);
-    Sleep(30.0 * cmn_ms);
+    osaSleep(30ms);
     m_mux_index_expected = 0;
 }
 
@@ -779,8 +782,7 @@ void mtsIntuitiveResearchKitSUJ::enter_POWERING(void)
         return;
     }
 
-    const double currentTime = this->StateTable.GetTic();
-    m_homing_timer = currentTime;
+    m_homing_timer = StateTable.GetTic();
     // pre-load the boards with zero current
     RobotIO.SetActuatorCurrent(Eigen::VectorXd::Zero(4).eval());
     // enable power and set a flags to move to next step
@@ -797,7 +799,7 @@ void mtsIntuitiveResearchKitSUJ::transition_POWERING(void)
         return;
     }
 
-    const double currentTime = this->StateTable.GetTic();
+    const auto currentTime = StateTable.GetTic();
 
     // check status
     if ((currentTime - m_homing_timer) > mtsIntuitiveResearchKit::TimeToPower) {
@@ -835,7 +837,7 @@ void mtsIntuitiveResearchKitSUJ::enter_ENABLED(void)
     for (auto& sarm : m_sarms) {
         sarm->m_clutched = 0;
         sarm->m_brake_desired_current = 0.0;
-        m_previous_tic = 0.0;
+        m_previous_tic = std::chrono::steady_clock::time_point::min();
     }
 }
 
@@ -929,10 +931,10 @@ void mtsIntuitiveResearchKitSUJ::get_robot_data(void)
     }
 
     // 30 ms is to make sure A2D stabilizes
-    const double muxCycle = 30.0 * cmn_ms;
+    const std::chrono::steady_clock::duration muxCycle = 30ms;
 
     // we can start reporting some joint values after the robot is powered
-    const double currentTime = this->StateTable.GetTic();
+    const auto currentTime = StateTable.GetTic();
 
     // we assume the analog in is now stable
     if (currentTime > m_mux_timer) {
@@ -1246,8 +1248,8 @@ void mtsIntuitiveResearchKitSUJ::state_command(const std::string & command)
 
 void mtsIntuitiveResearchKitSUJ::run_ENABLED(void)
 {
-    double currentTic = this->StateTable.GetTic();
-    const double timeDelta = currentTic - m_previous_tic;
+    const auto currentTic = StateTable.GetTic();
+    const double timeDelta = durationToSeconds(currentTic - m_previous_tic);
 
     const double brakeCurrentRate = 8.0; // rate = 8 A/s, about 1/4 second to get up/down
 

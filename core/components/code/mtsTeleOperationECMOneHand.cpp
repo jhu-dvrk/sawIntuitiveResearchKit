@@ -168,7 +168,7 @@ void mtsTeleOperationECMOneHand::TransitionSettingArmsState(void)
         return;
     }
     // check timeout (60 seconds)
-    if ((StateTable.GetTic() - mInStateTimer) > 60.0 * cmn_s) {
+    if ((StateTable.GetTic() - mInStateStartTime) > 60s) {
         mInterface->SendError(this->GetName() + ": timeout while waiting for arms to be ready");
         mTeleopState.SetDesiredState("DISABLED");
     }
@@ -185,7 +185,7 @@ void mtsTeleOperationECMOneHand::TransitionCheckingData(void)
         m_data_check_warning_sent = false;
         mTeleopState.SetCurrentState("ENABLED");
     } else {
-        if ((StateTable.GetTic() - mInStateTimer) > 2.0 * cmn_s) {
+        if ((StateTable.GetTic() - mInStateStartTime) > 2s) {
             mInterface->SendError(this->GetName() + ": timeout while waiting for valid data");
             mTeleopState.SetDesiredState("DISABLED");
         }

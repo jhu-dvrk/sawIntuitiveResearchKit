@@ -27,6 +27,7 @@ http://www.cisst.org/cisst/license.txt.
 
 // always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
+#include <chrono>
 
 class CISST_EXPORT mtsTeleOperationECMBase: public mtsTaskPeriodic
 {
@@ -95,7 +96,7 @@ protected:
     bool m_data_check_warning_sent = false;
 
     mtsStateMachine mTeleopState;
-    double mInStateTimer = 0.0;
+    std::chrono::steady_clock::time_point mInStateStartTime = std::chrono::steady_clock::time_point::min();
 
     bool m_following = false;
     void set_following(const bool following);

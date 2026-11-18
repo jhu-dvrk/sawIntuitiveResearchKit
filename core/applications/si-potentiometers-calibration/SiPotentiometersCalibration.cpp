@@ -17,6 +17,7 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 // system
+#include <filesystem>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -24,13 +25,12 @@ http://www.cisst.org/cisst/license.txt.
 
 // cisst/saw
 #include <cisstCommon/cmnConstants.h>
-#include <cisstCommon/cmnPath.h>
 #include <cisstCommon/cmnUnits.h>
 #include <cisstCommon/cmnKbHit.h>
 #include <cisstCommon/cmnGetChar.h>
 #include <cisstCommon/cmnCommandLineOptions.h>
 #include <cisstOSAbstraction/osaSleep.h>
-#include <cisstOSAbstraction/osaGetTime.h>
+#include <cisstOSAbstraction/osaTime.h>
 #include <sawRobotIO1394/mtsRobotIO1394.h>
 #include <sawRobotIO1394/mtsRobot1394.h>
 #include <sawRobotIO1394/mtsDigitalInput1394.h>
@@ -74,7 +74,7 @@ int main(int argc, char * argv[])
 
     const bool collectData = savedData.empty();
 
-    if (!cmnPath::Exists(configFile)) {
+    if (!std::filesystem::exists(configFile)) {
         std::cerr << "Can't find file \"" << configFile << "\"." << std::endl;
         return -1;
     }
@@ -331,7 +331,7 @@ int main(int argc, char * argv[])
     // using recorded data
     else {
         // make sure file exists
-        if (!cmnPath::Exists(savedData)) {
+        if (!std::filesystem::exists(savedData)) {
             std::cerr << "Can't find file \"" << savedData << "\"." << std::endl;
             return -1;
         }
@@ -551,12 +551,12 @@ int main(int argc, char * argv[])
     std::cout << std::endl;
     std::ofstream potToEncoderFile;
     std::string potToEncoderFileName = "sawRobotIO1394-" + armName + "-" + serialNumber + "-PotentiometerLookupTable.json";
-    if (cmnPath::Exists(potToEncoderFileName)) {
+    if (std::filesystem::exists(potToEncoderFileName)) {
         std::string currentDateTime;
         osaGetDateTimeString(currentDateTime);
         std::string newName = potToEncoderFileName + "-backup-" + currentDateTime;
         std::cout << "Existing IO config file has been renamed " << newName << std::endl;
-        cmnPath::RenameFile(potToEncoderFileName, newName);
+        std::filesystem::rename(potToEncoderFileName, newName);
     }
     potToEncoderFile.open(potToEncoderFileName);
     Json::Value jsonValue;

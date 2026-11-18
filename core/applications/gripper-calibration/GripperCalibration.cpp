@@ -24,13 +24,12 @@ http://www.cisst.org/cisst/license.txt.
 
 // cisst/saw
 #include <cisstCommon/cmnConstants.h>
-#include <cisstCommon/cmnPath.h>
 #include <cisstCommon/cmnUnits.h>
 #include <cisstCommon/cmnKbHit.h>
 #include <cisstCommon/cmnGetChar.h>
 #include <cisstCommon/cmnCommandLineOptions.h>
 #include <cisstOSAbstraction/osaSleep.h>
-#include <cisstOSAbstraction/osaGetTime.h>
+#include <cisstOSAbstraction/osaTime.h>
 #include <sawRobotIO1394/mtsRobotIO1394.h>
 #include <sawRobotIO1394/mtsRobot1394.h>
 
@@ -52,7 +51,7 @@ int main(int argc, char * argv[])
         return -1;
     }
 
-    if (!cmnPath::Exists(configFile)) {
+    if (!std::filesystem::exists(configFile)) {
         std::cerr << "Can't find file \"" << configFile << "\"." << std::endl;
         return -1;
     }
@@ -187,12 +186,12 @@ int main(int argc, char * argv[])
     if ((key == 's') || (key == 'S')) {
 
         // rename old file and save in place
-        const double abs_time = osaGetTime();
+        const auto abs_time = std::chrono::system_clock::now();
         std::string date, time;
         osaGetDateString(date, abs_time, '-');
         osaGetTimeString(time, abs_time, ':');
         const std::string newName = configFile + "-backup-" + date + "_" + time;
-        cmnPath::RenameFile(configFile, newName);
+        std::filesystem::rename(configFile, newName);
         std::cout << "Existing IO config file has been renamed " << newName << std::endl;
 
         // save new data

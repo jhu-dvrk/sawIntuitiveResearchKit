@@ -242,7 +242,7 @@ void mtsTeleOperationECMTwoHands::TransitionSettingArmsState(void)
         return;
     }
     // check timer
-    if ((StateTable.GetTic() - mInStateTimer) > 60.0 * cmn_s) {
+    if ((StateTable.GetTic() - mInStateStartTime) > 60s) {
         mInterface->SendError(this->GetName() + ": timed out while setting up arms state");
         mTeleopState.SetDesiredState("DISABLED");
     }

@@ -19,10 +19,13 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsIntuitiveResearchKit_h
 #define _mtsIntuitiveResearchKit_h
 
+#include <chrono>
 #include <cstdint>
 #include <cisstCommon/cmnUnits.h>
 #include <cisstCommon/cmnConstants.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
+
+using namespace std::chrono_literals;
 
 #define NOT_COPYABLE(TypeName)                          \
     TypeName (TypeName const &) = delete;               \
@@ -49,7 +52,7 @@ namespace mtsIntuitiveResearchKit {
     // (SUJ) will overheat the QLA while trying to turn on power in
     // some specific conditions.  Ask Peter!  See also
     // https://github.com/jhu-cisst/QLA/issues/1
-    const double TimeToPower = 3.0 * cmn_s;
+    const std::chrono::steady_clock::duration TimeToPower = 3s;
 
     // joint trajectory ratios
     namespace JointTrajectory {

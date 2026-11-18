@@ -18,15 +18,13 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawIntuitiveResearchKit/mtsToolList.h>
 
-#include <cisstCommon/cmnPath.h>
-
-bool mtsToolList::Load(const cmnPath & path,
+bool mtsToolList::Load(const cmnSearchPath & path,
                        const std::string & indexFile)
 {
     std::string fullFilename;
 
     // try to locate the file assuming absolute path
-    if (cmnPath::Exists(indexFile)) {
+    if (std::filesystem::exists(indexFile)) {
         fullFilename = indexFile;
     } else {
         // else use path provided

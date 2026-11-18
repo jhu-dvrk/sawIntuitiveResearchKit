@@ -262,12 +262,12 @@ void mtsTeleOperationECMBase::TransitionDisabled(void)
 void mtsTeleOperationECMBase::EnterSettingArmsState(void)
 {
     mECM.state_command(std::string("enable"));
-    mInStateTimer = StateTable.GetTic();
+    mInStateStartTime = StateTable.GetTic();
 }
 
 void mtsTeleOperationECMBase::EnterCheckingData(void)
 {
-    mInStateTimer = StateTable.GetTic();
+    mInStateStartTime = StateTable.GetTic();
     m_data_check_warning_sent = false;
 }
 

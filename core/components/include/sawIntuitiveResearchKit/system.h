@@ -20,9 +20,10 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _dvrk_system_h
 #define _dvrk_system_h
 
+#include <chrono>
 #include <memory>
 
-#include <cisstCommon/cmnPath.h>
+#include <cisstCommon/cmnSearchPath.h>
 #include <cisstMultiTask/mtsTaskFromSignal.h>
 #include <cisstMultiTask/mtsDelayedConnections.h>
 #include <cisstParameterTypes/prmOperatingState.h>
@@ -97,10 +98,10 @@ namespace dvrk {
     protected:
         dvrk::system_configuration m_config;
         bool m_configured;
-        cmnPath m_config_path;
+        cmnSearchPath m_config_path;
         mtsDelayedConnections m_connections;
 
-        double mTimeOfLastErrorBeep;
+        std::chrono::steady_clock::time_point mTimeOfLastErrorBeep;
 
         /*! Pointer to mtsTextToSpeech component */
         std::shared_ptr<mtsTextToSpeech> m_text_to_speech;

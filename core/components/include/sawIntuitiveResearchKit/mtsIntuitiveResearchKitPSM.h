@@ -46,7 +46,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 
 protected:
     void set_generation(const dvrk::generation generation) override;
-    void load_tool_list(const cmnPath & path,
+    void load_tool_list(const cmnSearchPath & path,
                         const std::string & indexFile = "tool/index.json");
 
     void tool_list_size(size_t & size) const;
@@ -54,10 +54,10 @@ protected:
     void tool_full_description(const size_t & index, std::string & description) const;
 
     void PostConfigure(const Json::Value & jsonConfig,
-                       const cmnPath & configPath,
+                       const cmnSearchPath & configPath,
                        const std::string & filename) override;
     void ConfigureGC(const Json::Value & jsonConfig,
-                       const cmnPath & configPath,
+                       const cmnSearchPath & configPath,
                        const std::string & filename) override;
     virtual bool ConfigureTool(const std::string & filename);
 

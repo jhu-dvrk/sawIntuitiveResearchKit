@@ -22,6 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstCommon/cmnGenericObject.h>
 #include <cisstCommon/cmnLogger.h>
+#include <cisstCommon/cmnSearchPath.h>
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitToolTypes.h>
 
@@ -37,7 +38,7 @@ class CISST_EXPORT mtsToolList
 
     inline ~mtsToolList() {}
 
-    bool Load(const cmnPath & path,
+    bool Load(const cmnSearchPath & path,
               const std::string & file);
 
     bool Find(const std::string & toolName, size_t & index) const;

@@ -21,7 +21,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <map>
 
 // cisst/saw
-#include <cisstCommon/cmnPath.h>
 #include <cisstCommon/cmnGetChar.h>
 #include <cisstCommon/cmnQt.h>
 #include <cisstMultiTask/mtsManagerLocal.h>
@@ -42,7 +41,7 @@ http://www.cisst.org/cisst/license.txt.
 void file_exists(const std::string & description, std::string & filename,
                  dvrk::system * system)
 {
-    if (!cmnPath::Exists(filename)) {
+    if (!std::filesystem::exists(filename)) {
         const std::string fileInPath = system->find_file(filename);
         if (fileInPath == "") {
             std::cerr << "File not found: " << description

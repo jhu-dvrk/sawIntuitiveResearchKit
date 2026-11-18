@@ -118,7 +118,7 @@ void mtsDaVinciHeadSensor::HeadSensorEventHandler(const size_t sensorNumber,
     // changed
     prmEventButton payload;
     payload.SetValid(true);
-    payload.SetTimestamp(StateTable.GetTic());
+    payload.SetTimestamp(getTimestamp(StateTable.GetTic()));
     if (operatorPresent) {
         payload.SetType(prmEventButton::PRESSED);
         MessageEvents.OperatorPresent(payload);

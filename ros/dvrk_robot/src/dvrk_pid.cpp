@@ -17,9 +17,9 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 // system
+#include <filesystem>
 #include <iostream>
 // cisst/saw
-#include <cisstCommon/cmnPath.h>
 #include <cisstMultiTask/mtsCommandLineOptionsQt.h>
 #include <cisstCommon/cmnQt.h>
 #include <cisstOSAbstraction/osaSleep.h>
@@ -84,11 +84,11 @@ int main(int argc, char ** argv)
     options.PrintParsedArguments(arguments);
     std::cout << "Options provided:" << std::endl << arguments;
 
-    if (!cmnPath::Exists(ioConfigFile)) {
+    if (!std::filesystem::exists(ioConfigFile)) {
         std::cerr << "File not found: " << ioConfigFile << std::endl;
         return -1;
     }
-    if (!cmnPath::Exists(pidConfigFile)) {
+    if (!std::filesystem::exists(pidConfigFile)) {
         std::cerr << "File not found: " << pidConfigFile << std::endl;
         return -1;
     }
@@ -138,7 +138,6 @@ int main(int argc, char ** argv)
     if (robotWidgetFactory->ButtonsWidget()) {
         tabWidget->addTab(robotWidgetFactory->ButtonsWidget(), "Buttons");
     }
-
 
     // Qt PID Controller GUI
     mtsPIDQtWidget * pidGUI = new mtsPIDQtWidget("pidGUI", numberOfJoints);

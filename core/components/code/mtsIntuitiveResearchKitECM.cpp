@@ -24,7 +24,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <time.h>
 
 // cisst
-#include <cisstCommon/cmnPath.h>
 #include <cisstCommon/cmnUnits.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
@@ -237,7 +236,7 @@ void mtsIntuitiveResearchKitECM::set_generation(const dvrk::generation generatio
 }
 
 void mtsIntuitiveResearchKitECM::PostConfigure(const Json::Value & jsonConfig,
-                                               const cmnPath & CMN_UNUSED(configPath),
+                                               const cmnSearchPath & CMN_UNUSED(configPath),
                                                const std::string & filename)
 {
     // load tool tip transform if any (for up/down endoscopes)
@@ -274,7 +273,7 @@ void mtsIntuitiveResearchKitECM::PostConfigure(const Json::Value & jsonConfig,
 }
 
 void mtsIntuitiveResearchKitECM::ConfigureGC(const Json::Value & jsonConfig,
-                                               const cmnPath & configPath,
+                                               const cmnSearchPath & configPath,
                                                const std::string & filename)
 {
     std::string physical_dh_name;

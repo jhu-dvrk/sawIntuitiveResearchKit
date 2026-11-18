@@ -19,7 +19,6 @@ http://www.cisst.org/cisst/license.txt.
 // system
 #include <iostream>
 // cisst/saw
-#include <cisstCommon/cmnPath.h>
 #include <cisstMultiTask/mtsCommandLineOptionsQt.h>
 #include <cisstOSAbstraction/osaSleep.h>
 #include <cisstMultiTask/mtsManagerLocal.h>
@@ -68,11 +67,11 @@ int main(int argc, char ** argv)
         return -1;
     }
 
-    if (!cmnPath::Exists(ioConfigFile)) {
+    if (!std::filesystem::exists(ioConfigFile)) {
         std::cerr << "File not found: " << ioConfigFile << std::endl;
         return -1;
     }
-    if (!cmnPath::Exists(pidConfigFile)) {
+    if (!std::filesystem::exists(pidConfigFile)) {
         std::cerr << "File not found: " << pidConfigFile << std::endl;
         return -1;
     }

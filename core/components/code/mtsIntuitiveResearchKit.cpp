@@ -17,7 +17,7 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 #include <cisstCommon/cmnLogger.h>
-#include <cisstOSAbstraction/osaGetTime.h>
+#include <cisstOSAbstraction/osaTime.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 
 mtsIntuitiveResearchKit::Logger::Logger(void)

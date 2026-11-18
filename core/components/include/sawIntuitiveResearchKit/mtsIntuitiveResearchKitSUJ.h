@@ -29,6 +29,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmSimulationType.h>
 
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
+#include <chrono>
 
 // forward declaration
 class mtsIntuitiveResearchKitSUJArmData;
@@ -143,7 +144,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJ: public mtsTaskPeriodic
     } mux_increment;
 
     void reset_mux(void);
-    double m_mux_timer;
+    std::chrono::steady_clock::time_point m_mux_timer;
     Eigen::ArrayX<bool> m_mux_state;
     size_t m_mux_index, m_mux_index_expected;
 
@@ -154,10 +155,10 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJ: public mtsTaskPeriodic
     } PWM;
 
     // Home Action
-    double m_homing_timer;
+    std::chrono::steady_clock::time_point m_homing_timer;
 
     // Clutch / brake timer
-    double m_previous_tic;
+    std::chrono::steady_clock::time_point m_previous_tic;
     Eigen::VectorXd m_brake_currents;
 
     std::vector<Eigen::VectorXd> m_voltage_samples;

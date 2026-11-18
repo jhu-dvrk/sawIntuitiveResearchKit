@@ -731,7 +731,7 @@ void mtsTeleOperationPSM::TransitionDisabled(void)
 void mtsTeleOperationPSM::EnterSettingArmsState(void)
 {
     // reset timer
-    mInStateTimer = StateTable.GetTic();
+    mInStateStartTime = StateTable.GetTic();
 
     // request state if needed
     prmOperatingState state;
@@ -764,7 +764,7 @@ void mtsTeleOperationPSM::TransitionSettingArmsState(void)
         return;
     }
     // check timer
-    if ((StateTable.GetTic() - mInStateTimer) > 60.0 * cmn_s) {
+    if ((StateTable.GetTic() - mInStateStartTime) > 60s) {
         if (!((psmState.State() == prmOperatingState::ENABLED) && psmState.IsHomed())) {
             mInterface->SendError(this->GetName() + ": timed out while setting up PSM state");
         }
@@ -809,7 +809,7 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
     ConfigurationEvents.scale(m_config.scale);
 
     // reset timer
-    mInStateTimer = StateTable.GetTic();
+    mInStateStartTime = StateTable.GetTic();
 
     // if we don't align MTM, just stay in same position
     if (!m_config.align_MTM && m_config.MTM_is_haptic && mMTM.move_cp.IsValid()) {
@@ -929,7 +929,7 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
         }
     } else {
         // check timer and issue a message
-        if ((StateTable.GetTic() - mInStateTimer) > 2.0 * cmn_s) {
+        if ((StateTable.GetTic() - mInStateStartTime) > 2s) {
             std::stringstream message;
             if (orientationError >= m_config.start_orientation_tolerance) {
                 message << this->GetName() + ": unable to align MTM, angle error is "
@@ -938,7 +938,7 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
                 message << this->GetName() + ": pinch/twist MTM gripper a bit";
             }
             mInterface->SendWarning(message.str());
-            mInStateTimer = StateTable.GetTic();
+            mInStateStartTime = StateTable.GetTic();
         }
     }
 }

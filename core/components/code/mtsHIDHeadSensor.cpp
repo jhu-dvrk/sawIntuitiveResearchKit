@@ -219,7 +219,7 @@ void mtsHIDHeadSensor::Run(void)
     m_operating_present = present;
     prmEventButton payload;
     payload.SetValid(true);
-    payload.SetTimestamp(StateTable.GetTic());
+    payload.SetTimestamp(getTimestamp(StateTable.GetTic()));
     if (m_operating_present) {
         payload.SetType(prmEventButton::PRESSED);
         m_events.operator_present(payload);

@@ -17,6 +17,7 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 // system include
+#include <chrono>
 #include <cmath>
 #include <iostream>
 #include <algorithm>
@@ -26,9 +27,9 @@ http://www.cisst.org/cisst/license.txt.
 // cisst
 #include <cisstCommon/cmnConstants.h>
 #include <cisstCommon/cmnJointType.h>
-#include <cisstCommon/cmnPath.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
+#include <cisstOSAbstraction/osaTime.h>
 #include <cisstParameterTypes/prmMaskedVector.h>
 
 #include <sawIntuitiveResearchKit/robManipulatorMTM.h>
@@ -146,7 +147,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
 }
 
 void mtsIntuitiveResearchKitMTM::PreConfigure(const Json::Value & jsonConfig,
-                                              const cmnPath & CMN_UNUSED(configPath),
+                                              const cmnSearchPath & CMN_UNUSED(configPath),
                                               const std::string & CMN_UNUSED(filename))
 {
     // platform gain
@@ -208,7 +209,7 @@ void mtsIntuitiveResearchKitMTM::PreConfigure(const Json::Value & jsonConfig,
 }
 
 void mtsIntuitiveResearchKitMTM::ConfigureGC(const Json::Value & armConfig,
-                                             const cmnPath & configPath,
+                                             const cmnSearchPath & configPath,
                                              const std::string & filename)
 {
     const auto jsonGC = armConfig["gravity_compensation"];
@@ -342,7 +343,7 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
     const double currentRoll = m_pid_setpoint_js.Position()(JNT_WRIST_ROLL);
     m_trajectory_j.goal(JNT_WRIST_ROLL) = currentRoll - maxRollRange;
     m_trajectory_j.goal_v.setZero();
-    m_trajectory_j.end_time = 0.0;
+    m_trajectory_j.end_time = std::chrono::steady_clock::time_point::min();
     SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::JOINT_SPACE,
                            mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE);
 
@@ -369,8 +370,8 @@ void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
 
     static const double maxTrackingError = 1.0 * cmnPI; // 1/2 turn
     double trackingError;
-    static const double extraTime = 2.0 * cmn_s;
-    const double currentTime = this->StateTable.GetTic();
+    static const auto extraTime = 2s;
+    const auto currentTime = StateTable.GetTic();
 
     m_trajectory_j.Reflexxes.Evaluate(m_servo_jp,
                                       m_servo_jv,
@@ -384,8 +385,9 @@ void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
 
     case robReflexxes::ResultType::WORKING:
         // if this is the first evaluation, we can't calculate expected completion time
-        if (m_trajectory_j.end_time == 0.0) {
-            m_trajectory_j.end_time = currentTime + m_trajectory_j.Reflexxes.Duration();
+        if (m_trajectory_j.end_time == std::chrono::steady_clock::time_point::min()) {
+            const auto duration = durationFromSeconds<std::chrono::steady_clock>(m_trajectory_j.Reflexxes.Duration());
+            m_trajectory_j.end_time = currentTime + duration;
             m_homing_timer = m_trajectory_j.end_time;
         }
 
@@ -445,15 +447,14 @@ void mtsIntuitiveResearchKitMTM::EnterResettingRollEncoder(void)
     IO.SetSomeEncoderPosition(values);
 
     // start timer
-    const double currentTime = this->StateTable.GetTic();
-    m_homing_timer = currentTime;
+    m_homing_timer = StateTable.GetTic();
 }
 
 void mtsIntuitiveResearchKitMTM::RunResettingRollEncoder(void)
 {
     // wait for some time, no easy way to check if encoder has been reset
-    const double timeToWait = 10.0 * cmn_ms;
-    const double currentTime = this->StateTable.GetTic();
+    const std::chrono::steady_clock::duration timeToWait = 10ms;
+    const auto currentTime = StateTable.GetTic();
     if ((currentTime - m_homing_timer) < timeToWait) {
         return;
     }

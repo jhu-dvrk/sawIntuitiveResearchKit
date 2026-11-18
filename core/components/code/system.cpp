@@ -18,6 +18,10 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawIntuitiveResearchKit/system.h>
 
+#include <json/json.h>
+#include <chrono>
+#include <filesystem>
+
 #include <cisstCommon/cmnRandomSequence.h>
 #include <cisstCommon/cmnObjectRegister.h>
 #include <cisstOSAbstraction/osaSleep.h>
@@ -40,24 +44,22 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/teleop_ECM_proxy.h>
 #include <sawIntuitiveResearchKit/mtsDaVinciEndoscopeFocus.h>
 
-#include <json/json.h>
-
 typedef dvrk::system dvrk_system;
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(dvrk_system, mtsTaskFromSignal, std::string);
 
 dvrk::system::system(const std::string & componentName):
     mtsTaskFromSignal(componentName, 100),
     m_configured(false),
-    mTimeOfLastErrorBeep(0.0)
+    mTimeOfLastErrorBeep(std::chrono::steady_clock::time_point::min())
 {
     // configure search path
-    m_config_path.Add(cmnPath::GetWorkingDirectory());
+    m_config_path.Add(std::filesystem::current_path());
     // add path to source/share directory to find common files.  This
     // will work as long as this component is located in the same
     // parent directory as the "shared" directory.
-    m_config_path.Add(std::string(sawIntuitiveResearchKit_SOURCE_CONFIG_DIR), cmnPath::TAIL);
+    m_config_path.Add(std::string(sawIntuitiveResearchKit_SOURCE_CONFIG_DIR), cmnSearchPath::Position::TAIL);
     // default installation directory
-    m_config_path.Add(mtsIntuitiveResearchKit::DefaultInstallationDirectory, cmnPath::TAIL);
+    m_config_path.Add(mtsIntuitiveResearchKit::DefaultInstallationDirectory, cmnSearchPath::Position::TAIL);
 
     m_interface = AddInterfaceProvided("Main");
     if (m_interface) {
@@ -172,7 +174,7 @@ void dvrk::system::Configure(const std::string & filename)
     // extract path of main json config file to search other files relative to it
     std::string fullname = m_config_path.Find(filename);
     std::string config_dir = fullname.substr(0, fullname.find_last_of('/'));
-    m_config_path.Add(config_dir, cmnPath::TAIL);
+    m_config_path.Add(config_dir, cmnSearchPath::Position::TAIL);
 
     mtsComponentManager * manager = mtsComponentManager::GetInstance();
 
@@ -482,7 +484,7 @@ void dvrk::system::Startup(void)
         int index;
         cmnRandomSequence & randomSequence = cmnRandomSequence::GetInstance();
         cmnRandomSequence::SeedType seed
-            = static_cast<cmnRandomSequence::SeedType>(mtsManagerLocal::GetInstance()->GetTimeServer().GetRelativeTime() * 100000.0);
+            = static_cast<cmnRandomSequence::SeedType>(getTimestamp(std::chrono::steady_clock::now()) * 100000.0);
         randomSequence.SetSeed(seed % 1000);
         randomSequence.ExtractRandomValue<int>(0, prompts.size() - 1, index);
         audio.string_to_speech(prompts.at(index));
@@ -1032,8 +1034,8 @@ void dvrk::system::error_event_handler(const mtsMessage & message)
 {
     m_interface->SendError(message.Message);
     // throttle error beeps
-    double currentTime = mtsManagerLocal::GetInstance()->GetTimeServer().GetRelativeTime();
-    if ((currentTime - mTimeOfLastErrorBeep) > 2.0 * cmn_s) {
+    const auto currentTime = std::chrono::steady_clock::now();
+    if ((currentTime - mTimeOfLastErrorBeep) > 2s) {
         audio.beep(Eigen::Vector3d(0.3, 3000.0, m_audio_volume));
         mTimeOfLastErrorBeep = currentTime;
     }

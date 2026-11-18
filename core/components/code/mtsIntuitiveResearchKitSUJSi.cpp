@@ -703,7 +703,7 @@ void mtsIntuitiveResearchKitSUJSi::get_robot_data(void)
                         // copy live jp
                         sarm->m_measured_js.Position() = sarm->m_live_measured_js.Position();
                         sarm->m_measured_js.SetValid(true);
-                        sarm->m_measured_js.SetTimestamp(mtsComponentManager::GetInstance()->GetTimeServer().GetRelativeTime());
+                        sarm->m_measured_js.SetTimestamp(getTimestamp(std::chrono::steady_clock::now()));
                         sarm->m_waiting_for_live = false;
                         sarm->m_need_update_forward_kinemactics = true;
                     }

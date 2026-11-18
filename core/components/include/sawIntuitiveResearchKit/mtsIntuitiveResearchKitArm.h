@@ -49,6 +49,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/arm_configuration.h>
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
 #include <sawIntuitiveResearchKit/robGravityCompensation.h>
+#include <chrono>
 #include "sawIntuitiveResearchKit/robManipulator.h"
 
 // forward declarations
@@ -89,7 +90,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
  protected:
     virtual void ConfigureGC(const Json::Value & CMN_UNUSED(armConfig),
-                             const cmnPath & CMN_UNUSED(configPath),
+                             const cmnSearchPath & CMN_UNUSED(configPath),
                              const std::string & CMN_UNUSED(filename)) {};
 
     /*! Define wrench reference frame */
@@ -104,10 +105,10 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     /*! Arm specific configuration for derived classes PSM,
       MTM... Called by Configure method. */
     inline virtual void PreConfigure(const Json::Value & CMN_UNUSED(jsonConfig),
-                                     const cmnPath & CMN_UNUSED(configPath),
+                                     const cmnSearchPath & CMN_UNUSED(configPath),
                                      const std::string & CMN_UNUSED(filename)) {};
     inline virtual void PostConfigure(const Json::Value & CMN_UNUSED(jsonConfig),
-                                      const cmnPath & CMN_UNUSED(configPath),
+                                      const cmnSearchPath & CMN_UNUSED(configPath),
                                       const std::string & CMN_UNUSED(filename)) {};
     inline virtual void set_generation(const dvrk::generation generation) {
         m_generation = generation;
@@ -412,7 +413,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     bool ArmIsReady(const std::string & methodName,
                     const mtsIntuitiveResearchKitControlTypes::ControlSpace space);
     size_t mArmNotReadyCounter;
-    double mArmNotReadyTimeLastMessage;
+    std::chrono::steady_clock::time_point mArmNotReadyTimeLastMessage;
 
     /*! Set joint velocity ratio for trajectory generation.  Computes
       joint velocities based on maximum joint velocities.  Ratio must
@@ -521,7 +522,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         Eigen::VectorXd goal_tolerance;
         Eigen::VectorXd jerk_max;
         bool is_active;
-        double end_time;
+        std::chrono::steady_clock::time_point end_time;
         mtsFunctionWrite goal_reached_event; // sends true if goal reached, false otherwise
     } m_trajectory_j;
 
@@ -532,7 +533,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     bool m_homing_goes_to_zero = false;
     bool m_skip_gravity_compensation = false;
     bool m_homing_bias_encoder_requested = false;
-    double m_homing_timer;
+    std::chrono::steady_clock::time_point m_homing_timer;
 
     // generation
     dvrk::generation m_generation

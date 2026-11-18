@@ -94,7 +94,7 @@ void dvrk::console::post_configure(void)
             }
             // add to list of teleops using each MTM
             teleops_per_MTM[proxy_config.MTM].push_back(teleop_proxy);
-            m_clutch_states.emplace(name, teleop_clutch_state());
+            m_clutch_states.try_emplace(name);
             auto clutch_handler = std::make_shared<teleop_clutch_input_handler>();
             clutch_handler->owner = this;
             clutch_handler->teleop_name = name;

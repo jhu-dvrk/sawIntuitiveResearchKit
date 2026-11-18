@@ -54,7 +54,7 @@ public:
     };
 
     void PreConfigure(const Json::Value & jsonConfig,
-                      const cmnPath & configPath,
+                      const cmnSearchPath & configPath,
                       const std::string & filename) override;
 
     /*! Configuration methods */
@@ -74,7 +74,7 @@ public:
         return false;
     }
 
-    void ConfigureGC(const Json::Value & armConfig, const cmnPath & configPath, const std::string & filename) override;
+    void ConfigureGC(const Json::Value & armConfig, const cmnSearchPath & configPath, const std::string & filename) override;
 
     Eigen::Isometry3d safe_cartesian_goal(const Eigen::Isometry3d& raw_goal) const override {
         return raw_goal;

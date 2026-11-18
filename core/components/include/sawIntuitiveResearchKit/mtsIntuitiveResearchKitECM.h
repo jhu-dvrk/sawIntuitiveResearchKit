@@ -46,10 +46,10 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
  protected:
     void set_generation(const dvrk::generation generation) override;
     void PostConfigure(const Json::Value & jsonConfig,
-                       const cmnPath & configPath,
+                       const cmnSearchPath & configPath,
                        const std::string & filename) override;
     void ConfigureGC(const Json::Value & jsonConfig,
-                       const cmnPath & configPath,
+                       const cmnSearchPath & configPath,
                        const std::string & filename) override;
 
     /*! Configuration methods */

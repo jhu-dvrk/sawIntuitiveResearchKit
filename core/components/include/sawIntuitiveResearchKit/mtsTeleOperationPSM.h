@@ -35,6 +35,7 @@
 
 // always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
+#include <chrono>
 
 class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
 {
@@ -194,7 +195,7 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     mtsStateTable * mConfigurationStateTable;
 
     mtsStateMachine mTeleopState;
-    double mInStateTimer;
+    std::chrono::steady_clock::time_point mInStateStartTime;
 
     bool m_following;
     bool m_data_check_warning_sent = false;
