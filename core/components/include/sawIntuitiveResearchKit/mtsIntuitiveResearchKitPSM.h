@@ -107,6 +107,7 @@ protected:
     void SetGoalHomingArm(void) override;
     void EnterHomed(void) override;
     void TransitionHomed(void); // for adapter/tool detection
+    void EnterDisabled(void) override;
 
     // methods used in change coupling/engaging
     void update_configuration_js_no_tool(const prmConfigurationJoint& joint_config);

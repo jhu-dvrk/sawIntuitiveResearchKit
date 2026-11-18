@@ -1912,7 +1912,7 @@ void mtsIntuitiveResearchKitArm::servo_jf_internal(const Eigen::VectorXd& jf)
 {
     // convert to cisstParameterTypes
     m_servo_jf_param.SetForceTorque(jf);
-    m_servo_jf_param.SetTimestamp(durationToSeconds(StateTable.GetTic().time_since_epoch()));
+    m_servo_jf_param.SetTimestamp(getTimestamp(StateTable.GetTic()));
     if (m_has_coupling) {
         m_servo_jf_param.ForceTorque() = m_coupling.JointToActuatorEffort() * m_servo_jf_param.ForceTorque();
     }
@@ -1932,7 +1932,7 @@ void mtsIntuitiveResearchKitArm::servo_jp_internal(const Eigen::VectorXd& jp,
 
     // assign velocities
     m_servo_jp_param.Velocity() = jv;
-    m_servo_jp_param.SetTimestamp(durationToSeconds(StateTable.GetTic().time_since_epoch()));
+    m_servo_jp_param.SetTimestamp(getTimestamp(StateTable.GetTic()));
     if (m_has_coupling) {
         m_servo_jp_param.Goal() = m_coupling.JointToActuatorPosition() * m_servo_jp_param.Goal();
         if (m_servo_jp_param.Velocity().size() != 0) {
@@ -1962,7 +1962,7 @@ void mtsIntuitiveResearchKitArm::apply_feed_forward(void)
         jf = m_coupling.JointToActuatorEffort() * jf;
     }
 
-    m_feed_forward_jf_param.SetTimestamp(durationToSeconds(StateTable.GetTic().time_since_epoch()));
+    m_feed_forward_jf_param.SetTimestamp(getTimestamp(StateTable.GetTic()));
     PID.feed_forward_servo_jf(m_feed_forward_jf_param);
 }
 
@@ -1980,7 +1980,7 @@ void mtsIntuitiveResearchKitArm::feed_forward_jf_internal(const Eigen::VectorXd&
         m_feed_forward_jf_param.ForceTorque() += actuator_efforts;
     }
 
-    m_feed_forward_jf_param.SetTimestamp(durationToSeconds(StateTable.GetTic().time_since_epoch()));
+    m_feed_forward_jf_param.SetTimestamp(getTimestamp(StateTable.GetTic()));
     PID.feed_forward_servo_jf(m_feed_forward_jf_param);
 }
 

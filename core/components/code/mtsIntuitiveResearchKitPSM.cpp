@@ -971,7 +971,19 @@ void mtsIntuitiveResearchKitPSM::TransitionHomed(void)
     }
 }
 
-// TODO: add trigger to call this when leaving homed?
+void mtsIntuitiveResearchKitPSM::EnterDisabled()
+{
+    // before tool is configured, m_configuration_js has seven joints, but
+    // after it has six, so if we disable power we need to "unconfigure" back
+    // to the seven joint version
+    // TODO: remove once controllers are cleaned up.
+    if (m_tool_present) {
+        set_tool_present_and_configured(true, false);
+    }
+
+    mtsIntuitiveResearchKitArm::EnterDisabled();
+}
+
 void mtsIntuitiveResearchKitPSM::update_configuration_js_no_tool(const prmConfigurationJoint& joint_config)
 {
     // all vectors used to get data from Manipulator must match the
@@ -1654,6 +1666,8 @@ void mtsIntuitiveResearchKitPSM::set_tool_present_and_configured(const bool & pr
     // update for users
     if (Manipulator) {
         update_configuration_js(Manipulator->jointConfig());
+    } else {
+        update_configuration_js_no_tool(arm_joints);
     }
     // refresh data to take coupling into account
     get_robot_data();
