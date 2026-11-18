@@ -466,7 +466,7 @@ void mtsIntuitiveResearchKitECM::EnterManual(void)
 void mtsIntuitiveResearchKitECM::RunManual(void)
 {
     if (mControlCallback) {
-        mControlCallback->Execute();
+        mControlCallback();
     }
 }
 

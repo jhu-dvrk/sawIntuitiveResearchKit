@@ -101,7 +101,7 @@ protected:
 
     void SetControlSpaceAndMode(const mtsIntuitiveResearchKitControlTypes::ControlSpace space,
                                 const mtsIntuitiveResearchKitControlTypes::ControlMode mode,
-                                mtsCallableVoidBase * callback = 0) override;
+                                const std::function<void(void)> & callback = nullptr) override;
 
     // state related methods
     void SetGoalHomingArm(void) override;

@@ -44,8 +44,7 @@ mtsIntuitiveResearchKitArm::mtsIntuitiveResearchKitArm(const std::string & compo
     mtsTaskPeriodic(componentName, periodInSeconds),
     mArmState(componentName, "DISABLED"),
     mStateTableState(100, "State"),
-    mStateTableConfiguration(100, "Configuration"),
-    mControlCallback(0)
+    mStateTableConfiguration(100, "Configuration")
 {
     mCartesianImpedanceController = new osaCartesianImpedanceController();
 }
@@ -54,8 +53,7 @@ mtsIntuitiveResearchKitArm::mtsIntuitiveResearchKitArm(const mtsTaskPeriodicCons
     mtsTaskPeriodic(arg),
     mArmState(arg.Name, "DISABLED"),
     mStateTableState(100, "State"),
-    mStateTableConfiguration(100, "Configuration"),
-    mControlCallback(0)
+    mStateTableConfiguration(100, "Configuration")
 {
     mCartesianImpedanceController = new osaCartesianImpedanceController();
 }
@@ -1444,7 +1442,7 @@ void mtsIntuitiveResearchKitArm::LeaveHomed(void)
 void mtsIntuitiveResearchKitArm::RunHomed(void)
 {
     if (mControlCallback) {
-        mControlCallback->Execute();
+        mControlCallback();
     }
 }
 
@@ -1689,13 +1687,10 @@ void mtsIntuitiveResearchKitArm::trajectory_j_update_reflexxes(void)
 
 void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResearchKitControlTypes::ControlSpace space,
                                                         const mtsIntuitiveResearchKitControlTypes::ControlMode mode,
-                                                        mtsCallableVoidBase * callback)
+                                                        const std::function<void(void)> & callback)
 {
     // ignore if already in the same space
     if ((space == m_control_space) && (mode == m_control_mode)) {
-        if (callback) {
-            delete callback;
-        }
         return;
     }
 

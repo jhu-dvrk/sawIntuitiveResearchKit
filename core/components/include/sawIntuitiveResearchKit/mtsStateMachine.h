@@ -19,7 +19,11 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsStateMachine_h
 #define _mtsStateMachine_h
 
-#include <cisstMultiTask/mtsCallableVoidMethod.h>
+#include <functional>
+#include <map>
+#include <string>
+#include <vector>
+#include <cisstCommon/cmnThrow.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
 /*
@@ -41,8 +45,6 @@ public:
         mName(name),
         mFirstRun(true),
         mDesiredStateIsNotCurrent(false),
-        mRunCallback(0),
-        mStateChangeCallback(0),
         mCurrentState(initialState),
         mDesiredState(initialState),
         mPreviousState(initialState),
@@ -62,9 +64,11 @@ public:
       SetDesiredState with allowed states. */
     void AddAllowedDesiredState(const StateType allowedState);
 
+    typedef std::function<void(void)> CallbackType;
+
     /*! Set the Run callback for a given state. */
     //@{
-    inline void SetRunCallback(const StateType state, mtsCallableVoidBase * callback) {
+    inline void SetRunCallback(const StateType state, const CallbackType & callback) {
         if (!StateExists(state)) {
             cmnThrow("mtsStateMachine::SetRunCallback: "
                      + mName + ", state [" + state + "] doesn't exist.  Use AddState first.");
@@ -75,27 +79,27 @@ public:
     inline void SetRunCallback(const StateType state,
                                void (__classType::*method)(void),
                                __classType * classInstantiation) {
-        this->SetRunCallback(state, new mtsCallableVoidMethod<__classType>(method, classInstantiation));
+        this->SetRunCallback(state, [method, classInstantiation](void) { (classInstantiation->*method)(); });
     }
     //@}
 
     /*! Set the Run callback called for all states, this method is
       called before the state specific Run callback. */
     //@{
-    inline void SetRunCallback(mtsCallableVoidBase * callback) {
+    inline void SetRunCallback(const CallbackType & callback) {
         mRunCallback = callback;
     }
     template <class __classType>
     inline void SetRunCallback(void (__classType::*method)(void),
                                __classType * classInstantiation) {
-        this->SetRunCallback(new mtsCallableVoidMethod<__classType>(method, classInstantiation));
+        this->SetRunCallback([method, classInstantiation](void) { (classInstantiation->*method)(); });
     }
     //@}
 
     /*! Set the Enter callback for a given state.  This method is
       called only once, before the Run callback. */
     //@{
-    inline void SetEnterCallback(const StateType state, mtsCallableVoidBase * callback) {
+    inline void SetEnterCallback(const StateType state, const CallbackType & callback) {
         if (!StateExists(state)) {
             cmnThrow("mtsStateMachine::SetEnterCallback: "
                      + mName + ", state [" + state + "] doesn't exist.  Use AddState first.");
@@ -106,14 +110,14 @@ public:
     inline void SetEnterCallback(const StateType state,
                                  void (__classType::*method)(void),
                                  __classType * classInstantiation) {
-        this->SetEnterCallback(state, new mtsCallableVoidMethod<__classType>(method, classInstantiation));
+        this->SetEnterCallback(state, [method, classInstantiation](void) { (classInstantiation->*method)(); });
     }
     //@}
 
     /*! Set the Leave callback for a given state.  Called once when
       leaving the current state. */
     //@{
-    inline void SetLeaveCallback(const StateType state, mtsCallableVoidBase * callback) {
+    inline void SetLeaveCallback(const StateType state, const CallbackType & callback) {
         if (!StateExists(state)) {
             cmnThrow("mtsStateMachine::SetLeaveCallback: "
                      + mName + ", state [" + state + "] doesn't exist.  Use AddState first.");
@@ -124,14 +128,14 @@ public:
     inline void SetLeaveCallback(const StateType state,
                                  void (__classType::*method)(void),
                                  __classType * classInstantiation) {
-        this->SetLeaveCallback(state, new mtsCallableVoidMethod<__classType>(method, classInstantiation));
+        this->SetLeaveCallback(state, [method, classInstantiation](void) { (classInstantiation->*method)(); });
     }
     //@}
 
     /*! Set the Transition callback for a given state.  This callback
       is called after the Run callback for the current state. */
     //@{
-    inline void SetTransitionCallback(const StateType state, mtsCallableVoidBase * callback) {
+    inline void SetTransitionCallback(const StateType state, const CallbackType & callback) {
         if (!StateExists(state)) {
             cmnThrow("mtsStateMachine::SetTransitionCallback: "
                      + mName + ", state [" + state + "] doesn't exist.  Use AddState first.");
@@ -142,19 +146,19 @@ public:
     inline void SetTransitionCallback(const StateType state,
                                       void (__classType::*method)(void),
                                       __classType * classInstantiation) {
-        this->SetTransitionCallback(state, new mtsCallableVoidMethod<__classType>(method, classInstantiation));
+        this->SetTransitionCallback(state, [method, classInstantiation](void) { (classInstantiation->*method)(); });
     }
     //@}
 
     /*! Set the state changed callback. */
     //@{
-    inline void SetStateChangedCallback(mtsCallableVoidBase * callback) {
+    inline void SetStateChangedCallback(const CallbackType & callback) {
         mStateChangeCallback = callback;
     }
     template <class __classType>
     inline void SetStateChangedCallback(void (__classType::*method)(void),
                                         __classType * classInstantiation) {
-        this->SetStateChangedCallback(new mtsCallableVoidMethod<__classType>(method, classInstantiation));
+        this->SetStateChangedCallback([method, classInstantiation](void) { (classInstantiation->*method)(); });
     }
     //@}
 
@@ -202,17 +206,17 @@ protected:
     bool mFirstRun;
     bool mDesiredStateIsNotCurrent;
 
-    typedef std::map<StateType, mtsCallableVoidBase *> CallbackMap;
+    typedef std::map<StateType, CallbackType> CallbackMap;
 
     CallbackMap mEnterCallbacks,
                 mRunCallbacks,
                 mLeaveCallbacks,
                 mTransitionCallbacks;
 
-    mtsCallableVoidBase * mRunCallback,
-                        * mCurrentRunCallback,
-                        * mCurrentTransitionCallback,
-                        * mStateChangeCallback;
+    CallbackType mRunCallback,
+                 mCurrentRunCallback,
+                 mCurrentTransitionCallback,
+                 mStateChangeCallback;
 
     StateType mCurrentState,
         mDesiredState,

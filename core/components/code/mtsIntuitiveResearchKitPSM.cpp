@@ -864,7 +864,7 @@ Eigen::Isometry3d mtsIntuitiveResearchKitPSM::safe_cartesian_goal(const Eigen::I
 
 void mtsIntuitiveResearchKitPSM::SetControlSpaceAndMode(const mtsIntuitiveResearchKitControlTypes::ControlSpace space,
                                                         const mtsIntuitiveResearchKitControlTypes::ControlMode mode,
-                                                        mtsCallableVoidBase * callback)
+                                                        const std::function<void(void)> & callback)
 {
     if (mode != m_control_mode) {
         if ((mode == mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE)
@@ -1342,7 +1342,7 @@ void mtsIntuitiveResearchKitPSM::EnterManual(void)
 void mtsIntuitiveResearchKitPSM::RunManual(void)
 {
     if (mControlCallback) {
-        mControlCallback->Execute();
+        mControlCallback();
     }
 }
 

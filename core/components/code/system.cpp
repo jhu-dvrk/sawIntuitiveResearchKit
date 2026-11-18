@@ -386,9 +386,7 @@ void dvrk::system::Configure(const std::string & filename)
     if (m_IRE_shell != "") {
         std::string _ire_cmd;
         // more cisst libraries
-        for (const auto lib : {"Vector", "ParameterTypes"}) {
-            _ire_cmd.append(std::string("import cisst") + lib + "Python as cisst" + lib + ";");
-        }
+        _ire_cmd.append("import cisstParameterTypesPython as cisstParameterTypes;");
         // create interface for system
         _ire_cmd.append(this->GetName() + " = cisstMultiTask.mtsCreateClientInterface(clientName = 'system_Python', serverName = '" + this->GetName() + "', interfaceName = 'Main');");
 

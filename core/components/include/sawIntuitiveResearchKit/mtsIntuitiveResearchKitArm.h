@@ -445,7 +445,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
       provided. */
     virtual void SetControlSpaceAndMode(const mtsIntuitiveResearchKitControlTypes::ControlSpace space,
                                         const mtsIntuitiveResearchKitControlTypes::ControlMode mode,
-                                        mtsCallableVoidBase * callback = 0);
+                                        const std::function<void(void)> & callback = nullptr);
 
     /*! Set the control space and mode along with a callback for
       control.  The callback method will be use only if either the
@@ -456,8 +456,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
                                            void (__classType::*method)(void),
                                            __classType * classInstantiation) {
         this->SetControlSpaceAndMode(space, mode,
-                                     new mtsCallableVoidMethod<__classType>(method,
-                                                                            classInstantiation));
+                                     [method, classInstantiation](void) { (classInstantiation->*method)(); });
     }
 
     /*! Methods to set the control callback directly.  Users should
@@ -466,19 +465,15 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     template <class __classType>
         inline void SetControlCallback(void (__classType::*method)(void),
                                        __classType * classInstantiation) {
-        this->SetControlCallback(new mtsCallableVoidMethod<__classType>(method,
-                                                                        classInstantiation));
+        this->SetControlCallback([method, classInstantiation](void) { (classInstantiation->*method)(); });
     }
 
-    inline void SetControlCallback(mtsCallableVoidBase * callback) {
-        if (this->mControlCallback != 0) {
-            delete this->mControlCallback;
-        }
+    inline void SetControlCallback(const std::function<void(void)> & callback) {
         this->mControlCallback = callback;
     }
     //@}
 
-    mtsCallableVoidBase * mControlCallback;
+    std::function<void(void)> mControlCallback;
 
     virtual void control_servo_jp(void);
     virtual void control_move_jp(void);

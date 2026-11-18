@@ -65,26 +65,26 @@ void mtsStateMachine::Run(void)
         CallbackMap::iterator callback;
         callback = mEnterCallbacks.find(mCurrentState);
         if (callback != mEnterCallbacks.end()) {
-            callback->second->Execute();
+            callback->second();
         }
 
         // user callback if provided
         if (mStateChangeCallback) {
-            mStateChangeCallback->Execute();
+            mStateChangeCallback();
         }
 
         mFirstRun = false;
     }
     // check if a transition should happen
     if (mCurrentTransitionCallback) {
-        mCurrentTransitionCallback->Execute();
+        mCurrentTransitionCallback();
     }
     // run current state method
     if (mRunCallback) {
-        mRunCallback->Execute();
+        mRunCallback();
     }
     if (mCurrentRunCallback) {
-        mCurrentRunCallback->Execute();
+        mCurrentRunCallback();
     }
 }
 
@@ -118,7 +118,7 @@ void mtsStateMachine::SetCurrentState(const StateType & newState)
     // find current state leave callback
     callback = mLeaveCallbacks.find(mCurrentState);
     if (callback != mLeaveCallbacks.end()) {
-        callback->second->Execute();
+        callback->second();
     }
     // set the new state and update current callbacks
     mPreviousState = mCurrentState;
@@ -128,12 +128,12 @@ void mtsStateMachine::SetCurrentState(const StateType & newState)
     // find new state enter callback
     callback = mEnterCallbacks.find(mCurrentState);
     if (callback != mEnterCallbacks.end()) {
-        callback->second->Execute();
+        callback->second();
     }
 
     // user callback if provided
     if (mStateChangeCallback) {
-        mStateChangeCallback->Execute();
+        mStateChangeCallback();
     }
 
     // update current callbacks
@@ -148,13 +148,13 @@ void mtsStateMachine::UpdateCurrentCallbacks(void)
     if (callback != mRunCallbacks.end()) {
         mCurrentRunCallback = callback->second;
     } else {
-        mCurrentRunCallback = 0;
+        mCurrentRunCallback = nullptr;
     }
     // find transition callback
     callback = mTransitionCallbacks.find(mCurrentState);
     if (callback != mTransitionCallbacks.end()) {
         mCurrentTransitionCallback = callback->second;
     } else {
-        mCurrentTransitionCallback = 0;
+        mCurrentTransitionCallback = nullptr;
     }
 }
