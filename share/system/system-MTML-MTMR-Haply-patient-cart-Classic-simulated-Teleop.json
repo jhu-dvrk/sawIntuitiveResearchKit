@@ -11,7 +11,7 @@
                 "constructor-arg": {
                     "Name": "Haply"
                 },
-                "configure-parameter": "sawHaplyService-JHU-Imerse-0699-069E.json"
+                "configure-parameter": "system/sawHaplyService-JHU-Imerse-0699-069E.json"
             }
         ]
     }

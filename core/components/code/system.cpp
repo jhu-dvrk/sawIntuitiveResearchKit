@@ -17,6 +17,7 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 #include <sawIntuitiveResearchKit/system.h>
+#include <sawIntuitiveResearchKit/configuration_overrides.h>
 
 #include <algorithm>
 #include <json/json.h>
@@ -132,6 +133,12 @@ void dvrk::system::calibration_mode(bool & result) const
 
 void dvrk::system::Configure(const std::string & filename)
 {
+    Configure(filename, std::list<std::string>());
+}
+
+void dvrk::system::Configure(const std::string & filename,
+                             const std::list<std::string> & tool_overrides)
+{
     m_configured = false;
 
     std::ifstream json_stream;
@@ -145,6 +152,8 @@ void dvrk::system::Configure(const std::string & filename)
                                  << json_reader.getFormattedErrorMessages();
         exit(EXIT_FAILURE);
     }
+
+    dvrk::apply_tool_overrides(json_config, tool_overrides);
 
     CMN_LOG_CLASS_INIT_VERBOSE << "Configure: " << this->GetName()
                                << " using file \"" << filename << "\"" << std::endl

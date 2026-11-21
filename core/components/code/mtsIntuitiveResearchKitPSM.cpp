@@ -34,6 +34,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitPSM.h>
 #include <sawIntuitiveResearchKit/prmActuatorJointCouplingCheck.h>
 #include <sawIntuitiveResearchKit/robManipulatorGeneric.h>
+#include <sawIntuitiveResearchKit/robManipulatorPSMSnake.h>
 
 #include <kdl/chainidsolver_recursive_newton_euler.hpp>
 
@@ -551,10 +552,13 @@ void mtsIntuitiveResearchKitPSM::ConfigureToolDH(
 
     prmConfigurationJoint combined_joints = arm_joints.append(tool_joints.value());
 
-    // update configuration joint from manipulator
-    update_configuration_js(combined_joints);
-
-    Manipulator = std::make_unique<robManipulatorGeneric>(combined_joints, full_chain);
+    if (m_snake_like) {
+        Manipulator = std::make_unique<robManipulatorPSMSnake>(combined_joints, full_chain);
+    } else {
+        Manipulator = std::make_unique<robManipulatorGeneric>(combined_joints, full_chain);
+    }
+    // The manipulator exposes independent coordinates, including snake tools.
+    update_configuration_js(Manipulator->jointConfig());
 
     // resize data members using kinematics (jacobians and effort vectors)
     ResizeKinematicsData();
@@ -580,70 +584,30 @@ void mtsIntuitiveResearchKitPSM::UpdateStateJointKinematics(void)
     m_jaw_setpoint_js.Position() = Eigen::VectorXd({{m_pid_setpoint_js.Position()(jaw_index)}});
     m_jaw_setpoint_js.Effort() = Eigen::VectorXd({{m_pid_setpoint_js.Effort()(jaw_index)}});
     m_jaw_setpoint_js.Timestamp() = m_pid_setpoint_js.Timestamp();
-    m_jaw_setpoint_js.Valid() = m_pid_setpoint_js.Timestamp();
+    m_jaw_setpoint_js.Valid() = m_pid_setpoint_js.Valid();
 
-    if (!m_snake_like) {
+    // All PSM tools expose six independent arm joints; the jaw is separate.
+    // measured p/v/e
+    m_kin_measured_js.Position() = m_pid_measured_js.Position().head(number_of_joints_kinematics());
+    m_kin_measured_js.Velocity() = m_pid_measured_js.Velocity().head(number_of_joints_kinematics());
+    m_kin_measured_js.Effort() = m_pid_measured_js.Effort().head(number_of_joints_kinematics());
+    m_kin_measured_js.Timestamp() = m_pid_measured_js.Timestamp();
+    m_kin_measured_js.Valid() = m_pid_measured_js.Valid();
 
-        // most tool, copy first n joints (6) from PID for kinematics
-        // measured p/v/e
-        m_kin_measured_js.Position() = m_pid_measured_js.Position().head(number_of_joints_kinematics());
-        m_kin_measured_js.Velocity() = m_pid_measured_js.Velocity().head(number_of_joints_kinematics());
-        m_kin_measured_js.Effort() = m_pid_measured_js.Effort().head(number_of_joints_kinematics());
-        m_kin_measured_js.Timestamp() = m_pid_measured_js.Timestamp();
-        m_kin_measured_js.Valid() = m_pid_measured_js.Valid();
-
-        // setpoint p/e
-        m_kin_setpoint_js.Position() = m_pid_setpoint_js.Position().head(number_of_joints_kinematics());
-        m_kin_setpoint_js.Velocity() = m_pid_setpoint_js.Velocity().head(number_of_joints_kinematics());
-        m_kin_setpoint_js.Effort() = m_pid_setpoint_js.Effort().head(number_of_joints_kinematics());
-        m_kin_setpoint_js.Timestamp() = m_pid_setpoint_js.Timestamp();
-        m_kin_setpoint_js.Valid() = m_pid_setpoint_js.Valid();
-
-    } else {
-
-        // measured p/v/e
-        m_kin_measured_js.Position().head(4) = m_pid_measured_js.Position().head(4);
-        m_kin_measured_js.Position()(4) = m_kin_measured_js.Position()(7) = m_pid_measured_js.Position()(4) / 2.0;
-        m_kin_measured_js.Position()(5) = m_kin_measured_js.Position()(6) = m_pid_measured_js.Position()(5) / 2.0;
-
-        m_kin_measured_js.Velocity().head(4) = m_pid_measured_js.Velocity().head(4);
-        m_kin_measured_js.Velocity()(4) = m_kin_measured_js.Velocity()(7) = m_pid_measured_js.Velocity()(4) / 2.0;
-        m_kin_measured_js.Velocity()(5) = m_kin_measured_js.Velocity()(6) = m_pid_measured_js.Velocity()(5) / 2.0;
-
-        m_kin_measured_js.Effort().head(4) = m_pid_measured_js.Effort().head(4);
-        m_kin_measured_js.Effort()(4) = m_kin_measured_js.Effort()(7) = m_pid_measured_js.Effort()(4) / 2.0;
-        m_kin_measured_js.Effort()(5) = m_kin_measured_js.Effort()(6) = m_pid_measured_js.Effort()(5) / 2.0;
-        m_kin_measured_js.Timestamp() = m_pid_measured_js.Timestamp();
-        m_kin_measured_js.Valid() = m_pid_measured_js.Valid();
-
-        // setpoint p/e
-        m_kin_setpoint_js.Position().head(4) = m_pid_setpoint_js.Position().head(4);
-        m_kin_setpoint_js.Position()(4) = m_kin_setpoint_js.Position()(7) = m_pid_setpoint_js.Position()(4) / 2.0;
-        m_kin_setpoint_js.Position()(5) = m_kin_setpoint_js.Position()(6) = m_pid_setpoint_js.Position()(5) / 2.0;
-        std::cerr << CMN_LOG_DETAILS << " ------- need to add code to generate setpoint_js.Velocity " << std::endl;
-        m_kin_setpoint_js.Effort().head(4) = m_pid_measured_js.Effort().head(4);
-        m_kin_setpoint_js.Effort()(4) = m_kin_setpoint_js.Effort()(7) = m_pid_setpoint_js.Effort()(4) / 2.0;
-        m_kin_setpoint_js.Effort()(5) = m_kin_setpoint_js.Effort()(6) = m_pid_setpoint_js.Effort()(5) / 2.0;
-        m_kin_setpoint_js.Timestamp() = m_pid_setpoint_js.Timestamp();
-        m_kin_setpoint_js.Valid() = m_pid_setpoint_js.Valid();
-    }
+    // setpoint p/v/e
+    m_kin_setpoint_js.Position() = m_pid_setpoint_js.Position().head(number_of_joints_kinematics());
+    m_kin_setpoint_js.Velocity() = m_pid_setpoint_js.Velocity().head(number_of_joints_kinematics());
+    m_kin_setpoint_js.Effort() = m_pid_setpoint_js.Effort().head(number_of_joints_kinematics());
+    m_kin_setpoint_js.Timestamp() = m_pid_setpoint_js.Timestamp();
+    m_kin_setpoint_js.Valid() = m_pid_setpoint_js.Valid();
 }
 
 void mtsIntuitiveResearchKitPSM::ToJointsPID(const Eigen::VectorXd& jointsKinematics, Eigen::VectorXd& jointsPID)
 {
     if (is_cartesian_ready()) {
         // tool is present
-        if (m_snake_like) {
-            CMN_ASSERT(jointsKinematics.size() == 8);
-            jointsPID.head<4>() = jointsKinematics.head<4>();
-            // Test if position 4 and 7 are very much apart; throw error maybe ?
-            jointsPID(4) = jointsKinematics(4) + jointsKinematics(7);
-            // Same goes for 5 and 6
-            jointsPID(5) = jointsKinematics(5) + jointsKinematics(6);
-        } else {
-            CMN_ASSERT(jointsKinematics.size() >= 6);
-            jointsPID.head<6>() = jointsKinematics.head<6>();
-        }
+        CMN_ASSERT(jointsKinematics.size() >= 6);
+        jointsPID.head<6>() = jointsKinematics.head<6>();
     } else {
         // joint space, no tool yet so we can control all 7 actuators
         CMN_ASSERT(jointsKinematics.size() == 7);
@@ -1425,7 +1389,7 @@ void mtsIntuitiveResearchKitPSM::jaw_move_jp(const prmPositionJointSet & jawPosi
             SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE,
                                    mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE);
             // make sure all other joints have a reasonable goal
-            m_trajectory_j.goal.head(number_of_joints_kinematics()) = m_pid_setpoint_js.Position().head(number_of_joints_kinematics());
+            m_trajectory_j.goal = m_pid_setpoint_js.Position();
         }
         break;
     default:
@@ -1477,7 +1441,7 @@ void mtsIntuitiveResearchKitPSM::servo_jp_internal(const Eigen::VectorXd& jp,
 
     // velocity - current code only support jaw_servo_jv if servo_jp has a velocity goal
     const size_t jv_size = jv.size();
-    m_servo_jp_param.Velocity() = Eigen::VectorXd::Zero(7);
+    m_servo_jp_param.Velocity() = Eigen::VectorXd::Zero(jv_size == 0 ? 0 : number_of_joints());
     if (jv_size != 0) {
         ToJointsPID(jv, m_servo_jp_param.Velocity());
     }
@@ -1534,11 +1498,7 @@ void mtsIntuitiveResearchKitPSM::servo_jf_internal(const Eigen::VectorXd& newEff
 
     // pad array for PID
     Eigen::VectorXd torqueDesired = Eigen::VectorXd::Zero(number_of_joints()); // for PID
-    if (m_snake_like) {
-        std::cerr << CMN_LOG_DETAILS << " need to convert 8 joints from snake to 6 for force control" << std::endl;
-    } else {
-        torqueDesired.head(number_of_joints_kinematics()) = newEffort.head(number_of_joints_kinematics());
-    }
+    torqueDesired.head(number_of_joints_kinematics()) = newEffort.head(number_of_joints_kinematics());
     // add torque for jaws
     torqueDesired(6) = m_jaw_servo_jf;
 
@@ -1569,9 +1529,7 @@ void mtsIntuitiveResearchKitPSM::feed_forward_jf_internal(const Eigen::VectorXd&
     Eigen::VectorXd joint_efforts = Eigen::VectorXd::Zero(number_of_joints()); // for PID
     joint_efforts(6) = m_jaw_servo_jf;
 
-    if (m_snake_like) {
-        std::cerr << CMN_LOG_DETAILS << " need to convert 8 joints from snake to 6 for force control" << std::endl;
-    } else if (jf.size() > 0) {
+    if (jf.size() > 0) {
         joint_efforts.head(number_of_joints_kinematics()) = jf;
     }
 

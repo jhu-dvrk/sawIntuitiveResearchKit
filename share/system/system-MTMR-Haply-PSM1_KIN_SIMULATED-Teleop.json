@@ -11,7 +11,16 @@
                 "constructor-arg": {
                     "Name": "Haply"
                 },
-                "configure-parameter": "sawHaplyService-JHU-Imerse-Right.json"
+                "configure-parameter": "system/sawHaplyService-JHU-Imerse-Right.json"
+            },
+            {
+                "shared-library": "sawGenericInput",
+                "class-name": "mtsEvdev",
+                "constructor-arg": {
+                    "Name": "Pedals",
+                    "Period": 0.002
+                },
+                "configure-parameter": "system/sawGenericInput-dVRK-console.json"
             }
         ]
     }
@@ -46,20 +55,20 @@
             "input_type": "COMPONENTS",
             "operator_present" :
             {
-                "component": "Haply",
-                "interface": "MTMR/A"
+                "component": "Pedals",
+                "interface": "OperatorPresent"
             }
             ,
             "clutch" :
             {
-                "component": "Haply",
-                "interface": "MTMR/B"
+                "component": "Pedals",
+                "interface": "Clutch"
             }
             ,
             "camera" :
             {
-                "component": "Haply",
-                "interface": "MTMR/Home"
+                "component": "Pedals",
+                "interface": "Camera"
             }
             ,
             "teleop_PSMs":
@@ -69,9 +78,8 @@
                     "PSM": "PSM1",
                     "configure_parameter": {
                         "start_gripper_threshold": 0.0,
-                        "ignore_jaw": true,
                         "scale": 0.4,
-                        "align_mtm": false
+                        "align_MTM": false
                     }
                 }
             ]

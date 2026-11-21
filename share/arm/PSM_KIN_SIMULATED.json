@@ -1,0 +1,6 @@
+{
+    "$id": "dvrk-psm.schema.json",
+    "$version": "1",
+    "kinematic": "kinematic/PSM.json",
+    "generation": "Classic"
+}

@@ -3,8 +3,23 @@
     "devices": [
         {
             "name": "MTMR",
-            "base_serial": "05DE",
-            "stylus_serial": "1245"
+            "base_serial": "0699",
+            "stylus_serial": "1605",
+            "gripper": {
+                "emulate": true,
+                "rate": 1.0,
+                "min": 0.0,
+                "max": 1.0
+            },
+            "base_frame": {
+                "reference_frame": "user",
+                "transform": [
+                    [1.0, 0.0, 0.0, 0.8],
+                    [0.0, 1.0, 0.0, 0.0],
+                    [0.0, 0.0, 1.0, 0.0],
+                    [0.0, 0.0, 0.0, 1.0]
+                ]
+            }
         }
     ]
 }

@@ -35,6 +35,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitRevision.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitConfig.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
+#include <sawIntuitiveResearchKit/configuration_overrides.h>
 #include <sawIntuitiveResearchKit/prmActuatorJointCouplingCheck.h>
 #include <sawIntuitiveResearchKit/robManipulator.h>
 
@@ -560,6 +561,10 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
             exit(EXIT_FAILURE);
         }
 
+        // The log below records the effective configuration. Keep filename
+        // unchanged so relative assets still resolve from the original file.
+        dvrk::apply_arm_overrides(jsonConfig, m_configuration_overrides);
+
         CMN_LOG_CLASS_INIT_VERBOSE << "Configure: " << this->GetName()
                                    << " using file \"" << filename << "\"" << std::endl
                                    << "----> content of configuration file: " << std::endl
@@ -962,9 +967,7 @@ void mtsIntuitiveResearchKitArm::get_robot_data(void)
         m_measured_cs.PositionIsValid() = true;
 
         // update jacobians
-        Manipulator->computeJacobians(m_kin_measured_js.Position());
-        m_body_jacobian = Manipulator->bodyJacobian().matrix();
-        m_spatial_jacobian = Manipulator->spatialJacobian().matrix();
+        UpdateJacobian(m_kin_measured_js.Position());
 
         // update cartesian velocity using the jacobian and joint
         // velocities.
@@ -1061,6 +1064,13 @@ void mtsIntuitiveResearchKitArm::get_robot_data(void)
 
     Eigen::MatrixXd test;
     test.setIdentity();
+}
+
+void mtsIntuitiveResearchKitArm::UpdateJacobian(const Eigen::VectorXd & joints)
+{
+    Manipulator->computeJacobians(joints);
+    m_body_jacobian = Manipulator->bodyJacobian().matrix();
+    m_spatial_jacobian = Manipulator->spatialJacobian().matrix();
 }
 
 void mtsIntuitiveResearchKitArm::UpdateStateJointKinematics(void)
@@ -1740,7 +1750,7 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
             // initialize trajectory
             m_servo_jp.head(number_of_joints()) = m_pid_setpoint_js.Position().head(number_of_joints());
             if (m_control_mode == mtsIntuitiveResearchKitControlTypes::POSITION_MODE) {
-                m_servo_jv.head(number_of_joints()) = m_pid_measured_js.Velocity().head(number_of_joints());
+                m_servo_jv = m_pid_measured_js.Velocity().head(number_of_joints());
             } else {
                 // we're switching from effort or no mode
                 m_servo_jv = Eigen::VectorXd::Zero(number_of_joints());
@@ -2026,7 +2036,7 @@ void mtsIntuitiveResearchKitArm::servo_jp(const prmPositionJointSet & jp)
                            mtsIntuitiveResearchKitControlTypes::POSITION_MODE);
     // set goal
     m_servo_jp.head(number_of_joints_kinematics()) = jp.Goal().head(number_of_joints_kinematics());
-    m_servo_jv.head(jp.Velocity().size()) = jp.Velocity();
+    m_servo_jv = jp.Velocity();
     m_pid_new_goal = true;
 }
 

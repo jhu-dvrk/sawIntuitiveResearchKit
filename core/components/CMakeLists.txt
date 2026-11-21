@@ -136,10 +136,12 @@ if (sawRobotIO1394_FOUND AND sawControllers_FOUND)
     robManipulator.h
     robManipulatorECM.h
     robManipulatorGeneric.h
+    robManipulatorPSMSnake.h
     robManipulatorMTM.h
     prmActuatorJointCouplingCheck.h
     robGravityCompensation.h
 
+    configuration_overrides.h
     arm_proxy.h
     console.h
     IO_proxy.h
@@ -169,6 +171,7 @@ if (sawRobotIO1394_FOUND AND sawControllers_FOUND)
     robManipulator.cpp
     robManipulatorECM.cpp
     robManipulatorGeneric.cpp
+    robManipulatorPSMSnake.cpp
     robManipulatorMTM.cpp
     prmActuatorJointCouplingCheck.cpp
     robGravityCompensationMTM.cpp

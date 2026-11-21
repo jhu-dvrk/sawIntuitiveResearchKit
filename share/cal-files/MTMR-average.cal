@@ -1,0 +1,31 @@
+%   MTM Calibration File (Nominal / Average Right MTM)
+%
+%   Averaged from the 3 unique MTMR .cal files in dvrk_config_jhu:
+%   - jhu-dVRK/cal-files/jhu-mtmr-m28247.cal (serial 28247)
+%   - jhu-daVinci/cal-files/jhu-dv-mtmr-32336.cal (serial 32336)
+%   - jhu-daVinci-Si/cal-files/jhu-mtmr-22403.cal (serial 22403)
+%   See README.md in this directory for details.
+
+FileType      = [ 'MTM_CAL' ]
+FileVersion   = [ 302 ]
+serial_number = [ 0 ]
+part_number   = [ 380026 ]
+part_version  = [ 7 ]
+date          = [ '20-Nov-2026 00:00:00' ]
+iteration     = [ 1 ]
+cal_version   = [ 40201 ]
+id            = [ 5000 ]
+style         = [ 5014 ]
+type          = [ 0 ]
+comment       = [ 'MTM_STYLE_MANET_RIGHT' ]
+
+joint.signal_range(UPPER_LIMIT,1:MST_JNT_POS_GR_DOFS) = [ 0.783000 1.163300 0.717658 3.599700 3.276300 0.819400 7.875299 0.523600 ]
+joint.signal_range(LOWER_LIMIT,1:MST_JNT_POS_GR_DOFS) = [ -1.277000 -0.352200 -0.248891 -1.679900 -1.705500 -0.819400 -8.416111 0.000000 ]
+
+motor.pot_input_gain(1:MST_MOT_DOFS)                  = [ 0.0014548 0.0014423 0.0014515 -0.0014678 0.0015076 0.0015169 0.0007711 0 ]
+motor.pot_input_offset(1:MST_MOT_DOFS)                = [ -3.185465 -2.532009 -2.793417 3.834052 -2.348690 -3.076881 -0.579371 0 ]
+
+motor.pot_limit_checks(UPPER_LIMIT,1:MST_MOT_DOFS)    = [ 2917.0 2705.1 2561.5 4001.9 3971.4 2723.0 4096.0 4096 ]
+motor.pot_limit_checks(LOWER_LIMIT,1:MST_MOT_DOFS)    = [ 1122.1 1372.5 1162.5 73.6 143.8 1353.0 0.0 0 ]
+
+% End of Cal File

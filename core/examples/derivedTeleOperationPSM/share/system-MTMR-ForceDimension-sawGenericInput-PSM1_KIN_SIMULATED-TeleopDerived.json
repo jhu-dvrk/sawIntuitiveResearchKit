@@ -1,0 +1,81 @@
+{
+    "$id": "dvrk-system.schema.json",
+    "$version": "1",
+    "component_manager": {
+        "components": [
+            {
+                "shared-library": "sawForceDimensionSDK",
+                "class-name": "mtsForceDimension",
+                "constructor-arg": {
+                    "Name": "ForceDimensionSDK"
+                },
+                "configure-parameter": "sawForceDimensionSDK-MTMR.json"
+            },
+            {
+                "shared-library": "sawIntuitiveResearchKitDerivedTeleOperationPSM",
+                "class-name": "mtsDerivedTeleOperationPSM",
+                "constructor-arg": {
+                    "Name": "MTMR_PSM1",
+                    "Period": 0.001
+                }
+            },
+            {
+                "shared-library": "sawGenericInput",
+                "class-name": "mtsEvdev",
+                "constructor-arg": {
+                    "Name": "Pedals",
+                    "Period": 0.002
+                },
+                "configure-parameter": "system/sawGenericInput-dVRK-console.json"
+            }
+        ]
+    },
+    "arms": [
+        {
+            "name": "MTMR",
+            "type": "MTM_GENERIC",
+            "component": "ForceDimensionSDK",
+            "interface": "MTMR"
+        },
+        {
+            "name": "PSM1",
+            "type": "PSM",
+            "simulation": "KINEMATIC",
+            "arm_file": "arm/PSM_KIN_SIMULATED_LARGE_NEEDLE_DRIVER_400006.json",
+            "base_frame": {
+                "reference_frame": "ForceDimensionSDK",
+                "transform": [
+                    [ 0.0, 1.0, 0.0, 0.0 ],
+                    [ -1.0, 0.0, 0.0, 0.0 ],
+                    [ 0.0, 0.0, 1.0, 0.0 ],
+                    [ 0.0, 0.0, 0.0, 1.0 ]
+                ]
+            }
+        }
+    ],
+    "consoles": [
+        {
+            "name": "console",
+            "input_type": "COMPONENTS",
+            "operator_present": {
+                "component": "Pedals",
+                "interface": "OperatorPresent"
+            },
+            "clutch": {
+                "component": "Pedals",
+                "interface": "Clutch"
+            },
+            "camera": {
+                "component": "Pedals",
+                "interface": "Camera"
+            },
+            "teleop_PSMs": [
+                {
+                    "type": "TELEOP_PSM_DERIVED",
+                    "MTM": "MTMR",
+                    "PSM": "PSM1"
+                }
+            ]
+        }
+    ]
+}

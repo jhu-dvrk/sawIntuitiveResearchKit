@@ -17,7 +17,6 @@ project (sawIntuitiveResearchKitTests VERSION 2.5.0)
 # create a list of required cisst libraries
 set (REQUIRED_CISST_LIBRARIES
   cisstCommon
-  cisstVector
   cisstOSAbstraction
   cisstMultiTask
   cisstParameterTypes
@@ -43,6 +42,7 @@ if (sawIntuitiveResearchKit_FOUND)
   link_directories (${sawIntuitiveResearchKit_LIBRARY_DIR})
 
   add_executable (sawIntuitiveResearchKitTests
+    mtsIntuitiveResearchKitPSMTest.cpp
     robManipulatorTest.cpp
     robManipulatorTest.h)
 

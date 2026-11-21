@@ -275,7 +275,7 @@ TeleopParametersPage::TeleopParametersPage(TeleopConfig& config, const ListModel
         if (index == 0) {
             this->config->PSM_base_frame = {};
         } else  {
-            this->config->PSM_base_frame = ComponentInterfaceConfig();
+            this->config->PSM_base_frame.emplace();
             this->config->PSM_base_frame->component_name = "ECM";
             this->config->PSM_base_frame->interface_name = "Arm";
         }

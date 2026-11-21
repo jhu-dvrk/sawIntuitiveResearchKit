@@ -22,6 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <array>
 #include <chrono>
+#include <list>
 #include <memory>
 #include <vector>
 
@@ -81,6 +82,11 @@ namespace dvrk {
           succeeded, used method Configured().
         */
         void Configure(const std::string & filename) override;
+
+        /*! Configure with per-arm ARM=TOOL selections. CLI selections override
+          arm_overrides in the system file and select FIXED tool detection. */
+        void Configure(const std::string & filename,
+                       const std::list<std::string> & tool_overrides);
 
         /*! Method to check if the configuration was successful, ideally called
           after a call to Configure.

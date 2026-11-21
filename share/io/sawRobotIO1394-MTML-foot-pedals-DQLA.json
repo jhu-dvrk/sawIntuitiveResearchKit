@@ -1,0 +1,61 @@
+{
+    "$id" : "saw-robot-io.schema.json",
+    "$version" : "6",
+    "digital_inputs" :
+    [
+        {
+            "bit_id" : 16,
+            "board_id" : 0,
+            "debounce_time" : 0.2,
+            "name" : "clutch",
+            "pressed_value" : true,
+            "trigger_when_pressed" : true,
+            "trigger_when_released" : true
+        },
+        {
+            "bit_id" : 17,
+            "board_id" : 0,
+            "debounce_time" : 0.05,
+            "name" : "focus_minus",
+            "pressed_value" : true,
+            "trigger_when_pressed" : true,
+            "trigger_when_released" : true
+        },
+        {
+            "bit_id" : 18,
+            "board_id" : 0,
+            "debounce_time" : 0.05,
+            "name" : "focus_plus",
+            "pressed_value" : true,
+            "trigger_when_pressed" : true,
+            "trigger_when_released" : true
+        },
+        {
+            "bit_id" : 19,
+            "board_id" : 0,
+            "debounce_time" : 0.2,
+            "name" : "coag",
+            "pressed_value" : true,
+            "trigger_when_pressed" : true,
+            "trigger_when_released" : true
+        },
+        {
+            "bit_id" : 20,
+            "board_id" : 0,
+            "debounce_time" : 0.2,
+            "name" : "camera",
+            "pressed_value" : true,
+            "trigger_when_pressed" : true,
+            "trigger_when_released" : true
+        },
+        {
+            "bit_id" : 21,
+            "board_id" : 0,
+            "debounce_time" : 0.2,
+            "name" : "bicoag",
+            "pressed_value" : true,
+            "trigger_when_pressed" : true,
+            "trigger_when_released" : true
+        }
+    ]
+}
