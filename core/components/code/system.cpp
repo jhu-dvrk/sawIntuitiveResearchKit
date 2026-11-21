@@ -23,8 +23,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <json/json.h>
 #include <chrono>
 #include <filesystem>
+#include <random>
+#include <string_view>
 
-#include <cisstCommon/cmnRandomSequence.h>
 #include <cisstCommon/cmnObjectRegister.h>
 #include <cisstOSAbstraction/osaSleep.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
@@ -491,13 +492,14 @@ void dvrk::system::Startup(void)
         prompts.push_back("Some documentation would be nice");
         prompts.push_back("ROS 2!");
         prompts.push_back("It's free, what did you expect?");
-        int index;
-        cmnRandomSequence & randomSequence = cmnRandomSequence::GetInstance();
-        cmnRandomSequence::SeedType seed
-            = static_cast<cmnRandomSequence::SeedType>(getTimestamp(std::chrono::steady_clock::now()) * 100000.0);
-        randomSequence.SetSeed(seed % 1000);
-        randomSequence.ExtractRandomValue<int>(0, prompts.size() - 1, index);
-        audio.string_to_speech(prompts.at(index));
+
+        // Select prompt uniformly at random
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_int_distribution<std::size_t> prompt_dist(0, prompts.size() - 1);
+        const std::string prompt = prompts.at(prompt_dist(gen));
+
+        audio.string_to_speech(prompt);
     }
 }
 
