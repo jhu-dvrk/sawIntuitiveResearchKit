@@ -327,7 +327,7 @@ void dvrk::system_ROS::add_topics_system(const std::string & _name)
     events_bridge().AddPublisherFromEventWrite<double, CISST_RAL_MSG(std_msgs, Float64)>
         (interface_name, "volume",
          ros_namespace + "volume");
-    events_bridge().AddSubscriberToCommandWrite<Eigen::VectorXd, CISST_RAL_MSG(std_msgs, Float64MultiArray)>
+    events_bridge().AddSubscriberToCommandWrite<std::vector<double>, CISST_RAL_MSG(std_msgs, Float64MultiArray)>
         (interface_name, "beep",
          ros_namespace + "beep");
     events_bridge().AddSubscriberToCommandWrite<std::string, CISST_RAL_MSG(std_msgs, String)>

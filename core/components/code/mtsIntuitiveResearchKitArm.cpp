@@ -1465,8 +1465,8 @@ void mtsIntuitiveResearchKitArm::set_LED_pattern(uint32_t color1, uint32_t color
                                                  bool blink1, bool blink2)
 {
     prmInputData pattern;
-    pattern.AnalogInputs() = Eigen::ArrayXd({{(double)color1, (double)color2}});
-    pattern.DigitalInputs() = Eigen::ArrayX<bool>({{blink1, blink2}});
+    pattern.AnalogInputs() = {static_cast<double>(color1), static_cast<double>(color2)};
+    pattern.DigitalInputs() = {blink1, blink2};
     IO.set_LED_pattern(pattern);
 }
 

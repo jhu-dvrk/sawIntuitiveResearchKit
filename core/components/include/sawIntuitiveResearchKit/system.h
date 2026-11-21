@@ -20,8 +20,10 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _dvrk_system_h
 #define _dvrk_system_h
 
+#include <array>
 #include <chrono>
 #include <memory>
+#include <vector>
 
 #include <cisstCommon/cmnSearchPath.h>
 #include <cisstMultiTask/mtsTaskFromSignal.h>
@@ -132,7 +134,7 @@ namespace dvrk {
         void disable_faulty_arms(void);
         // void set_scale(const double & scale);
         void set_volume(const double & volume);
-        void beep(const Eigen::VectorXd& values); // duration, [ frequency, [ volume ] ]
+        void beep(const std::vector<double>& values); // duration, [ frequency, [ volume ] ]
         void string_to_speech(const std::string & text);
 
         std::shared_ptr<dvrk::arm_proxy> m_SUJ;

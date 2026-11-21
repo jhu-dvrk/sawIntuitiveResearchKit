@@ -18,6 +18,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawIntuitiveResearchKit/system.h>
 
+#include <algorithm>
 #include <json/json.h>
 #include <chrono>
 #include <filesystem>
@@ -76,7 +77,7 @@ dvrk::system::system(const std::string & componentName):
         m_interface->AddCommandWrite(&system::set_volume, this,
                                      "set_volume", m_audio_volume);
         m_interface->AddCommandWrite(&system::beep, this,
-                                     "beep", Eigen::VectorXd());
+                                     "beep", std::vector<double>());
         m_interface->AddCommandWrite(&system::string_to_speech, this,
                                      "string_to_speech", std::string());
         m_interface->AddEventWrite(audio.volume,
@@ -981,15 +982,15 @@ void dvrk::system::set_volume(const double & volume)
 }
 
 
-void dvrk::system::beep(const Eigen::VectorXd& values)
+void dvrk::system::beep(const std::vector<double>& values)
 {
-    const Eigen::Index size = values.size();
+    const size_t size = values.size();
     if ((size == 0) || (size > 3)) {
         m_interface->SendError(this->GetName() + ": beep expect up to 3 values (duration, frequency, volume)");
         return;
     }
-    Eigen::Vector3d beep_value(0.3, 3000.0, m_audio_volume);
-    beep_value.head(size) = values; // overwrite with data sent
+    std::array<double, 3> beep_value{0.3, 3000.0, m_audio_volume};
+    std::copy(values.begin(), values.end(), beep_value.begin()); // overwrite with data sent
     // check duration
     bool durationError = false;
     if (beep_value[0] < 0.1) {
@@ -1036,7 +1037,7 @@ void dvrk::system::error_event_handler(const mtsMessage & message)
     // throttle error beeps
     const auto currentTime = std::chrono::steady_clock::now();
     if ((currentTime - mTimeOfLastErrorBeep) > 2s) {
-        audio.beep(Eigen::Vector3d(0.3, 3000.0, m_audio_volume));
+        audio.beep(std::array<double, 3>{0.3, 3000.0, m_audio_volume});
         mTimeOfLastErrorBeep = currentTime;
     }
 }
