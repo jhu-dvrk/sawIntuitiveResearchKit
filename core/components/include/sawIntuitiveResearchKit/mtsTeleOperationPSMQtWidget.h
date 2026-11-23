@@ -115,7 +115,7 @@ private:
     prmPositionCartesianGet m_PSM_setpoint_cp;
     prmPositionCartesianGetQtWidget * QCPGPSMWidget;
     Eigen::Matrix3d m_alignment_offset;
-    vctQtWidgetRotationDoubleRead * QVRAlignOffset;
+    EigenQt::RotationWidget * QVRAlignOffset;
 
     // timing
     mtsIntervalStatistics m_interval_statistics;

@@ -134,7 +134,7 @@ void mtsIntuitiveResearchKitArmQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(eve
     executionResult = Arm.measured_cf_body(Wrench);
     if (executionResult) {
         if (Wrench.Valid()) {
-            QFTWidget->SetValue(Wrench.F(), Wrench.T(), Wrench.Timestamp());
+            QFTWidget->setValue(Wrench.F(), Wrench.T(), Wrench.Timestamp());
         }
     }
 
@@ -237,7 +237,7 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
     EffortLayout = new QHBoxLayout();
     EffortLayout->setSpacing(2);
     EffortLayout->setContentsMargins(0, 0, 0, 0);
-    QFTWidget = new vctForceTorqueQtWidget();
+    QFTWidget = new EigenQt::WrenchWidget();
     EffortLayout->addWidget(QFTWidget);
     topLayout->addLayout(EffortLayout, 1, 1);
 

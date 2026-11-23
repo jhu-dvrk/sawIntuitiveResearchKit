@@ -51,7 +51,7 @@ private:
     void ToolTypeEventHandler(const std::string & toolType);
     void ToolTypeRequestEventHandler(void);
 
-    vctPlot2DOpenGLQtWidget * QVP2DJaw;
+    EigenQt::Plot2DWidget * QVP2DJaw;
     QLineEdit * QLEToolType;
     QComboBox * QCBToolOptions;
     mtsFunctionWrite set_tool_type;
@@ -65,9 +65,9 @@ private:
 
     prmPositionJointSetQtWidget * QPJSJaw;
 
-    vctPlot2DBase::Scale * m_scale_jaw;
-    vctPlot2DBase::Signal * m_signal_jaw;
-    vctPlot2DBase::Signal * m_signal_jaw_zero;
+    EigenQt::Plot2D::Scale * m_scale_jaw;
+    EigenQt::Plot2D::Signal * m_signal_jaw;
+    EigenQt::Plot2D::Signal * m_signal_jaw_zero;
 
     struct {
         mtsFunctionRead measured_js;

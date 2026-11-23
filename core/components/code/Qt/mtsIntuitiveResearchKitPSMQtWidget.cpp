@@ -25,7 +25,7 @@ http://www.cisst.org/cisst/license.txt.
 // cisst
 #include <cisstCommon/cmnConstants.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
-#include <cisstVectorQt/vctPlot2DOpenGLQtWidget.h>
+#include <eigenqt/Plot2DWidget.h>
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitPSMQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitToolTypes.h>
@@ -56,20 +56,20 @@ void mtsIntuitiveResearchKitPSMQtWidget::setupUiDerived(void)
     const QColor baseColor = palette().color(QPalette::Base);
     const QColor textColor = palette().color(QPalette::Text);
 
-    QVP2DJaw = new vctPlot2DOpenGLQtWidget();
-    QVP2DJaw->SetBackgroundColor(Eigen::Vector3d(baseColor.redF(), baseColor.greenF(), baseColor.blueF()));
+    QVP2DJaw = new EigenQt::Plot2DWidget();
+    QVP2DJaw->setBackgroundColor(Eigen::Vector3d(baseColor.redF(), baseColor.greenF(), baseColor.blueF()));
     QVP2DJaw->resize(QVP2DJaw->sizeHint());
     QVP2DJaw->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding));
-    QVP2DJaw->SetContinuousExpandYResetSlot();
+    QVP2DJaw->setContinuousExpandYResetSlot();
     EffortLayout->addWidget(QVP2DJaw);
 
-    m_scale_jaw = QVP2DJaw->AddScale("jaw/measured_jf");
-    m_signal_jaw = m_scale_jaw->AddSignal("jaw/measured_jf");
-    m_signal_jaw->SetColor(Eigen::Vector3d(textColor.redF(), textColor.greenF(), textColor.blueF()));
-    m_signal_jaw_zero = m_scale_jaw->AddSignal("zero");
-    m_signal_jaw_zero->SetColor(Eigen::Vector3d(0.5, 0.5, 0.5));
+    m_scale_jaw = QVP2DJaw->addScale("jaw/measured_jf");
+    m_signal_jaw = m_scale_jaw->addSignal("jaw/measured_jf");
+    m_signal_jaw->setColor(Eigen::Vector3d(textColor.redF(), textColor.greenF(), textColor.blueF()));
+    m_signal_jaw_zero = m_scale_jaw->addSignal("zero");
+    m_signal_jaw_zero->setColor(Eigen::Vector3d(0.5, 0.5, 0.5));
     // to display range in plot area
-    QVP2DJaw->SetDisplayYRangeScale(m_scale_jaw);
+    QVP2DJaw->setDisplayYRangeScale(m_scale_jaw);
     QVP2DJaw->setToolTip("Jaw torque");
 
     QFont font;
@@ -174,9 +174,9 @@ void mtsIntuitiveResearchKitPSMQtWidget::timerEventDerived(void)
         QLEJawVelocity->setText("");
     }
     if (m_jaw_measured_js.Effort().size() > 0) {
-        m_signal_jaw->AppendPoint(Eigen::Vector2d(m_jaw_measured_js.Timestamp(),
+        m_signal_jaw->appendPoint(Eigen::Vector2d(m_jaw_measured_js.Timestamp(),
                                              -(cmn180_PI) * m_jaw_measured_js.Effort()[0]));
-        m_signal_jaw_zero->AppendPoint(Eigen::Vector2d(m_jaw_measured_js.Timestamp(), 0.0));
+        m_signal_jaw_zero->appendPoint(Eigen::Vector2d(m_jaw_measured_js.Timestamp(), 0.0));
         QVP2DJaw->update();
         text.setNum(m_jaw_measured_js.Effort()[0], 'f', 3);
         QLEJawEffort->setText(text);

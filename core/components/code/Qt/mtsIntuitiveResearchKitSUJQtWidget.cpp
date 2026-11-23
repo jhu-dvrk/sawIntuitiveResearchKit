@@ -110,30 +110,30 @@ void mtsIntuitiveResearchKitSUJQtWidget::setupUiDerived(void)
     // brake current
     QLabel * labelBrakeCurrent = new QLabel("Brake (mA)");
     moreLayout->addWidget(labelBrakeCurrent, row, 0);
-    QVBrakeCurrentWidget = new vctQtWidgetDynamicVectorDoubleRead();
-    QVBrakeCurrentWidget->SetPrecision(5);
+    QVBrakeCurrentWidget = new EigenQt::VectorView();
+    QVBrakeCurrentWidget->setPrecision(5);
     moreLayout->addWidget(QVBrakeCurrentWidget, row, 1, 1, 1);
     row++;
 
     // voltages
     QLabel * labelPrimaryVoltages = new QLabel("Primary Voltages");
     moreLayout->addWidget(labelPrimaryVoltages, row, 0);
-    QVPrimaryVoltagesWidget = new vctQtWidgetDynamicVectorDoubleRead();
-    QVPrimaryVoltagesWidget->SetPrecision(5);
+    QVPrimaryVoltagesWidget = new EigenQt::VectorView();
+    QVPrimaryVoltagesWidget->setPrecision(5);
     moreLayout->addWidget(QVPrimaryVoltagesWidget, row, 1, 1, 5);
     row++;
 
     QLabel * labelSecondaryVoltages = new QLabel("Secondary Voltages");
     moreLayout->addWidget(labelSecondaryVoltages, row, 0);
-    QVSecondaryVoltagesWidget = new vctQtWidgetDynamicVectorDoubleRead();
-    QVSecondaryVoltagesWidget->SetPrecision(5);
+    QVSecondaryVoltagesWidget = new EigenQt::VectorView();
+    QVSecondaryVoltagesWidget->setPrecision(5);
     moreLayout->addWidget(QVSecondaryVoltagesWidget, row, 1, 1, 5);
     row++;
 
     QLabel * labelExtraVoltages = new QLabel("Extra Voltages");
     moreLayout->addWidget(labelExtraVoltages, row, 0);
-    QVExtraVoltagesWidget = new vctQtWidgetDynamicVectorDoubleRead();
-    QVExtraVoltagesWidget->SetPrecision(5);
+    QVExtraVoltagesWidget = new EigenQt::VectorView();
+    QVExtraVoltagesWidget->setPrecision(5);
     moreLayout->addWidget(QVExtraVoltagesWidget, row, 1, 1, 5);
     row++;
 
@@ -142,7 +142,7 @@ void mtsIntuitiveResearchKitSUJQtWidget::setupUiDerived(void)
     labelRecalibrationInputStart->setToolTip("Measured height or angle in mm or degrees");
     moreLayout->addWidget(labelRecalibrationInputStart, row, 0);
     QVPotentiometerRecalibrationStartWidget
-        = new vctQtWidgetDynamicVectorDoubleWrite(vctQtWidgetDynamicVectorDoubleWrite::TEXT_WIDGET);
+        = new EigenQt::VectorEditor(EigenQt::VectorEditor::Text);
     QVPotentiometerRecalibrationStartWidget->setToolTip("Measured height or angle in mm or degrees");
     moreLayout->addWidget(QVPotentiometerRecalibrationStartWidget, row, 1, 1, -1);
     row++;
@@ -151,7 +151,7 @@ void mtsIntuitiveResearchKitSUJQtWidget::setupUiDerived(void)
     labelRecalibrationInputFinish->setToolTip("Measured height or angle in mm or degrees");
     moreLayout->addWidget(labelRecalibrationInputFinish, row, 0);
     QVPotentiometerRecalibrationFinishWidget
-        = new vctQtWidgetDynamicVectorDoubleWrite(vctQtWidgetDynamicVectorDoubleWrite::TEXT_WIDGET);
+        = new EigenQt::VectorEditor(EigenQt::VectorEditor::Text);
     QVPotentiometerRecalibrationFinishWidget->setToolTip("Measured height or angle in mm or degrees");
     moreLayout->addWidget(QVPotentiometerRecalibrationFinishWidget, row, 1, 1, -1);
     QPBManualRecalibration = new QPushButton("Manual Recalibration");
@@ -193,21 +193,21 @@ void mtsIntuitiveResearchKitSUJQtWidget::timerEventDerived(void)
         // brake voltage
         if (GetBrakeCurrent.IsValid()) {
             GetBrakeCurrent(BrakeCurrent);
-            QVBrakeCurrentWidget->SetValue(Eigen::VectorXd::Constant(1, BrakeCurrent * 1000.0));
+            QVBrakeCurrentWidget->setValue(Eigen::VectorXd::Constant(1, BrakeCurrent * 1000.0));
         }
         // extra voltages
         if (GetExtraVoltages.IsValid()) {
             GetExtraVoltages(mVoltagesExtra);
-            QVExtraVoltagesWidget->SetValue(mVoltagesExtra);
+            QVExtraVoltagesWidget->setValue(mVoltagesExtra);
         }
         // potentiometers
         GetPrimaryVoltages(mVoltages[0]);
-        QVPrimaryVoltagesWidget->SetValue(mVoltages[0]);
+        QVPrimaryVoltagesWidget->setValue(mVoltages[0]);
         GetSecondaryVoltages(mVoltages[1]);
-        QVSecondaryVoltagesWidget->SetValue(mVoltages[1]);
+        QVSecondaryVoltagesWidget->setValue(mVoltages[1]);
         // calibration data
-        QVPotentiometerRecalibrationStartWidget->SetValue(JointPositionStart);
-        QVPotentiometerRecalibrationFinishWidget->SetValue(JointPositionFinish);
+        QVPotentiometerRecalibrationStartWidget->setValue(JointPositionStart);
+        QVPotentiometerRecalibrationFinishWidget->setValue(JointPositionFinish);
     }
 }
 
@@ -249,7 +249,7 @@ void mtsIntuitiveResearchKitSUJQtWidget::SlotVelocityReleased(void)
 void mtsIntuitiveResearchKitSUJQtWidget::SlotRecalibrationStartChanged(void)
 {
     const unsigned int currentColumn = QVPotentiometerRecalibrationStartWidget->currentColumn();
-    QVPotentiometerRecalibrationStartWidget->GetValue(JointPositionStart);
+    QVPotentiometerRecalibrationStartWidget->readValues(JointPositionStart);
     if (currentColumn == 0) {
         // convert mm to m
         mJointsRecalibrationMatrix(0, currentColumn) = JointPositionStart[currentColumn] / 1000.0;
@@ -264,7 +264,7 @@ void mtsIntuitiveResearchKitSUJQtWidget::SlotRecalibrationStartChanged(void)
 void mtsIntuitiveResearchKitSUJQtWidget::SlotRecalibrationFinishChanged(void)
 {
     const unsigned int currentColumn = QVPotentiometerRecalibrationFinishWidget->currentColumn();
-    QVPotentiometerRecalibrationFinishWidget->GetValue(JointPositionFinish);
+    QVPotentiometerRecalibrationFinishWidget->readValues(JointPositionFinish);
     if (currentColumn == 0) {
         // convert mm to m
         mJointsRecalibrationMatrix(3, currentColumn) = JointPositionFinish[currentColumn] / 1000.0;

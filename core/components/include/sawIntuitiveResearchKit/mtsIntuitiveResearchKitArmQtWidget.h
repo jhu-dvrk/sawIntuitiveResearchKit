@@ -20,7 +20,7 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsIntuitiveResearchKitArmQtWidget_h
 #define _mtsIntuitiveResearchKitArmQtWidget_h
 
-#include <cisstVectorQt/vctForceTorqueQtWidget.h>
+#include <eigenqt/WrenchWidget.h>
 #include <cisstMultiTask/mtsComponent.h>
 #include <cisstMultiTask/mtsEventReceiver.h>
 #include <cisstMultiTask/mtsMessageQtWidget.h>
@@ -108,7 +108,7 @@ protected:
     prmPositionCartesianGetQtWidget * QCPGWidget;
 
     prmForceCartesianGet Wrench;
-    vctForceTorqueQtWidget * QFTWidget;
+    EigenQt::WrenchWidget * QFTWidget;
 
     QFrame * QFJoints;
     prmPositionJointSetQtWidget * QPJSWidget;

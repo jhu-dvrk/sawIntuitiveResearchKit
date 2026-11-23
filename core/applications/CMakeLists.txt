@@ -35,7 +35,6 @@ set (REQUIRED_CISST_LIBRARIES
 if (CISST_HAS_QT)
   set (REQUIRED_CISST_LIBRARIES ${REQUIRED_CISST_LIBRARIES}
                                 cisstCommonQt
-                                cisstVectorQt
                                 cisstMultiTaskQt
                                 cisstParameterTypesQt)
 endif ()

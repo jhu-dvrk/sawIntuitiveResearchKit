@@ -11,7 +11,6 @@
 
 set (REQUIRED_CISST_LIBRARIES
   cisstCommon
-  cisstVectorQt
   cisstOSAbstraction
   cisstMultiTask
   cisstMultiTaskQt
@@ -21,6 +20,7 @@ set (REQUIRED_CISST_LIBRARIES
 
 # cisst
 find_package (cisst 1.5 REQUIRED COMPONENTS ${REQUIRED_CISST_LIBRARIES})
+find_package (EigenQt 0.1 CONFIG REQUIRED COMPONENTS Geometry)
 
 # for Qt generated header files
 include_directories (${CMAKE_CURRENT_BINARY_DIR})
@@ -63,6 +63,7 @@ set_target_properties (sawIntuitiveResearchKitQt PROPERTIES
                        VERSION ${sawIntuitiveResearchKit_VERSION}
                        FOLDER "sawIntuitiveResearchKit")
 target_link_libraries (sawIntuitiveResearchKitQt PUBLIC
+                       EigenQt::Geometry
                        ${cisst_LIBRARIES}
                        ${sawIntuitiveResearchKit_LIBRARIES})
 

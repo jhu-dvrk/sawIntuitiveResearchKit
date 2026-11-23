@@ -39,13 +39,13 @@ protected:
     void setupUiDerived(void) override;
     void timerEventDerived(void) override;
 
-    vctQtWidgetDynamicVectorDoubleRead * QVBrakeCurrentWidget;
-    vctQtWidgetDynamicVectorDoubleRead * QVExtraVoltagesWidget;
-    vctQtWidgetDynamicVectorDoubleRead * QVPrimaryVoltagesWidget;
-    vctQtWidgetDynamicVectorDoubleRead * QVSecondaryVoltagesWidget;
+    EigenQt::VectorView * QVBrakeCurrentWidget;
+    EigenQt::VectorView * QVExtraVoltagesWidget;
+    EigenQt::VectorView * QVPrimaryVoltagesWidget;
+    EigenQt::VectorView * QVSecondaryVoltagesWidget;
 
-    vctQtWidgetDynamicVectorDoubleWrite * QVPotentiometerRecalibrationStartWidget;
-    vctQtWidgetDynamicVectorDoubleWrite * QVPotentiometerRecalibrationFinishWidget;
+    EigenQt::VectorEditor * QVPotentiometerRecalibrationStartWidget;
+    EigenQt::VectorEditor * QVPotentiometerRecalibrationFinishWidget;
 
     bool mShowMore;
 

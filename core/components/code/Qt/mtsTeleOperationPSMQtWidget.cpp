@@ -141,7 +141,7 @@ void mtsTeleOperationPSMQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
 
     // alignment offset
     TeleOperation.alignment_offset(m_alignment_offset);
-    QVRAlignOffset->SetValue(m_alignment_offset);
+    QVRAlignOffset->setValue(m_alignment_offset);
 
     TeleOperation.period_statistics(m_interval_statistics);
     QMIntervalStatistics->SetValue(m_interval_statistics);
@@ -236,7 +236,7 @@ void mtsTeleOperationPSMQtWidget::setupUi(void)
     QLabel * alignLabel = new QLabel("<b>Alignment</b>");
     alignLabel->setAlignment(Qt::AlignCenter);
     frameLayout->addWidget(alignLabel, 0, column);
-    QVRAlignOffset = new vctQtWidgetRotationDoubleRead(vctQtWidgetRotationDoubleRead::OPENGL_WIDGET);
+    QVRAlignOffset = new EigenQt::RotationWidget(EigenQt::RotationWidget::OpenGL);
     frameLayout->addWidget(QVRAlignOffset, 1, column);
 
     // scale/lock/unlock/messages
