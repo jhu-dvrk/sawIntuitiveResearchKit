@@ -42,14 +42,6 @@ set (REQUIRED_CISST_LIBRARIES
 
 find_package (cisst 1.5 REQUIRED COMPONENTS ${REQUIRED_CISST_LIBRARIES})
 
-# make sure CISST_USE_SI_UNITS is defined and set to 1
-if (NOT DEFINED CISST_USE_SI_UNITS)
-  message (FATAL_ERROR "You need to upgrade to a version of cisst that defines CISST_USE_SI_UNITS (and set CISST_USE_SI_UNITS to ON)")
-endif ()
-if (NOT CISST_USE_SI_UNITS)
-  message (FATAL_ERROR "You need to make sure CISST_USE_SI_UNITS to ON")
-endif ()
-
 # saw components have been compiled within cisst, we should find them automatically
 find_package (sawTextToSpeech         1.5.0 REQUIRED)
 find_package (sawRobotIO1394          2.5.0 REQUIRED)
